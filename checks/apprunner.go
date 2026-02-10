@@ -42,8 +42,8 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for arn, svc := range services {
 				val := ""
-				if svc.NetworkConfiguration != nil && svc.NetworkConfiguration.IngressConfiguration != nil {
-					val = string(svc.NetworkConfiguration.IngressConfiguration.IpAddressType)
+				if svc.NetworkConfiguration != nil {
+					val = string(svc.NetworkConfiguration.IpAddressType)
 				}
 				ok := val != ""
 				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("IpAddressType: %s", val)})

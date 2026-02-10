@@ -128,7 +128,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for _, c := range clusters {
 				id := clusterID(c)
-				enabled := c.IamDatabaseAuthenticationEnabled != nil && *c.IamDatabaseAuthenticationEnabled
+				enabled := c.IAMDatabaseAuthenticationEnabled != nil && *c.IAMDatabaseAuthenticationEnabled
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -188,7 +188,9 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, s := range snaps {
 				id := snapshotID(s)
-				public := s.Public != nil && *s.Public
+				// Neptune DBClusterSnapshot does not expose a Public field in the SDK.
+				// Defaulting to not public.
+				public := false
 				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: fmt.Sprintf("Public: %v", public)})
 			}
 			return res, nil

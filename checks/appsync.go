@@ -71,13 +71,19 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			caches, err := d.AppSyncApiCaches.Get()
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, api := range apis {
 				id := "unknown"
+				var cache *appsynctypes.ApiCache
 				if api.Arn != nil {
 					id = *api.Arn
+					cache = caches[*api.Arn]
 				}
-				enabled := api.AtRestEncryptionEnabled
+				enabled := cache != nil && cache.AtRestEncryptionEnabled
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -95,13 +101,19 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			caches, err := d.AppSyncApiCaches.Get()
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, api := range apis {
 				id := "unknown"
+				var cache *appsynctypes.ApiCache
 				if api.Arn != nil {
 					id = *api.Arn
+					cache = caches[*api.Arn]
 				}
-				enabled := api.TransitEncryptionEnabled
+				enabled := cache != nil && cache.TransitEncryptionEnabled
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -119,13 +131,19 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			caches, err := d.AppSyncApiCaches.Get()
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, api := range apis {
 				id := "unknown"
+				var cache *appsynctypes.ApiCache
 				if api.Arn != nil {
 					id = *api.Arn
+					cache = caches[*api.Arn]
 				}
-				enabled := api.AtRestEncryptionEnabled
+				enabled := cache != nil && cache.AtRestEncryptionEnabled
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil

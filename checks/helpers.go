@@ -1,26 +1,31 @@
 package checks
 
 import (
+	"log/slog"
+	"time"
+
 	"bptools/awsdata"
 	"bptools/checker"
 )
 
 // BaseCheck provides a reusable base for checks.
 type BaseCheck struct {
-	CheckID   string
-	Desc      string
-	Svc       string
-	RunFunc   func() []checker.Result
+	CheckID string
+	Desc    string
+	Svc     string
+	RunFunc func() []checker.Result
 }
 
 func (b *BaseCheck) ID() string          { return b.CheckID }
 func (b *BaseCheck) Description() string { return b.Desc }
 func (b *BaseCheck) Service() string     { return b.Svc }
 func (b *BaseCheck) Run() []checker.Result {
+	start := time.Now()
 	r := b.RunFunc()
 	if r == nil {
-		return []checker.Result{}
+		r = []checker.Result{}
 	}
+	slog.Debug("check completed", "id", b.CheckID, "service", b.Svc, "results", len(r), "duration", time.Since(start))
 	return r
 }
 
@@ -126,6 +131,7 @@ func LoggingCheck(id, desc, svc string, d *awsdata.Data, listFn func(*awsdata.Da
 // DescriptionResource represents a resource with a description check.
 type DescriptionResource struct {
 	ID             string
+	Description    *string
 	HasDescription bool
 }
 
@@ -145,7 +151,7 @@ func DescriptionCheck(id, desc, svc string, d *awsdata.Data, listFn func(*awsdat
 			}
 			var results []checker.Result
 			for _, r := range resources {
-				if r.HasDescription {
+				if r.HasDescription || (r.Description != nil && *r.Description != "") {
 					results = append(results, checker.Result{CheckID: id, ResourceID: r.ID, Status: checker.StatusPass, Message: "Resource has a description"})
 				} else {
 					results = append(results, checker.Result{CheckID: id, ResourceID: r.ID, Status: checker.StatusFail, Message: "Resource has no description"})

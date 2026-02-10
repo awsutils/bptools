@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -159,7 +160,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 					if st.StageName == nil {
 						continue
 					}
-					ok := st.DefaultRouteSettings != nil && st.DefaultRouteSettings.DetailedMetricsEnabled
+					ok := st.DefaultRouteSettings != nil && st.DefaultRouteSettings.DetailedMetricsEnabled != nil && *st.DefaultRouteSettings.DetailedMetricsEnabled
 					res = append(res, EnabledResource{ID: apiID + ":" + *st.StageName, Enabled: ok})
 				}
 			}
@@ -277,7 +278,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 					}
 					logging := false
 					for _, ms := range st.MethodSettings {
-						if ms.LoggingLevel != apigwtypes.LoggingLevelOff && ms.LoggingLevel != "" {
+						if ms.LoggingLevel != nil && strings.ToUpper(*ms.LoggingLevel) != "OFF" {
 							logging = true
 							break
 						}

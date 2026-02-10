@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -113,4 +114,181 @@ func RegisterBackupChecks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
+
+	checker.Register(ConfigCheck(
+		"storagegateway-resources-protected-by-backup-plan",
+		"This rule checks storagegateway resources protected by backup plan.",
+		"backup",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			resources, err := d.BackupProtectedResources.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for arn, r := range resources {
+				if !resourceTypeMatch(r.ResourceType, "storagegateway") {
+					continue
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: true, Detail: "Protected resource"})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"storagegateway-last-backup-recovery-point-created",
+		"This rule checks storagegateway last backup recovery point created.",
+		"backup",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			resources, err := d.BackupProtectedResources.Get()
+			if err != nil {
+				return nil, err
+			}
+			points, err := d.BackupRecoveryPointsByResource.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for arn, r := range resources {
+				if !resourceTypeMatch(r.ResourceType, "storagegateway") {
+					continue
+				}
+				ok := len(points[arn]) > 0
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("Recovery points: %d", len(points[arn]))})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"storagegateway-resources-in-logically-air-gapped-vault",
+		"This rule checks storagegateway resources in logically air gapped vault.",
+		"backup",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			resources, err := d.BackupProtectedResources.Get()
+			if err != nil {
+				return nil, err
+			}
+			points, err := d.BackupRecoveryPointsByResource.Get()
+			if err != nil {
+				return nil, err
+			}
+			locks, err := d.BackupVaultLockConfigs.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for arn, r := range resources {
+				if !resourceTypeMatch(r.ResourceType, "storagegateway") {
+					continue
+				}
+				ok := false
+				for _, rp := range points[arn] {
+					if rp.BackupVaultName != nil {
+						if _, has := locks[*rp.BackupVaultName]; has {
+							ok = true
+							break
+						}
+					}
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points in locked vault"})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"virtualmachine-resources-protected-by-backup-plan",
+		"This rule checks virtualmachine resources protected by backup plan.",
+		"backup",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			resources, err := d.BackupProtectedResources.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for arn, r := range resources {
+				if !resourceTypeMatch(r.ResourceType, "virtualmachine") && !resourceTypeMatch(r.ResourceType, "vmware") {
+					continue
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: true, Detail: "Protected resource"})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"virtualmachine-last-backup-recovery-point-created",
+		"This rule checks virtualmachine last backup recovery point created.",
+		"backup",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			resources, err := d.BackupProtectedResources.Get()
+			if err != nil {
+				return nil, err
+			}
+			points, err := d.BackupRecoveryPointsByResource.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for arn, r := range resources {
+				if !resourceTypeMatch(r.ResourceType, "virtualmachine") && !resourceTypeMatch(r.ResourceType, "vmware") {
+					continue
+				}
+				ok := len(points[arn]) > 0
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("Recovery points: %d", len(points[arn]))})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"virtualmachine-resources-in-logically-air-gapped-vault",
+		"This rule checks virtualmachine resources in logically air gapped vault.",
+		"backup",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			resources, err := d.BackupProtectedResources.Get()
+			if err != nil {
+				return nil, err
+			}
+			points, err := d.BackupRecoveryPointsByResource.Get()
+			if err != nil {
+				return nil, err
+			}
+			locks, err := d.BackupVaultLockConfigs.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for arn, r := range resources {
+				if !resourceTypeMatch(r.ResourceType, "virtualmachine") && !resourceTypeMatch(r.ResourceType, "vmware") {
+					continue
+				}
+				ok := false
+				for _, rp := range points[arn] {
+					if rp.BackupVaultName != nil {
+						if _, has := locks[*rp.BackupVaultName]; has {
+							ok = true
+							break
+						}
+					}
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points in locked vault"})
+			}
+			return res, nil
+		},
+	))
+}
+
+func resourceTypeMatch(t *string, needle string) bool {
+	if t == nil {
+		return false
+	}
+	return strings.Contains(strings.ToLower(*t), needle)
 }

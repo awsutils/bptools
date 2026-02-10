@@ -6,6 +6,7 @@ import (
 	"bptools/awsdata"
 	"bptools/checker"
 
+	"github.com/aws/aws-sdk-go-v2/service/sagemaker"
 	sagemakertypes "github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 )
 
@@ -53,12 +54,8 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 				if dom.DomainArn != nil {
 					id = *dom.DomainArn
 				}
-				vpc := ""
-				if dom.VpcId != nil {
-					vpc = *dom.VpcId
-				}
-				ok := vpc != ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("VPC: %s", vpc)})
+				ok := false
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "VpcId not available in domain summary"})
 			}
 			return res, nil
 		},
@@ -373,14 +370,14 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 	))
 }
 
-func imageKey(img sagemakertypes.ImageSummary) string {
+func imageKey(img sagemakertypes.Image) string {
 	if img.ImageName != nil {
 		return *img.ImageName
 	}
 	return ""
 }
 
-func sagemakerEndpointConfigID(cfg sagemakertypes.EndpointConfig) string {
+func sagemakerEndpointConfigID(cfg sagemaker.DescribeEndpointConfigOutput) string {
 	if cfg.EndpointConfigArn != nil {
 		return *cfg.EndpointConfigArn
 	}
@@ -390,7 +387,7 @@ func sagemakerEndpointConfigID(cfg sagemakertypes.EndpointConfig) string {
 	return "unknown"
 }
 
-func sagemakerModelID(m sagemakertypes.Model) string {
+func sagemakerModelID(m sagemaker.DescribeModelOutput) string {
 	if m.ModelArn != nil {
 		return *m.ModelArn
 	}
@@ -400,7 +397,7 @@ func sagemakerModelID(m sagemakertypes.Model) string {
 	return "unknown"
 }
 
-func sagemakerNotebookID(nb sagemakertypes.NotebookInstance) string {
+func sagemakerNotebookID(nb sagemaker.DescribeNotebookInstanceOutput) string {
 	if nb.NotebookInstanceArn != nil {
 		return *nb.NotebookInstanceArn
 	}

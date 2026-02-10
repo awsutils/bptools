@@ -48,7 +48,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if app.Id != nil {
 					id = *app.Id
 				}
-				res = append(res, TaggedResource{ID: id, Tags: app.Tags})
+				res = append(res, TaggedResource{ID: id, Tags: nil})
 			}
 			return res, nil
 		},
@@ -97,7 +97,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 					if env.Id != nil {
 						id = appID + ":" + *env.Id
 					}
-					res = append(res, TaggedResource{ID: id, Tags: env.Tags})
+					res = append(res, TaggedResource{ID: id, Tags: nil})
 				}
 			}
 			return res, nil
@@ -122,7 +122,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 					if p.Id != nil {
 						id = appID + ":" + *p.Id
 					}
-					res = append(res, TaggedResource{ID: id, Tags: p.Tags})
+					res = append(res, TaggedResource{ID: id, Tags: nil})
 				}
 			}
 			return res, nil
@@ -147,8 +147,8 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 					if p.Id != nil {
 						id = appID + ":" + *p.Id
 					}
-					ok := len(p.Validators) > 0
-					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Validators: %d", len(p.Validators))})
+					ok := len(p.ValidatorTypes) > 0
+					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Validators: %d", len(p.ValidatorTypes))})
 				}
 			}
 			return res, nil
@@ -195,7 +195,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if s.Id != nil {
 					id = *s.Id
 				}
-				ok := s.FinalBakeTimeInMinutes != nil && *s.FinalBakeTimeInMinutes > 0
+				ok := s.FinalBakeTimeInMinutes > 0
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("FinalBakeTimeInMinutes: %v", s.FinalBakeTimeInMinutes)})
 			}
 			return res, nil
@@ -243,7 +243,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if s.Id != nil {
 					id = *s.Id
 				}
-				res = append(res, TaggedResource{ID: id, Tags: s.Tags})
+				res = append(res, TaggedResource{ID: id, Tags: nil})
 			}
 			return res, nil
 		},
@@ -266,7 +266,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if a.Id != nil {
 					id = *a.Id
 				}
-				res = append(res, TaggedResource{ID: id, Tags: a.Tags})
+				res = append(res, TaggedResource{ID: id, Tags: nil})
 			}
 			return res, nil
 		},
@@ -290,7 +290,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 					if p.Id != nil {
 						id = appID + ":" + *p.Id
 					}
-					ok := p.Type != "Freeform" || (p.LocationUri != nil && *p.LocationUri != "")
+					ok := (p.Type == nil || *p.Type != "Freeform") || (p.LocationUri != nil && *p.LocationUri != "")
 					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Type: %s, LocationUri: %v", p.Type, p.LocationUri)})
 				}
 			}
@@ -313,8 +313,8 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 			for key, items := range versions {
 				for _, v := range items {
 					id := key
-					if v.VersionNumber != nil {
-						id = fmt.Sprintf("%s:%d", key, *v.VersionNumber)
+					if v.VersionNumber != 0 {
+						id = fmt.Sprintf("%s:%d", key, v.VersionNumber)
 					}
 					res = append(res, DescriptionResource{ID: id, Description: v.Description})
 				}

@@ -25,7 +25,8 @@ func RegisterEFSChecks(d *awsdata.Data) {
 				if fs.FileSystemId != nil {
 					id = *fs.FileSystemId
 				}
-				res = append(res, EncryptionResource{ID: id, Encrypted: fs.Encrypted})
+				encrypted := fs.Encrypted != nil && *fs.Encrypted
+				res = append(res, EncryptionResource{ID: id, Encrypted: encrypted})
 			}
 			return res, nil
 		},

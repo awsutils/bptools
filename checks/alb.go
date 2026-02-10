@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -23,8 +24,130 @@ func isALB(lb elbv2types.LoadBalancer) bool {
 	return lb.Type == elbv2types.LoadBalancerTypeEnumApplication
 }
 
+func isNLB(lb elbv2types.LoadBalancer) bool {
+	return lb.Type == elbv2types.LoadBalancerTypeEnumNetwork
+}
+
 // RegisterALBChecks registers ALB-related checks.
 func RegisterALBChecks(d *awsdata.Data) {
+	// elbv2-acm-certificate-required
+	checker.Register(ConfigCheck(
+		"elbv2-acm-certificate-required",
+		"This rule checks ELBv2 ACM certificate required.",
+		"elbv2",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			listeners, err := d.ELBv2Listeners.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, l := range listeners {
+				if l.Protocol != elbv2types.ProtocolEnumHttps && l.Protocol != elbv2types.ProtocolEnumTls {
+					continue
+				}
+				id := "unknown"
+				if l.ListenerArn != nil {
+					id = *l.ListenerArn
+				}
+				ok := true
+				if len(l.Certificates) == 0 {
+					ok = false
+				} else {
+					for _, c := range l.Certificates {
+						if c.CertificateArn == nil || !strings.Contains(*c.CertificateArn, ":acm:") {
+							ok = false
+							break
+						}
+					}
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "ACM certificate required for TLS/HTTPS"})
+			}
+			return res, nil
+		},
+	))
+
+	// elbv2-listener-encryption-in-transit
+	checker.Register(ConfigCheck(
+		"elbv2-listener-encryption-in-transit",
+		"This rule checks encryption in transit for ELBv2 listener.",
+		"elbv2",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			listeners, err := d.ELBv2Listeners.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, l := range listeners {
+				id := "unknown"
+				if l.ListenerArn != nil {
+					id = *l.ListenerArn
+				}
+				ok := l.Protocol == elbv2types.ProtocolEnumHttps || l.Protocol == elbv2types.ProtocolEnumTls
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Protocol: %s", l.Protocol)})
+			}
+			return res, nil
+		},
+	))
+
+	// elbv2-multiple-az
+	checker.Register(ConfigCheck(
+		"elbv2-multiple-az",
+		"This rule checks ELBv2 multiple az.",
+		"elbv2",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			lbs, err := d.ELBv2LoadBalancers.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, lb := range lbs {
+				id := lbID(lb)
+				zones := make(map[string]bool)
+				for _, az := range lb.AvailabilityZones {
+					if az.ZoneName != nil {
+						zones[*az.ZoneName] = true
+					}
+				}
+				ok := len(zones) >= 2
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AZs: %d", len(zones))})
+			}
+			return res, nil
+		},
+	))
+
+	// elbv2-predefined-security-policy-ssl-check
+	checker.Register(ConfigCheck(
+		"elbv2-predefined-security-policy-ssl-check",
+		"This rule checks configuration for ELBv2 predefined security policy SSL.",
+		"elbv2",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			listeners, err := d.ELBv2Listeners.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, l := range listeners {
+				if l.Protocol != elbv2types.ProtocolEnumHttps && l.Protocol != elbv2types.ProtocolEnumTls {
+					continue
+				}
+				id := "unknown"
+				if l.ListenerArn != nil {
+					id = *l.ListenerArn
+				}
+				policy := ""
+				if l.SslPolicy != nil {
+					policy = *l.SslPolicy
+				}
+				ok := strings.HasPrefix(policy, "ELBSecurityPolicy-")
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("SSL policy: %s", policy)})
+			}
+			return res, nil
+		},
+	))
 	// alb-tagged
 	checker.Register(TaggedCheck(
 		"alb-tagged",

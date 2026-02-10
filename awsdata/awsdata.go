@@ -8,10 +8,15 @@ import (
 
 	"bptools/cache"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/account"
+	accounttypes "github.com/aws/aws-sdk-go-v2/service/account/types"
 	"github.com/aws/aws-sdk-go-v2/service/acm"
 	acmtypes "github.com/aws/aws-sdk-go-v2/service/acm/types"
 	"github.com/aws/aws-sdk-go-v2/service/acmpca"
 	acmpcatypes "github.com/aws/aws-sdk-go-v2/service/acmpca/types"
+	"github.com/aws/aws-sdk-go-v2/service/amp"
+	amptypes "github.com/aws/aws-sdk-go-v2/service/amp/types"
 	"github.com/aws/aws-sdk-go-v2/service/amplify"
 	amplifytypes "github.com/aws/aws-sdk-go-v2/service/amplify/types"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -30,10 +35,14 @@ import (
 	appmeshtypes "github.com/aws/aws-sdk-go-v2/service/appmesh/types"
 	"github.com/aws/aws-sdk-go-v2/service/apprunner"
 	apprunnertypes "github.com/aws/aws-sdk-go-v2/service/apprunner/types"
+	"github.com/aws/aws-sdk-go-v2/service/appstream"
+	appstreamtypes "github.com/aws/aws-sdk-go-v2/service/appstream/types"
 	"github.com/aws/aws-sdk-go-v2/service/appsync"
 	appsynctypes "github.com/aws/aws-sdk-go-v2/service/appsync/types"
 	"github.com/aws/aws-sdk-go-v2/service/athena"
 	athenatypes "github.com/aws/aws-sdk-go-v2/service/athena/types"
+	"github.com/aws/aws-sdk-go-v2/service/auditmanager"
+	auditmanagertypes "github.com/aws/aws-sdk-go-v2/service/auditmanager/types"
 	"github.com/aws/aws-sdk-go-v2/service/autoscaling"
 	autoscalingtypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
 	"github.com/aws/aws-sdk-go-v2/service/backup"
@@ -53,15 +62,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/codebuild"
 	codebuildtypes "github.com/aws/aws-sdk-go-v2/service/codebuild/types"
 	"github.com/aws/aws-sdk-go-v2/service/codedeploy"
-	codedeploytypes "github.com/aws/aws-sdk-go-v2/service/codedeploy/types"
+	"github.com/aws/aws-sdk-go-v2/service/codeguruprofiler"
+	codeguruprofilertypes "github.com/aws/aws-sdk-go-v2/service/codeguruprofiler/types"
+	"github.com/aws/aws-sdk-go-v2/service/codegurureviewer"
+	codegurureviewertypes "github.com/aws/aws-sdk-go-v2/service/codegurureviewer/types"
 	"github.com/aws/aws-sdk-go-v2/service/codepipeline"
 	codepipelinetypes "github.com/aws/aws-sdk-go-v2/service/codepipeline/types"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentity"
 	cognitoidtypes "github.com/aws/aws-sdk-go-v2/service/cognitoidentity/types"
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	cognitoidptypes "github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider/types"
+	"github.com/aws/aws-sdk-go-v2/service/connect"
+	connecttypes "github.com/aws/aws-sdk-go-v2/service/connect/types"
+	"github.com/aws/aws-sdk-go-v2/service/customerprofiles"
+	customerprofilestypes "github.com/aws/aws-sdk-go-v2/service/customerprofiles/types"
 	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
 	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
+	"github.com/aws/aws-sdk-go-v2/service/datasync"
+	datasynctypes "github.com/aws/aws-sdk-go-v2/service/datasync/types"
 	"github.com/aws/aws-sdk-go-v2/service/dax"
 	daxtypes "github.com/aws/aws-sdk-go-v2/service/dax/types"
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
@@ -89,19 +107,58 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticsearchservice"
 	estypes "github.com/aws/aws-sdk-go-v2/service/elasticsearchservice/types"
 	"github.com/aws/aws-sdk-go-v2/service/emr"
+	emrtypes "github.com/aws/aws-sdk-go-v2/service/emr/types"
+	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
+	eventbridgetypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
+	"github.com/aws/aws-sdk-go-v2/service/evidently"
+	evidentlytypes "github.com/aws/aws-sdk-go-v2/service/evidently/types"
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	firehosetypes "github.com/aws/aws-sdk-go-v2/service/firehose/types"
+	"github.com/aws/aws-sdk-go-v2/service/fis"
+	fistypes "github.com/aws/aws-sdk-go-v2/service/fis/types"
+	"github.com/aws/aws-sdk-go-v2/service/fms"
+	fmstypes "github.com/aws/aws-sdk-go-v2/service/fms/types"
+	"github.com/aws/aws-sdk-go-v2/service/frauddetector"
+	fraudtypes "github.com/aws/aws-sdk-go-v2/service/frauddetector/types"
 	"github.com/aws/aws-sdk-go-v2/service/fsx"
 	fsxtypes "github.com/aws/aws-sdk-go-v2/service/fsx/types"
+	"github.com/aws/aws-sdk-go-v2/service/globalaccelerator"
+	globalacceleratortypes "github.com/aws/aws-sdk-go-v2/service/globalaccelerator/types"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
 	gluetypes "github.com/aws/aws-sdk-go-v2/service/glue/types"
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	iamtypes "github.com/aws/aws-sdk-go-v2/service/iam/types"
+	"github.com/aws/aws-sdk-go-v2/service/inspector2"
+	"github.com/aws/aws-sdk-go-v2/service/iot"
+	iottypes "github.com/aws/aws-sdk-go-v2/service/iot/types"
+	"github.com/aws/aws-sdk-go-v2/service/iotevents"
+	ioteventstypes "github.com/aws/aws-sdk-go-v2/service/iotevents/types"
+	"github.com/aws/aws-sdk-go-v2/service/iotsitewise"
+	sitewisetypes "github.com/aws/aws-sdk-go-v2/service/iotsitewise/types"
+	"github.com/aws/aws-sdk-go-v2/service/iottwinmaker"
+	twinmakertypes "github.com/aws/aws-sdk-go-v2/service/iottwinmaker/types"
+	"github.com/aws/aws-sdk-go-v2/service/iotwireless"
+	iotwirelesstypes "github.com/aws/aws-sdk-go-v2/service/iotwireless/types"
+	"github.com/aws/aws-sdk-go-v2/service/ivs"
+	ivstypes "github.com/aws/aws-sdk-go-v2/service/ivs/types"
+	"github.com/aws/aws-sdk-go-v2/service/kafka"
+	kafkatypes "github.com/aws/aws-sdk-go-v2/service/kafka/types"
+	"github.com/aws/aws-sdk-go-v2/service/kafkaconnect"
+	kafkaconnecttypes "github.com/aws/aws-sdk-go-v2/service/kafkaconnect/types"
+	"github.com/aws/aws-sdk-go-v2/service/keyspaces"
+	keyspacestypes "github.com/aws/aws-sdk-go-v2/service/keyspaces/types"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
+	"github.com/aws/aws-sdk-go-v2/service/kinesisvideo"
+	kinesisvideotypes "github.com/aws/aws-sdk-go-v2/service/kinesisvideo/types"
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	kmstypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lightsail"
+	lightsailtypes "github.com/aws/aws-sdk-go-v2/service/lightsail/types"
+	"github.com/aws/aws-sdk-go-v2/service/macie2"
 	"github.com/aws/aws-sdk-go-v2/service/mq"
 	mqtypes "github.com/aws/aws-sdk-go-v2/service/mq/types"
 	"github.com/aws/aws-sdk-go-v2/service/neptune"
@@ -116,19 +173,33 @@ import (
 	redshifttypes "github.com/aws/aws-sdk-go-v2/service/redshift/types"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftserverless"
 	rsstypes "github.com/aws/aws-sdk-go-v2/service/redshiftserverless/types"
+	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
+	resourcegroupstaggingapitypes "github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi/types"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	route53types "github.com/aws/aws-sdk-go-v2/service/route53/types"
+	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
+	resolvertype "github.com/aws/aws-sdk-go-v2/service/route53resolver/types"
+	"github.com/aws/aws-sdk-go-v2/service/rum"
+	rumtypes "github.com/aws/aws-sdk-go-v2/service/rum/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker"
 	sagemakertypes "github.com/aws/aws-sdk-go-v2/service/sagemaker/types"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	smtypes "github.com/aws/aws-sdk-go-v2/service/secretsmanager/types"
+	"github.com/aws/aws-sdk-go-v2/service/securityhub"
+	"github.com/aws/aws-sdk-go-v2/service/servicecatalog"
+	servicecatalogtypes "github.com/aws/aws-sdk-go-v2/service/servicecatalog/types"
+	"github.com/aws/aws-sdk-go-v2/service/ses"
+	sestypes "github.com/aws/aws-sdk-go-v2/service/ses/types"
+	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
 	sfntypes "github.com/aws/aws-sdk-go-v2/service/sfn/types"
+	"github.com/aws/aws-sdk-go-v2/service/shield"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	snstypes "github.com/aws/aws-sdk-go-v2/service/sns/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
 	ssmtypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
@@ -241,12 +312,16 @@ type Data struct {
 	ElastiCacheSubnetGroups *cache.Memo[[]elasticachetypes.CacheSubnetGroup]
 
 	// CloudTrail
-	CloudTrailTrails *cache.Memo[[]cloudtrailtypes.TrailInfo]
+	CloudTrailTrails         *cache.Memo[[]cloudtrailtypes.TrailInfo]
+	CloudTrailTrailDetails   *cache.Memo[map[string]cloudtrailtypes.Trail]
+	CloudTrailTrailStatus    *cache.Memo[map[string]cloudtrail.GetTrailStatusOutput]
+	CloudTrailEventSelectors *cache.Memo[map[string]cloudtrail.GetEventSelectorsOutput]
 
 	// CloudWatch
-	CloudWatchAlarms        *cache.Memo[[]cloudwatchtypes.MetricAlarm]
-	CloudWatchLogGroups     *cache.Memo[[]logstypes.LogGroup]
-	CloudWatchMetricStreams *cache.Memo[[]cloudwatchtypes.MetricStreamEntry]
+	CloudWatchAlarms           *cache.Memo[[]cloudwatchtypes.MetricAlarm]
+	CloudWatchLogGroups        *cache.Memo[[]logstypes.LogGroup]
+	CloudWatchMetricStreams    *cache.Memo[[]cloudwatchtypes.MetricStreamEntry]
+	CloudWatchMetricStreamTags *cache.Memo[map[string]map[string]string]
 
 	// CloudFront
 	CloudFrontDistributions        *cache.Memo[[]cftypescf.DistributionSummary]
@@ -257,7 +332,8 @@ type Data struct {
 	CloudFrontS3OriginBucketExists *cache.Memo[map[string]bool]
 
 	// CloudFormation
-	CloudFormationStacks *cache.Memo[[]cftypes.StackSummary]
+	CloudFormationStacks       *cache.Memo[[]cftypes.StackSummary]
+	CloudFormationStackDetails *cache.Memo[map[string]cftypes.Stack]
 
 	// ACM
 	ACMCertificates       *cache.Memo[[]acmtypes.CertificateSummary]
@@ -268,22 +344,35 @@ type Data struct {
 	ACMPCACertificateAuthorityTags *cache.Memo[map[string]map[string]string]
 
 	// KMS
-	KMSKeys *cache.Memo[[]kmstypes.KeyListEntry]
+	KMSKeys              *cache.Memo[[]kmstypes.KeyListEntry]
+	KMSKeyDetails        *cache.Memo[map[string]kmstypes.KeyMetadata]
+	KMSKeyRotationStatus *cache.Memo[map[string]bool]
+	KMSKeyTags           *cache.Memo[map[string]map[string]string]
+	KMSKeyPolicies       *cache.Memo[map[string]string]
 
 	// SNS
-	SNSTopics *cache.Memo[[]snstypes.Topic]
+	SNSTopics          *cache.Memo[[]snstypes.Topic]
+	SNSTopicAttributes *cache.Memo[map[string]map[string]string]
 
 	// SQS
-	SQSQueues *cache.Memo[[]string]
+	SQSQueues          *cache.Memo[[]string]
+	SQSQueueAttributes *cache.Memo[map[string]map[string]string]
 
 	// Secrets Manager
-	SecretsManagerSecrets *cache.Memo[[]smtypes.SecretListEntry]
+	SecretsManagerSecrets       *cache.Memo[[]smtypes.SecretListEntry]
+	SecretsManagerSecretDetails *cache.Memo[map[string]secretsmanager.DescribeSecretOutput]
+	SecretsManagerSecretTags    *cache.Memo[map[string]map[string]string]
 
 	// SSM
-	SSMDocuments *cache.Memo[[]ssmtypes.DocumentIdentifier]
+	SSMDocuments       *cache.Memo[[]ssmtypes.DocumentIdentifier]
+	SSMDocumentDetails *cache.Memo[map[string]ssmtypes.DocumentDescription]
+	SSMDocumentTags    *cache.Memo[map[string]map[string]string]
+	SSMDocumentContent *cache.Memo[map[string]string]
 
 	// Step Functions
-	SFNStateMachines *cache.Memo[[]sfntypes.StateMachineListItem]
+	SFNStateMachines       *cache.Memo[[]sfntypes.StateMachineListItem]
+	SFNStateMachineDetails *cache.Memo[map[string]sfn.DescribeStateMachineOutput]
+	SFNStateMachineTags    *cache.Memo[map[string]map[string]string]
 
 	// Redshift
 	RedshiftClusters            *cache.Memo[[]redshifttypes.Cluster]
@@ -331,27 +420,102 @@ type Data struct {
 	ElasticsearchDomains *cache.Memo[[]estypes.ElasticsearchDomainStatus]
 
 	// Glue
-	GlueJobs *cache.Memo[[]gluetypes.Job]
+	GlueJobs             *cache.Memo[[]gluetypes.Job]
+	GlueMLTransforms     *cache.Memo[[]gluetypes.MLTransform]
+	GlueMLTransformTags  *cache.Memo[map[string]map[string]string]
+	GlueRegistries       *cache.Memo[[]gluetypes.RegistryListItem]
+	GlueRegistryPolicies *cache.Memo[map[string]string]
 
 	// GuardDuty
 	GuardDutyDetectorIDs         *cache.Memo[[]string]
 	GuardDutyDetectors           *cache.Memo[map[string]guardduty.GetDetectorOutput]
 	GuardDutyNonArchivedFindings *cache.Memo[map[string]int]
 
+	// Inspector2
+	Inspector2Status *cache.Memo[inspector2.BatchGetAccountStatusOutput]
+
+	// IoT
+	IoTAuthorizers                 *cache.Memo[[]iottypes.AuthorizerSummary]
+	IoTAuthorizerDetails           *cache.Memo[map[string]iottypes.AuthorizerDescription]
+	IoTJobTemplates                *cache.Memo[[]iottypes.JobTemplateSummary]
+	IoTJobTemplateTags             *cache.Memo[map[string]map[string]string]
+	IoTProvisioningTemplates       *cache.Memo[[]iottypes.ProvisioningTemplateSummary]
+	IoTProvisioningTemplateDetails *cache.Memo[map[string]iot.DescribeProvisioningTemplateOutput]
+	IoTProvisioningTemplateTags    *cache.Memo[map[string]map[string]string]
+	IoTScheduledAudits             *cache.Memo[[]iottypes.ScheduledAuditMetadata]
+	IoTScheduledAuditTags          *cache.Memo[map[string]map[string]string]
+
+	// IoT SiteWise
+	IoTSiteWiseAssetModels *cache.Memo[[]sitewisetypes.AssetModelSummary]
+	IoTSiteWiseDashboards  *cache.Memo[[]sitewisetypes.DashboardSummary]
+	IoTSiteWiseGateways    *cache.Memo[[]sitewisetypes.GatewaySummary]
+	IoTSiteWisePortals     *cache.Memo[[]sitewisetypes.PortalSummary]
+	IoTSiteWiseProjects    *cache.Memo[[]sitewisetypes.ProjectSummary]
+	IoTSiteWiseTags        *cache.Memo[map[string]map[string]string]
+
+	// IoT TwinMaker
+	TwinMakerWorkspaces     *cache.Memo[[]twinmakertypes.WorkspaceSummary]
+	TwinMakerComponentTypes *cache.Memo[map[string][]twinmakertypes.ComponentTypeSummary]
+	TwinMakerEntities       *cache.Memo[map[string][]twinmakertypes.EntitySummary]
+	TwinMakerScenes         *cache.Memo[map[string][]twinmakertypes.SceneSummary]
+	TwinMakerSyncJobs       *cache.Memo[map[string][]twinmakertypes.SyncJobSummary]
+	TwinMakerTags           *cache.Memo[map[string]map[string]string]
+
+	// IVS
+	IVSChannels                *cache.Memo[[]ivstypes.ChannelSummary]
+	IVSChannelDetails          *cache.Memo[map[string]ivstypes.Channel]
+	IVSRecordingConfigurations *cache.Memo[[]ivstypes.RecordingConfigurationSummary]
+	IVSPlaybackKeyPairs        *cache.Memo[[]ivstypes.PlaybackKeyPairSummary]
+	IVSTags                    *cache.Memo[map[string]map[string]string]
+
 	// Backup
 	BackupPlans                    *cache.Memo[[]backuptypes.BackupPlansListMember]
 	BackupVaults                   *cache.Memo[[]backuptypes.BackupVaultListMember]
 	BackupPlanDetails              *cache.Memo[map[string]backuptypes.BackupPlan]
 	BackupRecoveryPoints           *cache.Memo[map[string][]backuptypes.RecoveryPointByBackupVault]
-	BackupVaultLockConfigs         *cache.Memo[map[string]backuptypes.BackupVaultLockConfiguration]
+	BackupVaultLockConfigs         *cache.Memo[map[string]backup.DescribeBackupVaultOutput]
 	BackupProtectedResources       *cache.Memo[map[string]backuptypes.ProtectedResource]
 	BackupRecoveryPointsByResource *cache.Memo[map[string][]backuptypes.RecoveryPointByResource]
 
 	// DocDB
-	DocDBClusters *cache.Memo[[]docdbtypes.DBCluster]
+	DocDBClusters  *cache.Memo[[]docdbtypes.DBCluster]
+	DocDBSnapshots *cache.Memo[[]docdbtypes.DBClusterSnapshot]
 
 	// DAX
 	DAXClusters *cache.Memo[[]daxtypes.Cluster]
+
+	// Cassandra (Keyspaces)
+	CassandraKeyspaces         *cache.Memo[[]keyspacestypes.KeyspaceSummary]
+	CassandraKeyspaceTags      *cache.Memo[map[string]map[string]string]
+	CassandraKeyspaceARNByName *cache.Memo[map[string]string]
+
+	// DataSync
+	DataSyncTasks                        *cache.Memo[[]datasynctypes.TaskListEntry]
+	DataSyncTaskDetails                  *cache.Memo[map[string]datasync.DescribeTaskOutput]
+	DataSyncTaskTags                     *cache.Memo[map[string]map[string]string]
+	DataSyncLocations                    *cache.Memo[[]datasynctypes.LocationListEntry]
+	DataSyncLocationObjectStorageDetails *cache.Memo[map[string]datasync.DescribeLocationObjectStorageOutput]
+
+	// Evidently
+	EvidentlyProjects       *cache.Memo[[]evidentlytypes.ProjectSummary]
+	EvidentlyProjectDetails *cache.Memo[map[string]evidentlytypes.Project]
+	EvidentlyProjectTags    *cache.Memo[map[string]map[string]string]
+	EvidentlyLaunches       *cache.Memo[map[string][]evidentlytypes.Launch]
+	EvidentlyLaunchDetails  *cache.Memo[map[string]evidentlytypes.Launch]
+	EvidentlyLaunchTags     *cache.Memo[map[string]map[string]string]
+	EvidentlySegments       *cache.Memo[map[string][]evidentlytypes.Segment]
+	EvidentlySegmentDetails *cache.Memo[map[string]evidentlytypes.Segment]
+	EvidentlySegmentTags    *cache.Memo[map[string]map[string]string]
+
+	// Fraud Detector
+	FraudDetectorEntityTypes    *cache.Memo[[]fraudtypes.EntityType]
+	FraudDetectorLabels         *cache.Memo[[]fraudtypes.Label]
+	FraudDetectorOutcomes       *cache.Memo[[]fraudtypes.Outcome]
+	FraudDetectorVariables      *cache.Memo[[]fraudtypes.Variable]
+	FraudDetectorEntityTypeTags *cache.Memo[map[string]map[string]string]
+	FraudDetectorLabelTags      *cache.Memo[map[string]map[string]string]
+	FraudDetectorOutcomeTags    *cache.Memo[map[string]map[string]string]
+	FraudDetectorVariableTags   *cache.Memo[map[string]map[string]string]
 
 	// DMS
 	DMSReplicationInstances *cache.Memo[[]dmstypes.ReplicationInstance]
@@ -369,34 +533,53 @@ type Data struct {
 	BatchSchedulingPolicyTags *cache.Memo[map[string]map[string]string]
 
 	// CodeBuild
-	CodeBuildProjects     *cache.Memo[[]codebuildtypes.Project]
-	CodeBuildReportGroups *cache.Memo[[]string]
+	CodeBuildProjects           *cache.Memo[[]codebuildtypes.Project]
+	CodeBuildProjectDetails     *cache.Memo[map[string]codebuildtypes.Project]
+	CodeBuildReportGroups       *cache.Memo[[]string]
+	CodeBuildReportGroupDetails *cache.Memo[map[string]codebuildtypes.ReportGroup]
+	CodeBuildReportGroupTags    *cache.Memo[map[string]map[string]string]
 
 	// CodeDeploy
-	CodeDeployApps *cache.Memo[[]string]
+	CodeDeployApps                   *cache.Memo[[]string]
+	CodeDeployDeploymentGroups       *cache.Memo[map[string][]string]
+	CodeDeployDeploymentGroupDetails *cache.Memo[map[string]codedeploy.GetDeploymentGroupOutput]
+	CodeDeployDeploymentConfigs      *cache.Memo[map[string]codedeploy.GetDeploymentConfigOutput]
 
 	// CodePipeline
-	CodePipelines *cache.Memo[[]codepipelinetypes.PipelineSummary]
+	CodePipelines       *cache.Memo[[]codepipelinetypes.PipelineSummary]
+	CodePipelineDetails *cache.Memo[map[string]codepipeline.GetPipelineOutput]
 
 	// Cognito
-	CognitoUserPools     *cache.Memo[[]cognitoidptypes.UserPoolDescriptionType]
-	CognitoIdentityPools *cache.Memo[[]cognitoidtypes.IdentityPoolShortDescription]
+	CognitoUserPools           *cache.Memo[[]cognitoidptypes.UserPoolDescriptionType]
+	CognitoUserPoolDetails     *cache.Memo[map[string]cognitoidptypes.UserPoolType]
+	CognitoUserPoolTags        *cache.Memo[map[string]map[string]string]
+	CognitoIdentityPools       *cache.Memo[[]cognitoidtypes.IdentityPoolShortDescription]
+	CognitoIdentityPoolDetails *cache.Memo[map[string]cognitoidentity.DescribeIdentityPoolOutput]
+	CognitoIdentityPoolRoles   *cache.Memo[map[string]cognitoidentity.GetIdentityPoolRolesOutput]
+
+	// Account
+	AccountSecurityContact *cache.Memo[*accounttypes.AlternateContact]
 
 	// FSx
 	FSxFileSystems    *cache.Memo[[]fsxtypes.FileSystem]
 	FSxFileSystemTags *cache.Memo[map[string]map[string]string]
 
 	// EMR
-	EMRClusters *cache.Memo[[]string]
+	EMRClusters              *cache.Memo[[]string]
+	EMRClusterDetails        *cache.Memo[map[string]emrtypes.Cluster]
+	EMRSecurityConfigs       *cache.Memo[[]string]
+	EMRSecurityConfigDetails *cache.Memo[map[string]emr.DescribeSecurityConfigurationOutput]
+	EMRBlockPublicAccess     *cache.Memo[emrtypes.BlockPublicAccessConfiguration]
 
 	// Athena
-	AthenaWorkgroups         *cache.Memo[[]athenatypes.WorkgroupSummary]
+	AthenaWorkgroups         *cache.Memo[[]athenatypes.WorkGroupSummary]
 	AthenaWorkgroupDetails   *cache.Memo[map[string]athenatypes.WorkGroup]
 	AthenaDataCatalogs       *cache.Memo[[]athenatypes.DataCatalog]
 	AthenaPreparedStatements *cache.Memo[[]athenatypes.PreparedStatementSummary]
 
 	// AppSync
 	AppSyncAPIs                   *cache.Memo[[]appsynctypes.GraphqlApi]
+	AppSyncApiCaches              *cache.Memo[map[string]*appsynctypes.ApiCache]
 	AppSyncTags                   *cache.Memo[map[string]map[string]string]
 	AppSyncWAFv2WebACLForResource *cache.Memo[map[string]bool]
 
@@ -440,6 +623,54 @@ type Data struct {
 	AppRunnerServiceTags      *cache.Memo[map[string]map[string]string]
 	AppRunnerVPCConnectorTags *cache.Memo[map[string]map[string]string]
 
+	// AppStream
+	AppStreamFleets *cache.Memo[[]appstreamtypes.Fleet]
+
+	// AMP
+	AMPRuleGroupsNamespaces *cache.Memo[[]amptypes.RuleGroupsNamespaceSummary]
+
+	// AuditManager
+	AuditManagerAssessments *cache.Memo[map[string]auditmanagertypes.Assessment]
+
+	// CodeGuru Profiler
+	CodeGuruProfilingGroups *cache.Memo[map[string]codeguruprofilertypes.ProfilingGroupDescription]
+	CodeGuruProfilerTags    *cache.Memo[map[string]map[string]string]
+
+	// CodeGuru Reviewer
+	CodeGuruReviewerAssociations *cache.Memo[[]codegurureviewertypes.RepositoryAssociationSummary]
+	CodeGuruReviewerTags         *cache.Memo[map[string]map[string]string]
+
+	// Connect
+	ConnectInstances               *cache.Memo[[]connecttypes.InstanceSummary]
+	ConnectInstanceContactFlowLogs *cache.Memo[map[string]bool]
+
+	// CustomerProfiles
+	CustomerProfilesDomains           *cache.Memo[[]customerprofilestypes.ListDomainItem]
+	CustomerProfilesObjectTypes       *cache.Memo[map[string][]customerprofilestypes.ListProfileObjectTypeItem]
+	CustomerProfilesObjectTypeDetails *cache.Memo[map[string]customerprofiles.GetProfileObjectTypeOutput]
+
+	// FIS
+	FISExperimentTemplates       *cache.Memo[[]fistypes.ExperimentTemplateSummary]
+	FISExperimentTemplateDetails *cache.Memo[map[string]fistypes.ExperimentTemplate]
+
+	// FMS
+	FMSPolicies      *cache.Memo[[]fmstypes.PolicySummary]
+	FMSPolicyDetails *cache.Memo[map[string]fmstypes.Policy]
+
+	// SecurityHub
+	SecurityHubEnabled *cache.Memo[bool]
+
+	// SES
+	SESReceiptRuleSets     *cache.Memo[map[string][]sestypes.ReceiptRule]
+	SESv2ConfigurationSets *cache.Memo[map[string]sesv2.GetConfigurationSetOutput]
+
+	// Shield
+	ShieldSubscription *cache.Memo[*shield.DescribeSubscriptionOutput]
+	ShieldDRTAccess    *cache.Memo[*shield.DescribeDRTAccessOutput]
+
+	// Resource Groups Tagging API
+	ResourceTagMappings *cache.Memo[[]resourcegroupstaggingapitypes.ResourceTagMapping]
+
 	// AppIntegrations
 	AppIntegrationsEventIntegrations *cache.Memo[[]appintegrationstypes.EventIntegration]
 	AppIntegrationsTags              *cache.Memo[map[string]map[string]string]
@@ -457,32 +688,111 @@ type Data struct {
 	AppMeshGatewayRoutes         *cache.Memo[map[string][]appmeshtypes.GatewayRouteRef]
 	AppMeshTags                  *cache.Memo[map[string]map[string]string]
 
+	// EventBridge
+	EventBridgeBuses           *cache.Memo[[]eventbridgetypes.EventBus]
+	EventBridgeBusPolicies     *cache.Memo[map[string]string]
+	EventBridgeEndpoints       *cache.Memo[[]eventbridgetypes.Endpoint]
+	EventBridgeEndpointDetails *cache.Memo[map[string]eventbridge.DescribeEndpointOutput]
+
+	// Global Accelerator
+	GlobalAccelerators            *cache.Memo[[]globalacceleratortypes.Accelerator]
+	GlobalAcceleratorListeners    *cache.Memo[map[string][]globalacceleratortypes.Listener]
+	GlobalAcceleratorTags         *cache.Memo[map[string]map[string]string]
+	GlobalAcceleratorListenerTags *cache.Memo[map[string]map[string]string]
+
+	// IoT Device Defender custom metrics
+	IoTCustomMetrics    *cache.Memo[map[string]iot.DescribeCustomMetricOutput]
+	IoTCustomMetricTags *cache.Memo[map[string]map[string]string]
+
+	// IoT Events
+	IoTEventsAlarmModels    *cache.Memo[[]ioteventstypes.AlarmModelSummary]
+	IoTEventsDetectorModels *cache.Memo[[]ioteventstypes.DetectorModelSummary]
+	IoTEventsInputs         *cache.Memo[[]ioteventstypes.InputSummary]
+	IoTEventsTags           *cache.Memo[map[string]map[string]string]
+
+	// IoT Wireless
+	IoTWirelessFuotaTasks      *cache.Memo[[]iotwirelesstypes.FuotaTask]
+	IoTWirelessMulticastGroups *cache.Memo[[]iotwirelesstypes.MulticastGroup]
+	IoTWirelessServiceProfiles *cache.Memo[[]iotwirelesstypes.ServiceProfile]
+	IoTWirelessTags            *cache.Memo[map[string]map[string]string]
+
+	// Macie
+	MacieSession                  *cache.Memo[*macie2.GetMacieSessionOutput]
+	MacieAutomatedDiscoveryConfig *cache.Memo[*macie2.GetAutomatedDiscoveryConfigurationOutput]
+
+	// RUM
+	RUMAppMonitors       *cache.Memo[[]rumtypes.AppMonitorSummary]
+	RUMAppMonitorTags    *cache.Memo[map[string]map[string]string]
+	RUMAppMonitorDetails *cache.Memo[map[string]rum.GetAppMonitorOutput]
+
+	// Service Catalog
+	ServiceCatalogPortfolios      *cache.Memo[[]servicecatalogtypes.PortfolioDetail]
+	ServiceCatalogPortfolioTags   *cache.Memo[map[string]map[string]string]
+	ServiceCatalogPortfolioShares *cache.Memo[map[string][]string]
+
+	// MQ
+	MQBrokerEngineVersions *cache.Memo[map[mqtypes.EngineType]map[string]bool]
+
+	// CloudTrail Event Data Stores
+	CloudTrailEventDataStores *cache.Memo[[]cloudtrailtypes.EventDataStore]
+
 	// AutoScaling
 	AutoScalingGroups        *cache.Memo[[]autoscalingtypes.AutoScalingGroup]
 	AutoScalingLaunchConfigs *cache.Memo[[]autoscalingtypes.LaunchConfiguration]
 
 	// Kinesis
-	KinesisStreams *cache.Memo[[]string]
+	KinesisStreams       *cache.Memo[[]string]
+	KinesisStreamDetails *cache.Memo[map[string]kinesis.DescribeStreamOutput]
+
+	// Firehose
+	FirehoseDeliveryStreams *cache.Memo[[]string]
+	FirehoseDeliveryDetails *cache.Memo[map[string]firehosetypes.DeliveryStreamDescription]
+
+	// Kinesis Video
+	KinesisVideoStreams *cache.Memo[[]kinesisvideotypes.StreamInfo]
+
+	// MSK
+	MSKClusters    *cache.Memo[[]kafkatypes.Cluster]
+	MSKClusterTags *cache.Memo[map[string]map[string]string]
+
+	// MSK Connect
+	MSKConnectors       *cache.Memo[[]kafkaconnecttypes.ConnectorSummary]
+	MSKConnectorDetails *cache.Memo[map[string]kafkaconnect.DescribeConnectorOutput]
+
+	// Lightsail
+	LightsailBuckets      *cache.Memo[[]lightsailtypes.Bucket]
+	LightsailCertificates *cache.Memo[[]lightsailtypes.CertificateSummary]
+	LightsailDisks        *cache.Memo[[]lightsailtypes.Disk]
 
 	// Route53
-	Route53HostedZones  *cache.Memo[[]route53types.HostedZone]
-	Route53HealthChecks *cache.Memo[[]route53types.HealthCheck]
+	Route53HostedZones         *cache.Memo[[]route53types.HostedZone]
+	Route53HealthChecks        *cache.Memo[[]route53types.HealthCheck]
+	Route53HostedZoneTags      *cache.Memo[map[string]map[string]string]
+	Route53HealthCheckTags     *cache.Memo[map[string]map[string]string]
+	Route53QueryLoggingConfigs *cache.Memo[map[string][]route53types.QueryLoggingConfig]
+
+	// Route53 Resolver
+	Route53ResolverFirewallDomainLists           *cache.Memo[[]resolvertype.FirewallDomainListMetadata]
+	Route53ResolverFirewallRuleGroups            *cache.Memo[[]resolvertype.FirewallRuleGroupMetadata]
+	Route53ResolverFirewallRuleGroupAssociations *cache.Memo[[]resolvertype.FirewallRuleGroupAssociation]
+	Route53ResolverRules                         *cache.Memo[[]resolvertype.ResolverRule]
+	Route53ResolverTags                          *cache.Memo[map[string]map[string]string]
 
 	// SageMaker
 	SageMakerNotebooks             *cache.Memo[[]sagemakertypes.NotebookInstanceSummary]
 	SageMakerEndpointConfigs       *cache.Memo[[]sagemakertypes.EndpointConfigSummary]
 	SageMakerDomains               *cache.Memo[[]sagemakertypes.DomainDetails]
 	SageMakerModels                *cache.Memo[[]sagemakertypes.ModelSummary]
-	SageMakerNotebookDetails       *cache.Memo[map[string]sagemakertypes.NotebookInstance]
-	SageMakerEndpointConfigDetails *cache.Memo[map[string]sagemakertypes.EndpointConfig]
+	SageMakerNotebookDetails       *cache.Memo[map[string]sagemaker.DescribeNotebookInstanceOutput]
+	SageMakerEndpointConfigDetails *cache.Memo[map[string]sagemaker.DescribeEndpointConfigOutput]
 	SageMakerDomainTags            *cache.Memo[map[string]map[string]string]
-	SageMakerModelDetails          *cache.Memo[map[string]sagemakertypes.Model]
+	SageMakerModelDetails          *cache.Memo[map[string]sagemaker.DescribeModelOutput]
 	SageMakerFeatureGroups         *cache.Memo[[]sagemakertypes.FeatureGroupSummary]
 	SageMakerFeatureGroupTags      *cache.Memo[map[string]map[string]string]
-	SageMakerImages                *cache.Memo[[]sagemakertypes.ImageSummary]
+	SageMakerImages                *cache.Memo[[]sagemakertypes.Image]
 	SageMakerImageDetails          *cache.Memo[map[string]sagemaker.DescribeImageOutput]
 	SageMakerImageTags             *cache.Memo[map[string]map[string]string]
-	SageMakerAppImageConfigs       *cache.Memo[[]sagemakertypes.AppImageConfigSummary]
+	SageMakerAppImageConfigs       *cache.Memo[[]sagemakertypes.AppImageConfigDetails]
 	SageMakerAppImageConfigTags    *cache.Memo[map[string]map[string]string]
 
 	// Transfer
@@ -505,30 +815,49 @@ type Data struct {
 	MQBrokerDetails *cache.Memo[map[string]mq.DescribeBrokerOutput]
 
 	// Network Firewall
-	NetworkFirewalls *cache.Memo[[]networkfirewall.ListFirewallsOutput]
+	NetworkFirewalls          *cache.Memo[[]networkfirewall.ListFirewallsOutput]
+	NetworkFirewallDetails    *cache.Memo[map[string]networkfirewall.DescribeFirewallOutput]
+	NetworkFirewallPolicies   *cache.Memo[map[string]networkfirewall.DescribeFirewallPolicyOutput]
+	NetworkFirewallLogging    *cache.Memo[map[string]networkfirewall.DescribeLoggingConfigurationOutput]
+	NetworkFirewallRuleGroups *cache.Memo[map[string]networkfirewall.DescribeRuleGroupOutput]
 
 	// WAF
-	WAFWebACLs    *cache.Memo[[]waftypes.WebACLSummary]
-	WAFRules      *cache.Memo[[]waftypes.RuleSummary]
-	WAFRuleGroups *cache.Memo[[]waftypes.RuleGroupSummary]
+	WAFWebACLs               *cache.Memo[[]waftypes.WebACLSummary]
+	WAFRules                 *cache.Memo[[]waftypes.RuleSummary]
+	WAFRuleGroups            *cache.Memo[[]waftypes.RuleGroupSummary]
+	WAFWebACLDetails         *cache.Memo[map[string]waftypes.WebACL]
+	WAFRuleDetails           *cache.Memo[map[string]waftypes.Rule]
+	WAFRuleGroupDetails      *cache.Memo[map[string]waftypes.RuleGroup]
+	WAFLoggingConfigurations *cache.Memo[map[string]waf.GetLoggingConfigurationOutput]
 
 	// WAF Regional
-	WAFRegionalWebACLs    *cache.Memo[[]wafregionaltypes.WebACLSummary]
-	WAFRegionalRules      *cache.Memo[[]wafregionaltypes.RuleSummary]
-	WAFRegionalRuleGroups *cache.Memo[[]wafregionaltypes.RuleGroupSummary]
+	WAFRegionalWebACLs               *cache.Memo[[]wafregionaltypes.WebACLSummary]
+	WAFRegionalRules                 *cache.Memo[[]wafregionaltypes.RuleSummary]
+	WAFRegionalRuleGroups            *cache.Memo[[]wafregionaltypes.RuleGroupSummary]
+	WAFRegionalWebACLDetails         *cache.Memo[map[string]wafregionaltypes.WebACL]
+	WAFRegionalRuleDetails           *cache.Memo[map[string]wafregionaltypes.Rule]
+	WAFRegionalRuleGroupDetails      *cache.Memo[map[string]wafregionaltypes.RuleGroup]
+	WAFRegionalLoggingConfigurations *cache.Memo[map[string]wafregional.GetLoggingConfigurationOutput]
 
 	// WAFv2
 	WAFv2WebACLs           *cache.Memo[[]wafv2types.WebACLSummary]
 	WAFv2RuleGroups        *cache.Memo[[]wafv2types.RuleGroupSummary]
 	WAFv2WebACLForResource *cache.Memo[map[string]bool]
+	WAFv2WebACLDetails     *cache.Memo[map[string]wafv2types.WebACL]
+	WAFv2RuleGroupDetails  *cache.Memo[map[string]wafv2types.RuleGroup]
+	WAFv2LoggingConfigs    *cache.Memo[map[string]wafv2.GetLoggingConfigurationOutput]
 
 	// Workspaces
-	Workspaces *cache.Memo[[]workspacestypes.Workspace]
+	Workspaces                    *cache.Memo[[]workspacestypes.Workspace]
+	WorkspacesConnectionAlias     *cache.Memo[[]workspacestypes.ConnectionAlias]
+	WorkspacesTags                *cache.Memo[map[string]map[string]string]
+	WorkspacesConnectionAliasTags *cache.Memo[map[string]map[string]string]
 
 	// ElasticBeanstalk
 	ElasticBeanstalkApps        *cache.Memo[[]ebtypes.ApplicationDescription]
 	ElasticBeanstalkEnvs        *cache.Memo[[]ebtypes.EnvironmentDescription]
 	ElasticBeanstalkAppVersions *cache.Memo[[]ebtypes.ApplicationVersionDescription]
+	ElasticBeanstalkEnvSettings *cache.Memo[map[string][]ebtypes.ConfigurationOptionSetting]
 }
 
 // New creates a Data struct with all memoized API calls wired up.
@@ -543,7 +872,7 @@ func (d *Data) init() {
 	c := d.Clients
 
 	// STS
-	d.AccountID = cache.New(func() (string, error) {
+	d.AccountID = cache.New("AccountID", func() (string, error) {
 		out, err := c.STS.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 		if err != nil {
 			return "", err
@@ -552,47 +881,47 @@ func (d *Data) init() {
 	})
 
 	// Organizations
-	d.OrgAccount = cache.New(func() (*organizations.DescribeOrganizationOutput, error) {
+	d.OrgAccount = cache.New("OrgAccount", func() (*organizations.DescribeOrganizationOutput, error) {
 		return c.Organizations.DescribeOrganization(ctx, &organizations.DescribeOrganizationInput{})
 	})
 
 	// IAM
-	d.IAMUsers = cache.New(func() ([]iamtypes.User, error) {
+	d.IAMUsers = cache.New("IAMUsers", func() ([]iamtypes.User, error) {
 		out, err := c.IAM.ListUsers(ctx, &iam.ListUsersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Users, nil
 	})
-	d.IAMRoles = cache.New(func() ([]iamtypes.Role, error) {
+	d.IAMRoles = cache.New("IAMRoles", func() ([]iamtypes.Role, error) {
 		out, err := c.IAM.ListRoles(ctx, &iam.ListRolesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Roles, nil
 	})
-	d.IAMGroups = cache.New(func() ([]iamtypes.Group, error) {
+	d.IAMGroups = cache.New("IAMGroups", func() ([]iamtypes.Group, error) {
 		out, err := c.IAM.ListGroups(ctx, &iam.ListGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Groups, nil
 	})
-	d.IAMPolicies = cache.New(func() ([]iamtypes.Policy, error) {
+	d.IAMPolicies = cache.New("IAMPolicies", func() ([]iamtypes.Policy, error) {
 		out, err := c.IAM.ListPolicies(ctx, &iam.ListPoliciesInput{Scope: iamtypes.PolicyScopeTypeLocal})
 		if err != nil {
 			return nil, err
 		}
 		return out.Policies, nil
 	})
-	d.IAMServerCertificates = cache.New(func() ([]iamtypes.ServerCertificateMetadata, error) {
+	d.IAMServerCertificates = cache.New("IAMServerCertificates", func() ([]iamtypes.ServerCertificateMetadata, error) {
 		out, err := c.IAM.ListServerCertificates(ctx, &iam.ListServerCertificatesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ServerCertificateMetadataList, nil
 	})
-	d.IAMCredentialReport = cache.New(func() ([]byte, error) {
+	d.IAMCredentialReport = cache.New("IAMCredentialReport", func() ([]byte, error) {
 		_, _ = c.IAM.GenerateCredentialReport(ctx, &iam.GenerateCredentialReportInput{})
 		out, err := c.IAM.GetCredentialReport(ctx, &iam.GetCredentialReportInput{})
 		if err != nil {
@@ -600,14 +929,14 @@ func (d *Data) init() {
 		}
 		return out.Content, nil
 	})
-	d.IAMAccountPasswordPolicy = cache.New(func() (*iamtypes.PasswordPolicy, error) {
+	d.IAMAccountPasswordPolicy = cache.New("IAMAccountPasswordPolicy", func() (*iamtypes.PasswordPolicy, error) {
 		out, err := c.IAM.GetAccountPasswordPolicy(ctx, &iam.GetAccountPasswordPolicyInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.PasswordPolicy, nil
 	})
-	d.IAMAccountSummary = cache.New(func() (map[string]int32, error) {
+	d.IAMAccountSummary = cache.New("IAMAccountSummary", func() (map[string]int32, error) {
 		out, err := c.IAM.GetAccountAuthorizationDetails(ctx, &iam.GetAccountAuthorizationDetailsInput{})
 		if err != nil {
 			// fallback
@@ -624,14 +953,14 @@ func (d *Data) init() {
 		}
 		return sum.SummaryMap, nil
 	})
-	d.IAMSAMLProviders = cache.New(func() ([]iamtypes.SAMLProviderListEntry, error) {
+	d.IAMSAMLProviders = cache.New("IAMSAMLProviders", func() ([]iamtypes.SAMLProviderListEntry, error) {
 		out, err := c.IAM.ListSAMLProviders(ctx, &iam.ListSAMLProvidersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.SAMLProviderList, nil
 	})
-	d.IAMOIDCProviders = cache.New(func() ([]string, error) {
+	d.IAMOIDCProviders = cache.New("IAMOIDCProviders", func() ([]string, error) {
 		out, err := c.IAM.ListOpenIDConnectProviders(ctx, &iam.ListOpenIDConnectProvidersInput{})
 		if err != nil {
 			return nil, err
@@ -644,7 +973,7 @@ func (d *Data) init() {
 		}
 		return arns, nil
 	})
-	d.IAMVirtualMFADevices = cache.New(func() ([]iamtypes.VirtualMFADevice, error) {
+	d.IAMVirtualMFADevices = cache.New("IAMVirtualMFADevices", func() ([]iamtypes.VirtualMFADevice, error) {
 		out, err := c.IAM.ListVirtualMFADevices(ctx, &iam.ListVirtualMFADevicesInput{})
 		if err != nil {
 			return nil, err
@@ -653,98 +982,98 @@ func (d *Data) init() {
 	})
 
 	// EC2
-	d.EC2Instances = cache.New(func() ([]ec2types.Reservation, error) {
+	d.EC2Instances = cache.New("EC2Instances", func() ([]ec2types.Reservation, error) {
 		out, err := c.EC2.DescribeInstances(ctx, &ec2.DescribeInstancesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Reservations, nil
 	})
-	d.EC2SecurityGroups = cache.New(func() ([]ec2types.SecurityGroup, error) {
+	d.EC2SecurityGroups = cache.New("EC2SecurityGroups", func() ([]ec2types.SecurityGroup, error) {
 		out, err := c.EC2.DescribeSecurityGroups(ctx, &ec2.DescribeSecurityGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.SecurityGroups, nil
 	})
-	d.EC2Volumes = cache.New(func() ([]ec2types.Volume, error) {
+	d.EC2Volumes = cache.New("EC2Volumes", func() ([]ec2types.Volume, error) {
 		out, err := c.EC2.DescribeVolumes(ctx, &ec2.DescribeVolumesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Volumes, nil
 	})
-	d.EC2VPCs = cache.New(func() ([]ec2types.Vpc, error) {
+	d.EC2VPCs = cache.New("EC2VPCs", func() ([]ec2types.Vpc, error) {
 		out, err := c.EC2.DescribeVpcs(ctx, &ec2.DescribeVpcsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Vpcs, nil
 	})
-	d.EC2Subnets = cache.New(func() ([]ec2types.Subnet, error) {
+	d.EC2Subnets = cache.New("EC2Subnets", func() ([]ec2types.Subnet, error) {
 		out, err := c.EC2.DescribeSubnets(ctx, &ec2.DescribeSubnetsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Subnets, nil
 	})
-	d.EC2RouteTables = cache.New(func() ([]ec2types.RouteTable, error) {
+	d.EC2RouteTables = cache.New("EC2RouteTables", func() ([]ec2types.RouteTable, error) {
 		out, err := c.EC2.DescribeRouteTables(ctx, &ec2.DescribeRouteTablesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.RouteTables, nil
 	})
-	d.EC2NetworkACLs = cache.New(func() ([]ec2types.NetworkAcl, error) {
+	d.EC2NetworkACLs = cache.New("EC2NetworkACLs", func() ([]ec2types.NetworkAcl, error) {
 		out, err := c.EC2.DescribeNetworkAcls(ctx, &ec2.DescribeNetworkAclsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.NetworkAcls, nil
 	})
-	d.EC2InternetGateways = cache.New(func() ([]ec2types.InternetGateway, error) {
+	d.EC2InternetGateways = cache.New("EC2InternetGateways", func() ([]ec2types.InternetGateway, error) {
 		out, err := c.EC2.DescribeInternetGateways(ctx, &ec2.DescribeInternetGatewaysInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.InternetGateways, nil
 	})
-	d.EC2NATGateways = cache.New(func() ([]ec2types.NatGateway, error) {
+	d.EC2NATGateways = cache.New("EC2NATGateways", func() ([]ec2types.NatGateway, error) {
 		out, err := c.EC2.DescribeNatGateways(ctx, &ec2.DescribeNatGatewaysInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.NatGateways, nil
 	})
-	d.EC2NetworkInterfaces = cache.New(func() ([]ec2types.NetworkInterface, error) {
+	d.EC2NetworkInterfaces = cache.New("EC2NetworkInterfaces", func() ([]ec2types.NetworkInterface, error) {
 		out, err := c.EC2.DescribeNetworkInterfaces(ctx, &ec2.DescribeNetworkInterfacesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.NetworkInterfaces, nil
 	})
-	d.EC2Addresses = cache.New(func() ([]ec2types.Address, error) {
+	d.EC2Addresses = cache.New("EC2Addresses", func() ([]ec2types.Address, error) {
 		out, err := c.EC2.DescribeAddresses(ctx, &ec2.DescribeAddressesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Addresses, nil
 	})
-	d.EC2Snapshots = cache.New(func() ([]ec2types.Snapshot, error) {
+	d.EC2Snapshots = cache.New("EC2Snapshots", func() ([]ec2types.Snapshot, error) {
 		out, err := c.EC2.DescribeSnapshots(ctx, &ec2.DescribeSnapshotsInput{OwnerIds: []string{"self"}})
 		if err != nil {
 			return nil, err
 		}
 		return out.Snapshots, nil
 	})
-	d.EC2LaunchTemplates = cache.New(func() ([]ec2types.LaunchTemplate, error) {
+	d.EC2LaunchTemplates = cache.New("EC2LaunchTemplates", func() ([]ec2types.LaunchTemplate, error) {
 		out, err := c.EC2.DescribeLaunchTemplates(ctx, &ec2.DescribeLaunchTemplatesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.LaunchTemplates, nil
 	})
-	d.EC2LaunchTemplateVersions = cache.New(func() (map[string]ec2types.LaunchTemplateVersion, error) {
+	d.EC2LaunchTemplateVersions = cache.New("EC2LaunchTemplateVersions", func() (map[string]ec2types.LaunchTemplateVersion, error) {
 		lts, err := d.EC2LaunchTemplates.Get()
 		if err != nil {
 			return nil, err
@@ -763,77 +1092,77 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.EC2TransitGateways = cache.New(func() ([]ec2types.TransitGateway, error) {
+	d.EC2TransitGateways = cache.New("EC2TransitGateways", func() ([]ec2types.TransitGateway, error) {
 		out, err := c.EC2.DescribeTransitGateways(ctx, &ec2.DescribeTransitGatewaysInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.TransitGateways, nil
 	})
-	d.EC2VPNConnections = cache.New(func() ([]ec2types.VpnConnection, error) {
+	d.EC2VPNConnections = cache.New("EC2VPNConnections", func() ([]ec2types.VpnConnection, error) {
 		out, err := c.EC2.DescribeVpnConnections(ctx, &ec2.DescribeVpnConnectionsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.VpnConnections, nil
 	})
-	d.EC2FlowLogs = cache.New(func() ([]ec2types.FlowLog, error) {
+	d.EC2FlowLogs = cache.New("EC2FlowLogs", func() ([]ec2types.FlowLog, error) {
 		out, err := c.EC2.DescribeFlowLogs(ctx, &ec2.DescribeFlowLogsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.FlowLogs, nil
 	})
-	d.EC2VPCEndpoints = cache.New(func() ([]ec2types.VpcEndpoint, error) {
+	d.EC2VPCEndpoints = cache.New("EC2VPCEndpoints", func() ([]ec2types.VpcEndpoint, error) {
 		out, err := c.EC2.DescribeVpcEndpoints(ctx, &ec2.DescribeVpcEndpointsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.VpcEndpoints, nil
 	})
-	d.EC2VPCPeeringConnections = cache.New(func() ([]ec2types.VpcPeeringConnection, error) {
+	d.EC2VPCPeeringConnections = cache.New("EC2VPCPeeringConnections", func() ([]ec2types.VpcPeeringConnection, error) {
 		out, err := c.EC2.DescribeVpcPeeringConnections(ctx, &ec2.DescribeVpcPeeringConnectionsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.VpcPeeringConnections, nil
 	})
-	d.EC2PrefixLists = cache.New(func() ([]ec2types.ManagedPrefixList, error) {
+	d.EC2PrefixLists = cache.New("EC2PrefixLists", func() ([]ec2types.ManagedPrefixList, error) {
 		out, err := c.EC2.DescribeManagedPrefixLists(ctx, &ec2.DescribeManagedPrefixListsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.PrefixLists, nil
 	})
-	d.EC2Fleets = cache.New(func() ([]ec2types.FleetData, error) {
+	d.EC2Fleets = cache.New("EC2Fleets", func() ([]ec2types.FleetData, error) {
 		out, err := c.EC2.DescribeFleets(ctx, &ec2.DescribeFleetsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Fleets, nil
 	})
-	d.EC2CapacityReservations = cache.New(func() ([]ec2types.CapacityReservation, error) {
+	d.EC2CapacityReservations = cache.New("EC2CapacityReservations", func() ([]ec2types.CapacityReservation, error) {
 		out, err := c.EC2.DescribeCapacityReservations(ctx, &ec2.DescribeCapacityReservationsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.CapacityReservations, nil
 	})
-	d.EC2DHCPOptions = cache.New(func() ([]ec2types.DhcpOptions, error) {
+	d.EC2DHCPOptions = cache.New("EC2DHCPOptions", func() ([]ec2types.DhcpOptions, error) {
 		out, err := c.EC2.DescribeDhcpOptions(ctx, &ec2.DescribeDhcpOptionsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DhcpOptions, nil
 	})
-	d.EC2ClientVPNEndpoints = cache.New(func() ([]ec2types.ClientVpnEndpoint, error) {
+	d.EC2ClientVPNEndpoints = cache.New("EC2ClientVPNEndpoints", func() ([]ec2types.ClientVpnEndpoint, error) {
 		out, err := c.EC2.DescribeClientVpnEndpoints(ctx, &ec2.DescribeClientVpnEndpointsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ClientVpnEndpoints, nil
 	})
-	d.EC2EBSEncryptionByDefault = cache.New(func() (bool, error) {
+	d.EC2EBSEncryptionByDefault = cache.New("EC2EBSEncryptionByDefault", func() (bool, error) {
 		out, err := c.EC2.GetEbsEncryptionByDefault(ctx, &ec2.GetEbsEncryptionByDefaultInput{})
 		if err != nil {
 			return false, err
@@ -843,7 +1172,7 @@ func (d *Data) init() {
 		}
 		return false, nil
 	})
-	d.EC2EBSSnapshotBlockPublicAccess = cache.New(func() (string, error) {
+	d.EC2EBSSnapshotBlockPublicAccess = cache.New("EC2EBSSnapshotBlockPublicAccess", func() (string, error) {
 		out, err := c.EC2.GetSnapshotBlockPublicAccessState(ctx, &ec2.GetSnapshotBlockPublicAccessStateInput{})
 		if err != nil {
 			return "", err
@@ -852,7 +1181,7 @@ func (d *Data) init() {
 	})
 
 	// S3
-	d.S3Buckets = cache.New(func() ([]s3types.Bucket, error) {
+	d.S3Buckets = cache.New("S3Buckets", func() ([]s3types.Bucket, error) {
 		out, err := c.S3.ListBuckets(ctx, &s3.ListBucketsInput{})
 		if err != nil {
 			return nil, err
@@ -861,56 +1190,56 @@ func (d *Data) init() {
 	})
 
 	// RDS
-	d.RDSDBInstances = cache.New(func() ([]rdstypes.DBInstance, error) {
+	d.RDSDBInstances = cache.New("RDSDBInstances", func() ([]rdstypes.DBInstance, error) {
 		out, err := c.RDS.DescribeDBInstances(ctx, &rds.DescribeDBInstancesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DBInstances, nil
 	})
-	d.RDSDBClusters = cache.New(func() ([]rdstypes.DBCluster, error) {
+	d.RDSDBClusters = cache.New("RDSDBClusters", func() ([]rdstypes.DBCluster, error) {
 		out, err := c.RDS.DescribeDBClusters(ctx, &rds.DescribeDBClustersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DBClusters, nil
 	})
-	d.RDSSnapshots = cache.New(func() ([]rdstypes.DBSnapshot, error) {
+	d.RDSSnapshots = cache.New("RDSSnapshots", func() ([]rdstypes.DBSnapshot, error) {
 		out, err := c.RDS.DescribeDBSnapshots(ctx, &rds.DescribeDBSnapshotsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DBSnapshots, nil
 	})
-	d.RDSOptionGroups = cache.New(func() ([]rdstypes.OptionGroup, error) {
+	d.RDSOptionGroups = cache.New("RDSOptionGroups", func() ([]rdstypes.OptionGroup, error) {
 		out, err := c.RDS.DescribeOptionGroups(ctx, &rds.DescribeOptionGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.OptionGroupsList, nil
 	})
-	d.RDSEventSubs = cache.New(func() ([]rdstypes.EventSubscription, error) {
+	d.RDSEventSubs = cache.New("RDSEventSubs", func() ([]rdstypes.EventSubscription, error) {
 		out, err := c.RDS.DescribeEventSubscriptions(ctx, &rds.DescribeEventSubscriptionsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.EventSubscriptionsList, nil
 	})
-	d.RDSProxies = cache.New(func() ([]rdstypes.DBProxy, error) {
+	d.RDSProxies = cache.New("RDSProxies", func() ([]rdstypes.DBProxy, error) {
 		out, err := c.RDS.DescribeDBProxies(ctx, &rds.DescribeDBProxiesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DBProxies, nil
 	})
-	d.RDSDBSubnetGroups = cache.New(func() ([]rdstypes.DBSubnetGroup, error) {
+	d.RDSDBSubnetGroups = cache.New("RDSDBSubnetGroups", func() ([]rdstypes.DBSubnetGroup, error) {
 		out, err := c.RDS.DescribeDBSubnetGroups(ctx, &rds.DescribeDBSubnetGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DBSubnetGroups, nil
 	})
-	d.RDSEventSubTags = cache.New(func() (map[string]map[string]string, error) {
+	d.RDSEventSubTags = cache.New("RDSEventSubTags", func() (map[string]map[string]string, error) {
 		subs, err := d.RDSEventSubs.Get()
 		if err != nil {
 			return nil, err
@@ -934,7 +1263,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.RDSOptionGroupTags = cache.New(func() (map[string]map[string]string, error) {
+	d.RDSOptionGroupTags = cache.New("RDSOptionGroupTags", func() (map[string]map[string]string, error) {
 		ogs, err := d.RDSOptionGroups.Get()
 		if err != nil {
 			return nil, err
@@ -958,7 +1287,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.RDSDBParamValues = cache.New(func() (map[string]map[string]string, error) {
+	d.RDSDBParamValues = cache.New("RDSDBParamValues", func() (map[string]map[string]string, error) {
 		instances, err := d.RDSDBInstances.Get()
 		if err != nil {
 			return nil, err
@@ -999,7 +1328,7 @@ func (d *Data) init() {
 	})
 
 	// Lambda
-	d.LambdaFunctions = cache.New(func() ([]lambdatypes.FunctionConfiguration, error) {
+	d.LambdaFunctions = cache.New("LambdaFunctions", func() ([]lambdatypes.FunctionConfiguration, error) {
 		out, err := c.Lambda.ListFunctions(ctx, &lambda.ListFunctionsInput{})
 		if err != nil {
 			return nil, err
@@ -1008,14 +1337,14 @@ func (d *Data) init() {
 	})
 
 	// DynamoDB
-	d.DynamoDBTableNames = cache.New(func() ([]string, error) {
+	d.DynamoDBTableNames = cache.New("DynamoDBTableNames", func() ([]string, error) {
 		out, err := c.DynamoDB.ListTables(ctx, &dynamodb.ListTablesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.TableNames, nil
 	})
-	d.DynamoDBTables = cache.New(func() (map[string]dynamodbtypes.TableDescription, error) {
+	d.DynamoDBTables = cache.New("DynamoDBTables", func() (map[string]dynamodbtypes.TableDescription, error) {
 		names, err := d.DynamoDBTableNames.Get()
 		if err != nil {
 			return nil, err
@@ -1030,7 +1359,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.DynamoDBPITR = cache.New(func() (map[string]bool, error) {
+	d.DynamoDBPITR = cache.New("DynamoDBPITR", func() (map[string]bool, error) {
 		names, err := d.DynamoDBTableNames.Get()
 		if err != nil {
 			return nil, err
@@ -1046,7 +1375,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.DynamoDBAutoScaling = cache.New(func() (map[string]bool, error) {
+	d.DynamoDBAutoScaling = cache.New("DynamoDBAutoScaling", func() (map[string]bool, error) {
 		names, err := d.DynamoDBTableNames.Get()
 		if err != nil {
 			return nil, err
@@ -1068,21 +1397,21 @@ func (d *Data) init() {
 	})
 
 	// ECS
-	d.ECSClusters = cache.New(func() ([]string, error) {
+	d.ECSClusters = cache.New("ECSClusters", func() ([]string, error) {
 		out, err := c.ECS.ListClusters(ctx, &ecs.ListClustersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ClusterArns, nil
 	})
-	d.ECSTaskDefinitions = cache.New(func() ([]string, error) {
+	d.ECSTaskDefinitions = cache.New("ECSTaskDefinitions", func() ([]string, error) {
 		out, err := c.ECS.ListTaskDefinitions(ctx, &ecs.ListTaskDefinitionsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.TaskDefinitionArns, nil
 	})
-	d.ECSClusterDetails = cache.New(func() (map[string]ecstypes.Cluster, error) {
+	d.ECSClusterDetails = cache.New("ECSClusterDetails", func() (map[string]ecstypes.Cluster, error) {
 		arns, err := d.ECSClusters.Get()
 		if err != nil {
 			return nil, err
@@ -1102,7 +1431,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.ECSTaskDefDetails = cache.New(func() (map[string]ecstypes.TaskDefinition, error) {
+	d.ECSTaskDefDetails = cache.New("ECSTaskDefDetails", func() (map[string]ecstypes.TaskDefinition, error) {
 		arns, err := d.ECSTaskDefinitions.Get()
 		if err != nil {
 			return nil, err
@@ -1117,14 +1446,14 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.ECSCapacityProviders = cache.New(func() ([]ecstypes.CapacityProvider, error) {
+	d.ECSCapacityProviders = cache.New("ECSCapacityProviders", func() ([]ecstypes.CapacityProvider, error) {
 		out, err := c.ECS.DescribeCapacityProviders(ctx, &ecs.DescribeCapacityProvidersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.CapacityProviders, nil
 	})
-	d.ECSCapacityProviderTags = cache.New(func() (map[string]map[string]string, error) {
+	d.ECSCapacityProviderTags = cache.New("ECSCapacityProviderTags", func() (map[string]map[string]string, error) {
 		cps, err := d.ECSCapacityProviders.Get()
 		if err != nil {
 			return nil, err
@@ -1148,7 +1477,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.ECSServicesByCluster = cache.New(func() (map[string][]ecstypes.Service, error) {
+	d.ECSServicesByCluster = cache.New("ECSServicesByCluster", func() (map[string][]ecstypes.Service, error) {
 		arns, err := d.ECSClusters.Get()
 		if err != nil {
 			return nil, err
@@ -1172,14 +1501,14 @@ func (d *Data) init() {
 	})
 
 	// EKS
-	d.EKSClusterNames = cache.New(func() ([]string, error) {
+	d.EKSClusterNames = cache.New("EKSClusterNames", func() ([]string, error) {
 		out, err := c.EKS.ListClusters(ctx, &eks.ListClustersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Clusters, nil
 	})
-	d.EKSClusters = cache.New(func() (map[string]ekstypes.Cluster, error) {
+	d.EKSClusters = cache.New("EKSClusters", func() (map[string]ekstypes.Cluster, error) {
 		names, err := d.EKSClusterNames.Get()
 		if err != nil {
 			return nil, err
@@ -1194,7 +1523,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.EKSAddons = cache.New(func() (map[string][]ekstypes.Addon, error) {
+	d.EKSAddons = cache.New("EKSAddons", func() (map[string][]ekstypes.Addon, error) {
 		names, err := d.EKSClusterNames.Get()
 		if err != nil {
 			return nil, err
@@ -1215,7 +1544,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.EKSFargateProfiles = cache.New(func() (map[string][]ekstypes.FargateProfile, error) {
+	d.EKSFargateProfiles = cache.New("EKSFargateProfiles", func() (map[string][]ekstypes.FargateProfile, error) {
 		names, err := d.EKSClusterNames.Get()
 		if err != nil {
 			return nil, err
@@ -1238,21 +1567,21 @@ func (d *Data) init() {
 	})
 
 	// ElastiCache
-	d.ElastiCacheClusters = cache.New(func() ([]elasticachetypes.CacheCluster, error) {
+	d.ElastiCacheClusters = cache.New("ElastiCacheClusters", func() ([]elasticachetypes.CacheCluster, error) {
 		out, err := c.ElastiCache.DescribeCacheClusters(ctx, &elasticache.DescribeCacheClustersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.CacheClusters, nil
 	})
-	d.ElastiCacheReplGroups = cache.New(func() ([]elasticachetypes.ReplicationGroup, error) {
+	d.ElastiCacheReplGroups = cache.New("ElastiCacheReplGroups", func() ([]elasticachetypes.ReplicationGroup, error) {
 		out, err := c.ElastiCache.DescribeReplicationGroups(ctx, &elasticache.DescribeReplicationGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ReplicationGroups, nil
 	})
-	d.ElastiCacheSubnetGroups = cache.New(func() ([]elasticachetypes.CacheSubnetGroup, error) {
+	d.ElastiCacheSubnetGroups = cache.New("ElastiCacheSubnetGroups", func() ([]elasticachetypes.CacheSubnetGroup, error) {
 		out, err := c.ElastiCache.DescribeCacheSubnetGroups(ctx, &elasticache.DescribeCacheSubnetGroupsInput{})
 		if err != nil {
 			return nil, err
@@ -1261,39 +1590,141 @@ func (d *Data) init() {
 	})
 
 	// CloudTrail
-	d.CloudTrailTrails = cache.New(func() ([]cloudtrailtypes.TrailInfo, error) {
+	d.CloudTrailTrails = cache.New("CloudTrailTrails", func() ([]cloudtrailtypes.TrailInfo, error) {
 		out, err := c.CloudTrail.ListTrails(ctx, &cloudtrail.ListTrailsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Trails, nil
 	})
+	d.CloudTrailTrailDetails = cache.New("CloudTrailTrailDetails", func() (map[string]cloudtrailtypes.Trail, error) {
+		trails, err := d.CloudTrailTrails.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]cloudtrailtypes.Trail)
+		var names []string
+		for _, t := range trails {
+			if t.TrailARN != nil {
+				names = append(names, *t.TrailARN)
+			} else if t.Name != nil {
+				names = append(names, *t.Name)
+			}
+		}
+		if len(names) == 0 {
+			return out, nil
+		}
+		resp, err := c.CloudTrail.DescribeTrails(ctx, &cloudtrail.DescribeTrailsInput{TrailNameList: names})
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range resp.TrailList {
+			if t.TrailARN != nil {
+				out[*t.TrailARN] = t
+			} else if t.Name != nil {
+				out[*t.Name] = t
+			}
+		}
+		return out, nil
+	})
+	d.CloudTrailTrailStatus = cache.New("CloudTrailTrailStatus", func() (map[string]cloudtrail.GetTrailStatusOutput, error) {
+		trails, err := d.CloudTrailTrails.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]cloudtrail.GetTrailStatusOutput)
+		for _, t := range trails {
+			var name *string
+			if t.TrailARN != nil {
+				name = t.TrailARN
+			} else if t.Name != nil {
+				name = t.Name
+			}
+			if name == nil {
+				continue
+			}
+			resp, err := c.CloudTrail.GetTrailStatus(ctx, &cloudtrail.GetTrailStatusInput{Name: name})
+			if err != nil {
+				continue
+			}
+			out[*name] = *resp
+		}
+		return out, nil
+	})
+	d.CloudTrailEventSelectors = cache.New("CloudTrailEventSelectors", func() (map[string]cloudtrail.GetEventSelectorsOutput, error) {
+		trails, err := d.CloudTrailTrails.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]cloudtrail.GetEventSelectorsOutput)
+		for _, t := range trails {
+			var name *string
+			if t.TrailARN != nil {
+				name = t.TrailARN
+			} else if t.Name != nil {
+				name = t.Name
+			}
+			if name == nil {
+				continue
+			}
+			resp, err := c.CloudTrail.GetEventSelectors(ctx, &cloudtrail.GetEventSelectorsInput{TrailName: name})
+			if err != nil {
+				continue
+			}
+			out[*name] = *resp
+		}
+		return out, nil
+	})
 
 	// CloudWatch
-	d.CloudWatchAlarms = cache.New(func() ([]cloudwatchtypes.MetricAlarm, error) {
+	d.CloudWatchAlarms = cache.New("CloudWatchAlarms", func() ([]cloudwatchtypes.MetricAlarm, error) {
 		out, err := c.CloudWatch.DescribeAlarms(ctx, &cloudwatch.DescribeAlarmsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.MetricAlarms, nil
 	})
-	d.CloudWatchLogGroups = cache.New(func() ([]logstypes.LogGroup, error) {
+	d.CloudWatchLogGroups = cache.New("CloudWatchLogGroups", func() ([]logstypes.LogGroup, error) {
 		out, err := c.CloudWatchLogs.DescribeLogGroups(ctx, &cloudwatchlogs.DescribeLogGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.LogGroups, nil
 	})
-	d.CloudWatchMetricStreams = cache.New(func() ([]cloudwatchtypes.MetricStreamEntry, error) {
+	d.CloudWatchMetricStreams = cache.New("CloudWatchMetricStreams", func() ([]cloudwatchtypes.MetricStreamEntry, error) {
 		out, err := c.CloudWatch.ListMetricStreams(ctx, &cloudwatch.ListMetricStreamsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Entries, nil
 	})
+	d.CloudWatchMetricStreamTags = cache.New("CloudWatchMetricStreamTags", func() (map[string]map[string]string, error) {
+		streams, err := d.CloudWatchMetricStreams.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, s := range streams {
+			if s.Arn == nil {
+				continue
+			}
+			resp, err := c.CloudWatch.ListTagsForResource(ctx, &cloudwatch.ListTagsForResourceInput{ResourceARN: s.Arn})
+			if err != nil {
+				continue
+			}
+			tags := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					tags[*t.Key] = *t.Value
+				}
+			}
+			out[*s.Arn] = tags
+		}
+		return out, nil
+	})
 
 	// CloudFront
-	d.CloudFrontDistributions = cache.New(func() ([]cftypescf.DistributionSummary, error) {
+	d.CloudFrontDistributions = cache.New("CloudFrontDistributions", func() ([]cftypescf.DistributionSummary, error) {
 		out, err := c.CloudFront.ListDistributions(ctx, &cloudfront.ListDistributionsInput{})
 		if err != nil {
 			return nil, err
@@ -1303,7 +1734,7 @@ func (d *Data) init() {
 		}
 		return out.DistributionList.Items, nil
 	})
-	d.CloudFrontDistributionConfigs = cache.New(func() (map[string]cftypescf.DistributionConfig, error) {
+	d.CloudFrontDistributionConfigs = cache.New("CloudFrontDistributionConfigs", func() (map[string]cftypescf.DistributionConfig, error) {
 		dists, err := d.CloudFrontDistributions.Get()
 		if err != nil {
 			return nil, err
@@ -1321,7 +1752,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.CloudFrontDistributionARNs = cache.New(func() (map[string]string, error) {
+	d.CloudFrontDistributionARNs = cache.New("CloudFrontDistributionARNs", func() (map[string]string, error) {
 		dists, err := d.CloudFrontDistributions.Get()
 		if err != nil {
 			return nil, err
@@ -1339,7 +1770,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.CloudFrontDistributionTags = cache.New(func() (map[string]map[string]string, error) {
+	d.CloudFrontDistributionTags = cache.New("CloudFrontDistributionTags", func() (map[string]map[string]string, error) {
 		arns, err := d.CloudFrontDistributionARNs.Get()
 		if err != nil {
 			return nil, err
@@ -1360,7 +1791,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.CloudFrontDistributionWAF = cache.New(func() (map[string]bool, error) {
+	d.CloudFrontDistributionWAF = cache.New("CloudFrontDistributionWAF", func() (map[string]bool, error) {
 		arns, err := d.CloudFrontDistributionARNs.Get()
 		if err != nil {
 			return nil, err
@@ -1380,7 +1811,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.CloudFrontS3OriginBucketExists = cache.New(func() (map[string]bool, error) {
+	d.CloudFrontS3OriginBucketExists = cache.New("CloudFrontS3OriginBucketExists", func() (map[string]bool, error) {
 		configs, err := d.CloudFrontDistributionConfigs.Get()
 		if err != nil {
 			return nil, err
@@ -1413,23 +1844,48 @@ func (d *Data) init() {
 	})
 
 	// CloudFormation
-	d.CloudFormationStacks = cache.New(func() ([]cftypes.StackSummary, error) {
+	d.CloudFormationStacks = cache.New("CloudFormationStacks", func() ([]cftypes.StackSummary, error) {
 		out, err := c.CloudFormation.ListStacks(ctx, &cloudformation.ListStacksInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.StackSummaries, nil
 	})
+	d.CloudFormationStackDetails = cache.New("CloudFormationStackDetails", func() (map[string]cftypes.Stack, error) {
+		summaries, err := d.CloudFormationStacks.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]cftypes.Stack)
+		for _, s := range summaries {
+			name := s.StackName
+			if name == nil || *name == "" {
+				continue
+			}
+			resp, err := c.CloudFormation.DescribeStacks(ctx, &cloudformation.DescribeStacksInput{StackName: name})
+			if err != nil {
+				continue
+			}
+			for _, st := range resp.Stacks {
+				if st.StackId != nil {
+					out[*st.StackId] = st
+				} else if st.StackName != nil {
+					out[*st.StackName] = st
+				}
+			}
+		}
+		return out, nil
+	})
 
 	// ACM
-	d.ACMCertificates = cache.New(func() ([]acmtypes.CertificateSummary, error) {
+	d.ACMCertificates = cache.New("ACMCertificates", func() ([]acmtypes.CertificateSummary, error) {
 		out, err := c.ACM.ListCertificates(ctx, &acm.ListCertificatesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.CertificateSummaryList, nil
 	})
-	d.ACMCertificateDetails = cache.New(func() (map[string]acmtypes.CertificateDetail, error) {
+	d.ACMCertificateDetails = cache.New("ACMCertificateDetails", func() (map[string]acmtypes.CertificateDetail, error) {
 		certs, err := d.ACMCertificates.Get()
 		if err != nil {
 			return nil, err
@@ -1449,14 +1905,14 @@ func (d *Data) init() {
 	})
 
 	// ACM PCA
-	d.ACMPCACertificateAuthorities = cache.New(func() ([]acmpcatypes.CertificateAuthority, error) {
+	d.ACMPCACertificateAuthorities = cache.New("ACMPCACertificateAuthorities", func() ([]acmpcatypes.CertificateAuthority, error) {
 		out, err := c.ACMPCA.ListCertificateAuthorities(ctx, &acmpca.ListCertificateAuthoritiesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.CertificateAuthorities, nil
 	})
-	d.ACMPCACertificateAuthorityTags = cache.New(func() (map[string]map[string]string, error) {
+	d.ACMPCACertificateAuthorityTags = cache.New("ACMPCACertificateAuthorityTags", func() (map[string]map[string]string, error) {
 		cas, err := d.ACMPCACertificateAuthorities.Get()
 		if err != nil {
 			return nil, err
@@ -1482,100 +1938,360 @@ func (d *Data) init() {
 	})
 
 	// KMS
-	d.KMSKeys = cache.New(func() ([]kmstypes.KeyListEntry, error) {
+	d.KMSKeys = cache.New("KMSKeys", func() ([]kmstypes.KeyListEntry, error) {
 		out, err := c.KMS.ListKeys(ctx, &kms.ListKeysInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Keys, nil
 	})
+	d.KMSKeyDetails = cache.New("KMSKeyDetails", func() (map[string]kmstypes.KeyMetadata, error) {
+		keys, err := d.KMSKeys.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]kmstypes.KeyMetadata)
+		for _, k := range keys {
+			if k.KeyId == nil {
+				continue
+			}
+			desc, err := c.KMS.DescribeKey(ctx, &kms.DescribeKeyInput{KeyId: k.KeyId})
+			if err != nil || desc.KeyMetadata == nil {
+				continue
+			}
+			out[*k.KeyId] = *desc.KeyMetadata
+		}
+		return out, nil
+	})
+	d.KMSKeyRotationStatus = cache.New("KMSKeyRotationStatus", func() (map[string]bool, error) {
+		keys, err := d.KMSKeys.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]bool)
+		for _, k := range keys {
+			if k.KeyId == nil {
+				continue
+			}
+			resp, err := c.KMS.GetKeyRotationStatus(ctx, &kms.GetKeyRotationStatusInput{KeyId: k.KeyId})
+			if err != nil {
+				continue
+			}
+			out[*k.KeyId] = resp.KeyRotationEnabled
+		}
+		return out, nil
+	})
+	d.KMSKeyTags = cache.New("KMSKeyTags", func() (map[string]map[string]string, error) {
+		keys, err := d.KMSKeys.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, k := range keys {
+			if k.KeyId == nil {
+				continue
+			}
+			resp, err := c.KMS.ListResourceTags(ctx, &kms.ListResourceTagsInput{KeyId: k.KeyId})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.TagKey != nil && t.TagValue != nil {
+					m[*t.TagKey] = *t.TagValue
+				}
+			}
+			out[*k.KeyId] = m
+		}
+		return out, nil
+	})
+	d.KMSKeyPolicies = cache.New("KMSKeyPolicies", func() (map[string]string, error) {
+		keys, err := d.KMSKeys.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]string)
+		for _, k := range keys {
+			if k.KeyId == nil {
+				continue
+			}
+			resp, err := c.KMS.GetKeyPolicy(ctx, &kms.GetKeyPolicyInput{KeyId: k.KeyId, PolicyName: aws.String("default")})
+			if err != nil || resp.Policy == nil {
+				continue
+			}
+			out[*k.KeyId] = *resp.Policy
+		}
+		return out, nil
+	})
 
 	// SNS
-	d.SNSTopics = cache.New(func() ([]snstypes.Topic, error) {
+	d.SNSTopics = cache.New("SNSTopics", func() ([]snstypes.Topic, error) {
 		out, err := c.SNS.ListTopics(ctx, &sns.ListTopicsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Topics, nil
 	})
+	d.SNSTopicAttributes = cache.New("SNSTopicAttributes", func() (map[string]map[string]string, error) {
+		topics, err := d.SNSTopics.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, t := range topics {
+			if t.TopicArn == nil {
+				continue
+			}
+			resp, err := c.SNS.GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{TopicArn: t.TopicArn})
+			if err != nil {
+				continue
+			}
+			out[*t.TopicArn] = resp.Attributes
+		}
+		return out, nil
+	})
 
 	// SQS
-	d.SQSQueues = cache.New(func() ([]string, error) {
+	d.SQSQueues = cache.New("SQSQueues", func() ([]string, error) {
 		out, err := c.SQS.ListQueues(ctx, &sqs.ListQueuesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.QueueUrls, nil
 	})
+	d.SQSQueueAttributes = cache.New("SQSQueueAttributes", func() (map[string]map[string]string, error) {
+		queues, err := d.SQSQueues.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, q := range queues {
+			resp, err := c.SQS.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{QueueUrl: &q, AttributeNames: []sqstypes.QueueAttributeName{sqstypes.QueueAttributeNameAll}})
+			if err != nil {
+				continue
+			}
+			out[q] = resp.Attributes
+		}
+		return out, nil
+	})
 
 	// Secrets Manager
-	d.SecretsManagerSecrets = cache.New(func() ([]smtypes.SecretListEntry, error) {
+	d.SecretsManagerSecrets = cache.New("SecretsManagerSecrets", func() ([]smtypes.SecretListEntry, error) {
 		out, err := c.SecretsManager.ListSecrets(ctx, &secretsmanager.ListSecretsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.SecretList, nil
 	})
+	d.SecretsManagerSecretDetails = cache.New("SecretsManagerSecretDetails", func() (map[string]secretsmanager.DescribeSecretOutput, error) {
+		secrets, err := d.SecretsManagerSecrets.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]secretsmanager.DescribeSecretOutput)
+		for _, s := range secrets {
+			if s.ARN == nil {
+				continue
+			}
+			desc, err := c.SecretsManager.DescribeSecret(ctx, &secretsmanager.DescribeSecretInput{SecretId: s.ARN})
+			if err != nil {
+				continue
+			}
+			out[*s.ARN] = *desc
+		}
+		return out, nil
+	})
+	d.SecretsManagerSecretTags = cache.New("SecretsManagerSecretTags", func() (map[string]map[string]string, error) {
+		secrets, err := d.SecretsManagerSecrets.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, s := range secrets {
+			if s.ARN == nil {
+				continue
+			}
+			resp, err := c.SecretsManager.ListSecretVersionIds(ctx, &secretsmanager.ListSecretVersionIdsInput{SecretId: s.ARN})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			_ = resp
+			// Secrets Manager doesn't have ListTagsForResource; use DescribeSecret tags.
+			desc, err := c.SecretsManager.DescribeSecret(ctx, &secretsmanager.DescribeSecretInput{SecretId: s.ARN})
+			if err == nil {
+				for _, t := range desc.Tags {
+					if t.Key != nil && t.Value != nil {
+						m[*t.Key] = *t.Value
+					}
+				}
+			}
+			out[*s.ARN] = m
+		}
+		return out, nil
+	})
 
 	// SSM
-	d.SSMDocuments = cache.New(func() ([]ssmtypes.DocumentIdentifier, error) {
+	d.SSMDocuments = cache.New("SSMDocuments", func() ([]ssmtypes.DocumentIdentifier, error) {
 		out, err := c.SSM.ListDocuments(ctx, &ssm.ListDocumentsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DocumentIdentifiers, nil
 	})
+	d.SSMDocumentDetails = cache.New("SSMDocumentDetails", func() (map[string]ssmtypes.DocumentDescription, error) {
+		docs, err := d.SSMDocuments.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]ssmtypes.DocumentDescription)
+		for _, doc := range docs {
+			if doc.Name == nil {
+				continue
+			}
+			desc, err := c.SSM.DescribeDocument(ctx, &ssm.DescribeDocumentInput{Name: doc.Name})
+			if err != nil || desc.Document == nil {
+				continue
+			}
+			out[*doc.Name] = *desc.Document
+		}
+		return out, nil
+	})
+	d.SSMDocumentTags = cache.New("SSMDocumentTags", func() (map[string]map[string]string, error) {
+		docs, err := d.SSMDocuments.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, doc := range docs {
+			if doc.Name == nil {
+				continue
+			}
+			resp, err := c.SSM.ListTagsForResource(ctx, &ssm.ListTagsForResourceInput{ResourceType: ssmtypes.ResourceTypeForTaggingDocument, ResourceId: doc.Name})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.TagList {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*doc.Name] = m
+		}
+		return out, nil
+	})
+	d.SSMDocumentContent = cache.New("SSMDocumentContent", func() (map[string]string, error) {
+		docs, err := d.SSMDocuments.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]string)
+		for _, doc := range docs {
+			if doc.Name == nil {
+				continue
+			}
+			resp, err := c.SSM.GetDocument(ctx, &ssm.GetDocumentInput{Name: doc.Name, DocumentVersion: aws.String("$LATEST")})
+			if err != nil || resp.Content == nil {
+				continue
+			}
+			out[*doc.Name] = *resp.Content
+		}
+		return out, nil
+	})
 
 	// Step Functions
-	d.SFNStateMachines = cache.New(func() ([]sfntypes.StateMachineListItem, error) {
+	d.SFNStateMachines = cache.New("SFNStateMachines", func() ([]sfntypes.StateMachineListItem, error) {
 		out, err := c.SFN.ListStateMachines(ctx, &sfn.ListStateMachinesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.StateMachines, nil
 	})
+	d.SFNStateMachineDetails = cache.New("SFNStateMachineDetails", func() (map[string]sfn.DescribeStateMachineOutput, error) {
+		items, err := d.SFNStateMachines.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]sfn.DescribeStateMachineOutput)
+		for _, m := range items {
+			if m.StateMachineArn == nil {
+				continue
+			}
+			desc, err := c.SFN.DescribeStateMachine(ctx, &sfn.DescribeStateMachineInput{StateMachineArn: m.StateMachineArn})
+			if err != nil || desc == nil {
+				continue
+			}
+			out[*m.StateMachineArn] = *desc
+		}
+		return out, nil
+	})
+	d.SFNStateMachineTags = cache.New("SFNStateMachineTags", func() (map[string]map[string]string, error) {
+		items, err := d.SFNStateMachines.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, m := range items {
+			if m.StateMachineArn == nil {
+				continue
+			}
+			resp, err := c.SFN.ListTagsForResource(ctx, &sfn.ListTagsForResourceInput{ResourceArn: m.StateMachineArn})
+			if err != nil {
+				continue
+			}
+			mm := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					mm[*t.Key] = *t.Value
+				}
+			}
+			out[*m.StateMachineArn] = mm
+		}
+		return out, nil
+	})
 
 	// Redshift
-	d.RedshiftClusters = cache.New(func() ([]redshifttypes.Cluster, error) {
+	d.RedshiftClusters = cache.New("RedshiftClusters", func() ([]redshifttypes.Cluster, error) {
 		out, err := c.Redshift.DescribeClusters(ctx, &redshift.DescribeClustersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Clusters, nil
 	})
-	d.RedshiftParamGroups = cache.New(func() ([]redshifttypes.ClusterParameterGroup, error) {
+	d.RedshiftParamGroups = cache.New("RedshiftParamGroups", func() ([]redshifttypes.ClusterParameterGroup, error) {
 		out, err := c.Redshift.DescribeClusterParameterGroups(ctx, &redshift.DescribeClusterParameterGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ParameterGroups, nil
 	})
-	d.RedshiftClusterSubnetGroups = cache.New(func() ([]redshifttypes.ClusterSubnetGroup, error) {
+	d.RedshiftClusterSubnetGroups = cache.New("RedshiftClusterSubnetGroups", func() ([]redshifttypes.ClusterSubnetGroup, error) {
 		out, err := c.Redshift.DescribeClusterSubnetGroups(ctx, &redshift.DescribeClusterSubnetGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ClusterSubnetGroups, nil
 	})
-	d.RedshiftLoggingStatus = cache.New(func() (map[string]redshift.DescribeLoggingStatusOutput, error) {
+	d.RedshiftLoggingStatus = cache.New("RedshiftLoggingStatus", func() (map[string]redshift.DescribeLoggingStatusOutput, error) {
 		clusters, err := d.RedshiftClusters.Get()
 		if err != nil {
 			return nil, err
 		}
 		out := make(map[string]redshift.DescribeLoggingStatusOutput)
-		for _, c := range clusters {
-			if c.ClusterIdentifier == nil {
+		for _, cl := range clusters {
+			if cl.ClusterIdentifier == nil {
 				continue
 			}
-			ls, err := c.Redshift.DescribeLoggingStatus(ctx, &redshift.DescribeLoggingStatusInput{ClusterIdentifier: c.ClusterIdentifier})
+			ls, err := c.Redshift.DescribeLoggingStatus(ctx, &redshift.DescribeLoggingStatusInput{ClusterIdentifier: cl.ClusterIdentifier})
 			if err != nil {
 				continue
 			}
-			out[*c.ClusterIdentifier] = *ls
+			out[*cl.ClusterIdentifier] = *ls
 		}
 		return out, nil
 	})
-	d.RedshiftParamGroupTags = cache.New(func() (map[string]map[string]string, error) {
+	d.RedshiftParamGroupTags = cache.New("RedshiftParamGroupTags", func() (map[string]map[string]string, error) {
 		groups, err := d.RedshiftParamGroups.Get()
 		if err != nil {
 			return nil, err
@@ -1604,7 +2320,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.RedshiftParamValues = cache.New(func() (map[string]map[string]string, error) {
+	d.RedshiftParamValues = cache.New("RedshiftParamValues", func() (map[string]map[string]string, error) {
 		groups, err := d.RedshiftParamGroups.Get()
 		if err != nil {
 			return nil, err
@@ -1640,14 +2356,14 @@ func (d *Data) init() {
 	})
 
 	// Redshift Serverless
-	d.RedshiftServerlessWorkgroups = cache.New(func() ([]rsstypes.Workgroup, error) {
+	d.RedshiftServerlessWorkgroups = cache.New("RedshiftServerlessWorkgroups", func() ([]rsstypes.Workgroup, error) {
 		out, err := c.RedshiftServerless.ListWorkgroups(ctx, &redshiftserverless.ListWorkgroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Workgroups, nil
 	})
-	d.RedshiftServerlessNamespaces = cache.New(func() ([]rsstypes.Namespace, error) {
+	d.RedshiftServerlessNamespaces = cache.New("RedshiftServerlessNamespaces", func() ([]rsstypes.Namespace, error) {
 		out, err := c.RedshiftServerless.ListNamespaces(ctx, &redshiftserverless.ListNamespacesInput{})
 		if err != nil {
 			return nil, err
@@ -1656,21 +2372,21 @@ func (d *Data) init() {
 	})
 
 	// EFS
-	d.EFSFileSystems = cache.New(func() ([]efstypes.FileSystemDescription, error) {
+	d.EFSFileSystems = cache.New("EFSFileSystems", func() ([]efstypes.FileSystemDescription, error) {
 		out, err := c.EFS.DescribeFileSystems(ctx, &efs.DescribeFileSystemsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.FileSystems, nil
 	})
-	d.EFSAccessPoints = cache.New(func() ([]efstypes.AccessPointDescription, error) {
+	d.EFSAccessPoints = cache.New("EFSAccessPoints", func() ([]efstypes.AccessPointDescription, error) {
 		out, err := c.EFS.DescribeAccessPoints(ctx, &efs.DescribeAccessPointsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.AccessPoints, nil
 	})
-	d.EFSMountTargets = cache.New(func() (map[string][]efstypes.MountTargetDescription, error) {
+	d.EFSMountTargets = cache.New("EFSMountTargets", func() (map[string][]efstypes.MountTargetDescription, error) {
 		fss, err := d.EFSFileSystems.Get()
 		if err != nil {
 			return nil, err
@@ -1688,7 +2404,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.EFSBackupPolicies = cache.New(func() (map[string]bool, error) {
+	d.EFSBackupPolicies = cache.New("EFSBackupPolicies", func() (map[string]bool, error) {
 		fss, err := d.EFSFileSystems.Get()
 		if err != nil {
 			return nil, err
@@ -1707,7 +2423,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.EFSFileSystemTags = cache.New(func() (map[string]map[string]string, error) {
+	d.EFSFileSystemTags = cache.New("EFSFileSystemTags", func() (map[string]map[string]string, error) {
 		fss, err := d.EFSFileSystems.Get()
 		if err != nil {
 			return nil, err
@@ -1733,14 +2449,14 @@ func (d *Data) init() {
 	})
 
 	// ELB
-	d.ELBClassicLBs = cache.New(func() ([]elbtypes.LoadBalancerDescription, error) {
+	d.ELBClassicLBs = cache.New("ELBClassicLBs", func() ([]elbtypes.LoadBalancerDescription, error) {
 		out, err := c.ELB.DescribeLoadBalancers(ctx, &elasticloadbalancing.DescribeLoadBalancersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.LoadBalancerDescriptions, nil
 	})
-	d.ELBClassicTags = cache.New(func() (map[string]map[string]string, error) {
+	d.ELBClassicTags = cache.New("ELBClassicTags", func() (map[string]map[string]string, error) {
 		lbs, err := d.ELBClassicLBs.Get()
 		if err != nil {
 			return nil, err
@@ -1777,7 +2493,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.ELBClassicAttributes = cache.New(func() (map[string]elbtypes.LoadBalancerAttributes, error) {
+	d.ELBClassicAttributes = cache.New("ELBClassicAttributes", func() (map[string]elbtypes.LoadBalancerAttributes, error) {
 		lbs, err := d.ELBClassicLBs.Get()
 		if err != nil {
 			return nil, err
@@ -1795,7 +2511,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.ELBClassicPolicies = cache.New(func() (map[string][]elbtypes.PolicyDescription, error) {
+	d.ELBClassicPolicies = cache.New("ELBClassicPolicies", func() (map[string][]elbtypes.PolicyDescription, error) {
 		lbs, err := d.ELBClassicLBs.Get()
 		if err != nil {
 			return nil, err
@@ -1815,14 +2531,14 @@ func (d *Data) init() {
 	})
 
 	// ELBv2
-	d.ELBv2LoadBalancers = cache.New(func() ([]elbv2types.LoadBalancer, error) {
+	d.ELBv2LoadBalancers = cache.New("ELBv2LoadBalancers", func() ([]elbv2types.LoadBalancer, error) {
 		out, err := c.ELBv2.DescribeLoadBalancers(ctx, &elasticloadbalancingv2.DescribeLoadBalancersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.LoadBalancers, nil
 	})
-	d.ELBv2Listeners = cache.New(func() ([]elbv2types.Listener, error) {
+	d.ELBv2Listeners = cache.New("ELBv2Listeners", func() ([]elbv2types.Listener, error) {
 		lbs, err := d.ELBv2LoadBalancers.Get()
 		if err != nil {
 			return nil, err
@@ -1837,14 +2553,14 @@ func (d *Data) init() {
 		}
 		return all, nil
 	})
-	d.ELBv2TargetGroups = cache.New(func() ([]elbv2types.TargetGroup, error) {
+	d.ELBv2TargetGroups = cache.New("ELBv2TargetGroups", func() ([]elbv2types.TargetGroup, error) {
 		out, err := c.ELBv2.DescribeTargetGroups(ctx, &elasticloadbalancingv2.DescribeTargetGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.TargetGroups, nil
 	})
-	d.ELBv2Tags = cache.New(func() (map[string]map[string]string, error) {
+	d.ELBv2Tags = cache.New("ELBv2Tags", func() (map[string]map[string]string, error) {
 		lbs, err := d.ELBv2LoadBalancers.Get()
 		if err != nil {
 			return nil, err
@@ -1890,7 +2606,7 @@ func (d *Data) init() {
 		}
 		return tags, nil
 	})
-	d.ELBv2LBAttributes = cache.New(func() (map[string]map[string]string, error) {
+	d.ELBv2LBAttributes = cache.New("ELBv2LBAttributes", func() (map[string]map[string]string, error) {
 		lbs, err := d.ELBv2LoadBalancers.Get()
 		if err != nil {
 			return nil, err
@@ -1916,7 +2632,7 @@ func (d *Data) init() {
 	})
 
 	// ECR
-	d.ECRRepositories = cache.New(func() ([]ecrtypes.Repository, error) {
+	d.ECRRepositories = cache.New("ECRRepositories", func() ([]ecrtypes.Repository, error) {
 		out, err := c.ECR.DescribeRepositories(ctx, &ecr.DescribeRepositoriesInput{})
 		if err != nil {
 			return nil, err
@@ -1925,14 +2641,14 @@ func (d *Data) init() {
 	})
 
 	// Neptune
-	d.NeptuneClusters = cache.New(func() ([]neptunetypes.DBCluster, error) {
+	d.NeptuneClusters = cache.New("NeptuneClusters", func() ([]neptunetypes.DBCluster, error) {
 		out, err := c.Neptune.DescribeDBClusters(ctx, &neptune.DescribeDBClustersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DBClusters, nil
 	})
-	d.NeptuneSnapshots = cache.New(func() ([]neptunetypes.DBClusterSnapshot, error) {
+	d.NeptuneSnapshots = cache.New("NeptuneSnapshots", func() ([]neptunetypes.DBClusterSnapshot, error) {
 		out, err := c.Neptune.DescribeDBClusterSnapshots(ctx, &neptune.DescribeDBClusterSnapshotsInput{})
 		if err != nil {
 			return nil, err
@@ -1941,7 +2657,7 @@ func (d *Data) init() {
 	})
 
 	// OpenSearch
-	d.OpenSearchDomains = cache.New(func() ([]opentypes.DomainStatus, error) {
+	d.OpenSearchDomains = cache.New("OpenSearchDomains", func() ([]opentypes.DomainStatus, error) {
 		list, err := c.OpenSearch.ListDomainNames(ctx, &opensearch.ListDomainNamesInput{})
 		if err != nil {
 			return nil, err
@@ -1963,7 +2679,7 @@ func (d *Data) init() {
 	})
 
 	// Elasticsearch
-	d.ElasticsearchDomains = cache.New(func() ([]estypes.ElasticsearchDomainStatus, error) {
+	d.ElasticsearchDomains = cache.New("ElasticsearchDomains", func() ([]estypes.ElasticsearchDomainStatus, error) {
 		list, err := c.Elasticsearch.ListDomainNames(ctx, &elasticsearchservice.ListDomainNamesInput{})
 		if err != nil {
 			return nil, err
@@ -1985,23 +2701,73 @@ func (d *Data) init() {
 	})
 
 	// Glue
-	d.GlueJobs = cache.New(func() ([]gluetypes.Job, error) {
+	d.GlueJobs = cache.New("GlueJobs", func() ([]gluetypes.Job, error) {
 		out, err := c.Glue.GetJobs(ctx, &glue.GetJobsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Jobs, nil
 	})
+	d.GlueMLTransforms = cache.New("GlueMLTransforms", func() ([]gluetypes.MLTransform, error) {
+		out, err := c.Glue.GetMLTransforms(ctx, &glue.GetMLTransformsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Transforms, nil
+	})
+	d.GlueMLTransformTags = cache.New("GlueMLTransformTags", func() (map[string]map[string]string, error) {
+		transforms, err := d.GlueMLTransforms.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, t := range transforms {
+			if t.TransformId == nil {
+				continue
+			}
+			resp, err := c.Glue.GetTags(ctx, &glue.GetTagsInput{ResourceArn: t.TransformId})
+			if err != nil {
+				continue
+			}
+			out[*t.TransformId] = resp.Tags
+		}
+		return out, nil
+	})
+	d.GlueRegistries = cache.New("GlueRegistries", func() ([]gluetypes.RegistryListItem, error) {
+		out, err := c.Glue.ListRegistries(ctx, &glue.ListRegistriesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Registries, nil
+	})
+	d.GlueRegistryPolicies = cache.New("GlueRegistryPolicies", func() (map[string]string, error) {
+		regs, err := d.GlueRegistries.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]string)
+		for _, r := range regs {
+			if r.RegistryArn == nil {
+				continue
+			}
+			pol, err := c.Glue.GetResourcePolicy(ctx, &glue.GetResourcePolicyInput{ResourceArn: r.RegistryArn})
+			if err != nil || pol.PolicyInJson == nil {
+				continue
+			}
+			out[*r.RegistryArn] = *pol.PolicyInJson
+		}
+		return out, nil
+	})
 
 	// GuardDuty
-	d.GuardDutyDetectorIDs = cache.New(func() ([]string, error) {
+	d.GuardDutyDetectorIDs = cache.New("GuardDutyDetectorIDs", func() ([]string, error) {
 		out, err := c.GuardDuty.ListDetectors(ctx, &guardduty.ListDetectorsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DetectorIds, nil
 	})
-	d.GuardDutyDetectors = cache.New(func() (map[string]guardduty.GetDetectorOutput, error) {
+	d.GuardDutyDetectors = cache.New("GuardDutyDetectors", func() (map[string]guardduty.GetDetectorOutput, error) {
 		ids, err := d.GuardDutyDetectorIDs.Get()
 		if err != nil {
 			return nil, err
@@ -2016,7 +2782,401 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.GuardDutyNonArchivedFindings = cache.New(func() (map[string]int, error) {
+
+	// Inspector2
+	d.Inspector2Status = cache.New("Inspector2Status", func() (inspector2.BatchGetAccountStatusOutput, error) {
+		out, err := c.Inspector2.BatchGetAccountStatus(ctx, &inspector2.BatchGetAccountStatusInput{})
+		if err != nil {
+			return inspector2.BatchGetAccountStatusOutput{}, err
+		}
+		return *out, nil
+	})
+
+	// IoT
+	d.IoTAuthorizers = cache.New("IoTAuthorizers", func() ([]iottypes.AuthorizerSummary, error) {
+		out, err := c.IoT.ListAuthorizers(ctx, &iot.ListAuthorizersInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Authorizers, nil
+	})
+	d.IoTAuthorizerDetails = cache.New("IoTAuthorizerDetails", func() (map[string]iottypes.AuthorizerDescription, error) {
+		items, err := d.IoTAuthorizers.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]iottypes.AuthorizerDescription)
+		for _, a := range items {
+			if a.AuthorizerName == nil {
+				continue
+			}
+			desc, err := c.IoT.DescribeAuthorizer(ctx, &iot.DescribeAuthorizerInput{AuthorizerName: a.AuthorizerName})
+			if err != nil || desc.AuthorizerDescription == nil {
+				continue
+			}
+			out[*a.AuthorizerName] = *desc.AuthorizerDescription
+		}
+		return out, nil
+	})
+
+	// IoT SiteWise
+	d.IoTSiteWiseAssetModels = cache.New("IoTSiteWiseAssetModels", func() ([]sitewisetypes.AssetModelSummary, error) {
+		out, err := c.IoTSiteWise.ListAssetModels(ctx, &iotsitewise.ListAssetModelsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.AssetModelSummaries, nil
+	})
+	d.IoTSiteWiseDashboards = cache.New("IoTSiteWiseDashboards", func() ([]sitewisetypes.DashboardSummary, error) {
+		out, err := c.IoTSiteWise.ListDashboards(ctx, &iotsitewise.ListDashboardsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.DashboardSummaries, nil
+	})
+	d.IoTSiteWiseGateways = cache.New("IoTSiteWiseGateways", func() ([]sitewisetypes.GatewaySummary, error) {
+		out, err := c.IoTSiteWise.ListGateways(ctx, &iotsitewise.ListGatewaysInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.GatewaySummaries, nil
+	})
+	d.IoTSiteWisePortals = cache.New("IoTSiteWisePortals", func() ([]sitewisetypes.PortalSummary, error) {
+		out, err := c.IoTSiteWise.ListPortals(ctx, &iotsitewise.ListPortalsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.PortalSummaries, nil
+	})
+	d.IoTSiteWiseProjects = cache.New("IoTSiteWiseProjects", func() ([]sitewisetypes.ProjectSummary, error) {
+		out, err := c.IoTSiteWise.ListProjects(ctx, &iotsitewise.ListProjectsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.ProjectSummaries, nil
+	})
+	d.IoTSiteWiseTags = cache.New("IoTSiteWiseTags", func() (map[string]map[string]string, error) {
+		out := make(map[string]map[string]string)
+		collect := func(arn *string) {
+			if arn == nil {
+				return
+			}
+			resp, err := c.IoTSiteWise.ListTagsForResource(ctx, &iotsitewise.ListTagsForResourceInput{ResourceArn: arn})
+			if err != nil {
+				return
+			}
+			out[*arn] = resp.Tags
+		}
+		assets, _ := d.IoTSiteWiseAssetModels.Get()
+		for _, a := range assets {
+			collect(a.Arn)
+		}
+		// DashboardSummary, GatewaySummary, PortalSummary, and ProjectSummary
+		// do not have Arn fields, so we cannot collect tags for them.
+		return out, nil
+	})
+
+	// IoT TwinMaker
+	d.TwinMakerWorkspaces = cache.New("TwinMakerWorkspaces", func() ([]twinmakertypes.WorkspaceSummary, error) {
+		out, err := c.IoTTwinMaker.ListWorkspaces(ctx, &iottwinmaker.ListWorkspacesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.WorkspaceSummaries, nil
+	})
+	d.TwinMakerComponentTypes = cache.New("TwinMakerComponentTypes", func() (map[string][]twinmakertypes.ComponentTypeSummary, error) {
+		workspaces, err := d.TwinMakerWorkspaces.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]twinmakertypes.ComponentTypeSummary)
+		for _, ws := range workspaces {
+			if ws.WorkspaceId == nil {
+				continue
+			}
+			resp, err := c.IoTTwinMaker.ListComponentTypes(ctx, &iottwinmaker.ListComponentTypesInput{WorkspaceId: ws.WorkspaceId})
+			if err != nil {
+				continue
+			}
+			out[*ws.WorkspaceId] = resp.ComponentTypeSummaries
+		}
+		return out, nil
+	})
+
+	// IVS
+	d.IVSChannels = cache.New("IVSChannels", func() ([]ivstypes.ChannelSummary, error) {
+		out, err := c.IVS.ListChannels(ctx, &ivs.ListChannelsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Channels, nil
+	})
+	d.IVSChannelDetails = cache.New("IVSChannelDetails", func() (map[string]ivstypes.Channel, error) {
+		channels, err := d.IVSChannels.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]ivstypes.Channel)
+		for _, ch := range channels {
+			if ch.Arn == nil {
+				continue
+			}
+			desc, err := c.IVS.GetChannel(ctx, &ivs.GetChannelInput{Arn: ch.Arn})
+			if err != nil || desc.Channel == nil {
+				continue
+			}
+			out[*ch.Arn] = *desc.Channel
+		}
+		return out, nil
+	})
+	d.IVSRecordingConfigurations = cache.New("IVSRecordingConfigurations", func() ([]ivstypes.RecordingConfigurationSummary, error) {
+		out, err := c.IVS.ListRecordingConfigurations(ctx, &ivs.ListRecordingConfigurationsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.RecordingConfigurations, nil
+	})
+	d.IVSPlaybackKeyPairs = cache.New("IVSPlaybackKeyPairs", func() ([]ivstypes.PlaybackKeyPairSummary, error) {
+		out, err := c.IVS.ListPlaybackKeyPairs(ctx, &ivs.ListPlaybackKeyPairsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.KeyPairs, nil
+	})
+	d.IVSTags = cache.New("IVSTags", func() (map[string]map[string]string, error) {
+		out := make(map[string]map[string]string)
+		collect := func(arn *string) {
+			if arn == nil {
+				return
+			}
+			resp, err := c.IVS.ListTagsForResource(ctx, &ivs.ListTagsForResourceInput{ResourceArn: arn})
+			if err != nil {
+				return
+			}
+			out[*arn] = resp.Tags
+		}
+		channels, _ := d.IVSChannels.Get()
+		for _, ch := range channels {
+			collect(ch.Arn)
+		}
+		rec, _ := d.IVSRecordingConfigurations.Get()
+		for _, r := range rec {
+			collect(r.Arn)
+		}
+		pairs, _ := d.IVSPlaybackKeyPairs.Get()
+		for _, p := range pairs {
+			collect(p.Arn)
+		}
+		return out, nil
+	})
+	d.TwinMakerEntities = cache.New("TwinMakerEntities", func() (map[string][]twinmakertypes.EntitySummary, error) {
+		workspaces, err := d.TwinMakerWorkspaces.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]twinmakertypes.EntitySummary)
+		for _, ws := range workspaces {
+			if ws.WorkspaceId == nil {
+				continue
+			}
+			resp, err := c.IoTTwinMaker.ListEntities(ctx, &iottwinmaker.ListEntitiesInput{WorkspaceId: ws.WorkspaceId})
+			if err != nil {
+				continue
+			}
+			out[*ws.WorkspaceId] = resp.EntitySummaries
+		}
+		return out, nil
+	})
+	d.TwinMakerScenes = cache.New("TwinMakerScenes", func() (map[string][]twinmakertypes.SceneSummary, error) {
+		workspaces, err := d.TwinMakerWorkspaces.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]twinmakertypes.SceneSummary)
+		for _, ws := range workspaces {
+			if ws.WorkspaceId == nil {
+				continue
+			}
+			resp, err := c.IoTTwinMaker.ListScenes(ctx, &iottwinmaker.ListScenesInput{WorkspaceId: ws.WorkspaceId})
+			if err != nil {
+				continue
+			}
+			out[*ws.WorkspaceId] = resp.SceneSummaries
+		}
+		return out, nil
+	})
+	d.TwinMakerSyncJobs = cache.New("TwinMakerSyncJobs", func() (map[string][]twinmakertypes.SyncJobSummary, error) {
+		workspaces, err := d.TwinMakerWorkspaces.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]twinmakertypes.SyncJobSummary)
+		for _, ws := range workspaces {
+			if ws.WorkspaceId == nil {
+				continue
+			}
+			resp, err := c.IoTTwinMaker.ListSyncJobs(ctx, &iottwinmaker.ListSyncJobsInput{WorkspaceId: ws.WorkspaceId})
+			if err != nil {
+				continue
+			}
+			out[*ws.WorkspaceId] = resp.SyncJobSummaries
+		}
+		return out, nil
+	})
+	d.TwinMakerTags = cache.New("TwinMakerTags", func() (map[string]map[string]string, error) {
+		out := make(map[string]map[string]string)
+		collect := func(arn *string) {
+			if arn == nil {
+				return
+			}
+			resp, err := c.IoTTwinMaker.ListTagsForResource(ctx, &iottwinmaker.ListTagsForResourceInput{ResourceARN: arn})
+			if err != nil {
+				return
+			}
+			out[*arn] = resp.Tags
+		}
+		workspaces, _ := d.TwinMakerWorkspaces.Get()
+		for _, ws := range workspaces {
+			collect(ws.Arn)
+		}
+		comp, _ := d.TwinMakerComponentTypes.Get()
+		for _, items := range comp {
+			for _, it := range items {
+				collect(it.Arn)
+			}
+		}
+		ents, _ := d.TwinMakerEntities.Get()
+		for _, items := range ents {
+			for _, it := range items {
+				collect(it.Arn)
+			}
+		}
+		scenes, _ := d.TwinMakerScenes.Get()
+		for _, items := range scenes {
+			for _, it := range items {
+				collect(it.Arn)
+			}
+		}
+		syncs, _ := d.TwinMakerSyncJobs.Get()
+		for _, items := range syncs {
+			for _, it := range items {
+				collect(it.Arn)
+			}
+		}
+		return out, nil
+	})
+	d.IoTJobTemplates = cache.New("IoTJobTemplates", func() ([]iottypes.JobTemplateSummary, error) {
+		out, err := c.IoT.ListJobTemplates(ctx, &iot.ListJobTemplatesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.JobTemplates, nil
+	})
+	d.IoTJobTemplateTags = cache.New("IoTJobTemplateTags", func() (map[string]map[string]string, error) {
+		items, err := d.IoTJobTemplates.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, jt := range items {
+			if jt.JobTemplateArn == nil {
+				continue
+			}
+			resp, err := c.IoT.ListTagsForResource(ctx, &iot.ListTagsForResourceInput{ResourceArn: jt.JobTemplateArn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*jt.JobTemplateArn] = m
+		}
+		return out, nil
+	})
+	d.IoTProvisioningTemplates = cache.New("IoTProvisioningTemplates", func() ([]iottypes.ProvisioningTemplateSummary, error) {
+		out, err := c.IoT.ListProvisioningTemplates(ctx, &iot.ListProvisioningTemplatesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Templates, nil
+	})
+	d.IoTProvisioningTemplateDetails = cache.New("IoTProvisioningTemplateDetails", func() (map[string]iot.DescribeProvisioningTemplateOutput, error) {
+		items, err := d.IoTProvisioningTemplates.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]iot.DescribeProvisioningTemplateOutput)
+		for _, it := range items {
+			if it.TemplateName == nil {
+				continue
+			}
+			desc, err := c.IoT.DescribeProvisioningTemplate(ctx, &iot.DescribeProvisioningTemplateInput{TemplateName: it.TemplateName})
+			if err != nil || desc.TemplateName == nil {
+				continue
+			}
+			out[*it.TemplateName] = *desc
+		}
+		return out, nil
+	})
+	d.IoTProvisioningTemplateTags = cache.New("IoTProvisioningTemplateTags", func() (map[string]map[string]string, error) {
+		items, err := d.IoTProvisioningTemplates.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, it := range items {
+			if it.TemplateArn == nil {
+				continue
+			}
+			resp, err := c.IoT.ListTagsForResource(ctx, &iot.ListTagsForResourceInput{ResourceArn: it.TemplateArn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*it.TemplateArn] = m
+		}
+		return out, nil
+	})
+	d.IoTScheduledAudits = cache.New("IoTScheduledAudits", func() ([]iottypes.ScheduledAuditMetadata, error) {
+		out, err := c.IoT.ListScheduledAudits(ctx, &iot.ListScheduledAuditsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.ScheduledAudits, nil
+	})
+	d.IoTScheduledAuditTags = cache.New("IoTScheduledAuditTags", func() (map[string]map[string]string, error) {
+		items, err := d.IoTScheduledAudits.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, it := range items {
+			if it.ScheduledAuditArn == nil {
+				continue
+			}
+			resp, err := c.IoT.ListTagsForResource(ctx, &iot.ListTagsForResourceInput{ResourceArn: it.ScheduledAuditArn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*it.ScheduledAuditArn] = m
+		}
+		return out, nil
+	})
+	d.GuardDutyNonArchivedFindings = cache.New("GuardDutyNonArchivedFindings", func() (map[string]int, error) {
 		ids, err := d.GuardDutyDetectorIDs.Get()
 		if err != nil {
 			return nil, err
@@ -2038,21 +3198,21 @@ func (d *Data) init() {
 	})
 
 	// Backup
-	d.BackupPlans = cache.New(func() ([]backuptypes.BackupPlansListMember, error) {
+	d.BackupPlans = cache.New("BackupPlans", func() ([]backuptypes.BackupPlansListMember, error) {
 		out, err := c.Backup.ListBackupPlans(ctx, &backup.ListBackupPlansInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.BackupPlansList, nil
 	})
-	d.BackupVaults = cache.New(func() ([]backuptypes.BackupVaultListMember, error) {
+	d.BackupVaults = cache.New("BackupVaults", func() ([]backuptypes.BackupVaultListMember, error) {
 		out, err := c.Backup.ListBackupVaults(ctx, &backup.ListBackupVaultsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.BackupVaultList, nil
 	})
-	d.BackupPlanDetails = cache.New(func() (map[string]backuptypes.BackupPlan, error) {
+	d.BackupPlanDetails = cache.New("BackupPlanDetails", func() (map[string]backuptypes.BackupPlan, error) {
 		plans, err := d.BackupPlans.Get()
 		if err != nil {
 			return nil, err
@@ -2070,7 +3230,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.BackupRecoveryPoints = cache.New(func() (map[string][]backuptypes.RecoveryPointByBackupVault, error) {
+	d.BackupRecoveryPoints = cache.New("BackupRecoveryPoints", func() (map[string][]backuptypes.RecoveryPointByBackupVault, error) {
 		vaults, err := d.BackupVaults.Get()
 		if err != nil {
 			return nil, err
@@ -2088,25 +3248,25 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.BackupVaultLockConfigs = cache.New(func() (map[string]backuptypes.BackupVaultLockConfiguration, error) {
+	d.BackupVaultLockConfigs = cache.New("BackupVaultLockConfigs", func() (map[string]backup.DescribeBackupVaultOutput, error) {
 		vaults, err := d.BackupVaults.Get()
 		if err != nil {
 			return nil, err
 		}
-		out := make(map[string]backuptypes.BackupVaultLockConfiguration)
+		out := make(map[string]backup.DescribeBackupVaultOutput)
 		for _, v := range vaults {
 			if v.BackupVaultName == nil {
 				continue
 			}
-			lock, err := c.Backup.GetBackupVaultLockConfiguration(ctx, &backup.GetBackupVaultLockConfigurationInput{BackupVaultName: v.BackupVaultName})
-			if err != nil || lock.BackupVaultLockConfiguration == nil {
+			desc, err := c.Backup.DescribeBackupVault(ctx, &backup.DescribeBackupVaultInput{BackupVaultName: v.BackupVaultName})
+			if err != nil || desc == nil {
 				continue
 			}
-			out[*v.BackupVaultName] = *lock.BackupVaultLockConfiguration
+			out[*v.BackupVaultName] = *desc
 		}
 		return out, nil
 	})
-	d.BackupProtectedResources = cache.New(func() (map[string]backuptypes.ProtectedResource, error) {
+	d.BackupProtectedResources = cache.New("BackupProtectedResources", func() (map[string]backuptypes.ProtectedResource, error) {
 		out := make(map[string]backuptypes.ProtectedResource)
 		list, err := c.Backup.ListProtectedResources(ctx, &backup.ListProtectedResourcesInput{})
 		if err != nil {
@@ -2120,7 +3280,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.BackupRecoveryPointsByResource = cache.New(func() (map[string][]backuptypes.RecoveryPointByResource, error) {
+	d.BackupRecoveryPointsByResource = cache.New("BackupRecoveryPointsByResource", func() (map[string][]backuptypes.RecoveryPointByResource, error) {
 		resources, err := d.BackupProtectedResources.Get()
 		if err != nil {
 			return nil, err
@@ -2137,16 +3297,23 @@ func (d *Data) init() {
 	})
 
 	// DocDB
-	d.DocDBClusters = cache.New(func() ([]docdbtypes.DBCluster, error) {
+	d.DocDBClusters = cache.New("DocDBClusters", func() ([]docdbtypes.DBCluster, error) {
 		out, err := c.DocDB.DescribeDBClusters(ctx, &docdb.DescribeDBClustersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.DBClusters, nil
 	})
+	d.DocDBSnapshots = cache.New("DocDBSnapshots", func() ([]docdbtypes.DBClusterSnapshot, error) {
+		out, err := c.DocDB.DescribeDBClusterSnapshots(ctx, &docdb.DescribeDBClusterSnapshotsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.DBClusterSnapshots, nil
+	})
 
 	// DAX
-	d.DAXClusters = cache.New(func() ([]daxtypes.Cluster, error) {
+	d.DAXClusters = cache.New("DAXClusters", func() ([]daxtypes.Cluster, error) {
 		out, err := c.DAX.DescribeClusters(ctx, &dax.DescribeClustersInput{})
 		if err != nil {
 			return nil, err
@@ -2154,29 +3321,435 @@ func (d *Data) init() {
 		return out.Clusters, nil
 	})
 
+	// Cassandra (Keyspaces)
+	d.CassandraKeyspaces = cache.New("CassandraKeyspaces", func() ([]keyspacestypes.KeyspaceSummary, error) {
+		out, err := c.Keyspaces.ListKeyspaces(ctx, &keyspaces.ListKeyspacesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Keyspaces, nil
+	})
+	d.CassandraKeyspaceARNByName = cache.New("CassandraKeyspaceARNByName", func() (map[string]string, error) {
+		keyspacesList, err := d.CassandraKeyspaces.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]string)
+		for _, ks := range keyspacesList {
+			if ks.KeyspaceName == nil {
+				continue
+			}
+			desc, err := c.Keyspaces.GetKeyspace(ctx, &keyspaces.GetKeyspaceInput{KeyspaceName: ks.KeyspaceName})
+			if err != nil || desc == nil || desc.ResourceArn == nil {
+				continue
+			}
+			out[*ks.KeyspaceName] = *desc.ResourceArn
+		}
+		return out, nil
+	})
+	d.CassandraKeyspaceTags = cache.New("CassandraKeyspaceTags", func() (map[string]map[string]string, error) {
+		arnByName, err := d.CassandraKeyspaceARNByName.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for name, arn := range arnByName {
+			arn := arn
+			tags, err := c.Keyspaces.ListTagsForResource(ctx, &keyspaces.ListTagsForResourceInput{ResourceArn: &arn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range tags.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[name] = m
+		}
+		return out, nil
+	})
+
+	// DataSync
+	d.DataSyncTasks = cache.New("DataSyncTasks", func() ([]datasynctypes.TaskListEntry, error) {
+		out, err := c.DataSync.ListTasks(ctx, &datasync.ListTasksInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Tasks, nil
+	})
+	d.DataSyncTaskDetails = cache.New("DataSyncTaskDetails", func() (map[string]datasync.DescribeTaskOutput, error) {
+		tasks, err := d.DataSyncTasks.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]datasync.DescribeTaskOutput)
+		for _, t := range tasks {
+			if t.TaskArn == nil {
+				continue
+			}
+			desc, err := c.DataSync.DescribeTask(ctx, &datasync.DescribeTaskInput{TaskArn: t.TaskArn})
+			if err != nil {
+				continue
+			}
+			out[*t.TaskArn] = *desc
+		}
+		return out, nil
+	})
+
+	// Evidently
+	d.EvidentlyProjects = cache.New("EvidentlyProjects", func() ([]evidentlytypes.ProjectSummary, error) {
+		out, err := c.Evidently.ListProjects(ctx, &evidently.ListProjectsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Projects, nil
+	})
+	d.EvidentlyProjectDetails = cache.New("EvidentlyProjectDetails", func() (map[string]evidentlytypes.Project, error) {
+		projects, err := d.EvidentlyProjects.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]evidentlytypes.Project)
+		for _, p := range projects {
+			if p.Arn == nil {
+				continue
+			}
+			desc, err := c.Evidently.GetProject(ctx, &evidently.GetProjectInput{Project: p.Arn})
+			if err != nil || desc.Project == nil {
+				continue
+			}
+			out[*p.Arn] = *desc.Project
+		}
+		return out, nil
+	})
+
+	// Fraud Detector
+	d.FraudDetectorEntityTypes = cache.New("FraudDetectorEntityTypes", func() ([]fraudtypes.EntityType, error) {
+		out, err := c.FraudDetector.GetEntityTypes(ctx, &frauddetector.GetEntityTypesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.EntityTypes, nil
+	})
+	d.FraudDetectorLabels = cache.New("FraudDetectorLabels", func() ([]fraudtypes.Label, error) {
+		out, err := c.FraudDetector.GetLabels(ctx, &frauddetector.GetLabelsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Labels, nil
+	})
+	d.FraudDetectorOutcomes = cache.New("FraudDetectorOutcomes", func() ([]fraudtypes.Outcome, error) {
+		out, err := c.FraudDetector.GetOutcomes(ctx, &frauddetector.GetOutcomesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Outcomes, nil
+	})
+	d.FraudDetectorVariables = cache.New("FraudDetectorVariables", func() ([]fraudtypes.Variable, error) {
+		out, err := c.FraudDetector.GetVariables(ctx, &frauddetector.GetVariablesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Variables, nil
+	})
+	d.FraudDetectorEntityTypeTags = cache.New("FraudDetectorEntityTypeTags", func() (map[string]map[string]string, error) {
+		items, err := d.FraudDetectorEntityTypes.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, it := range items {
+			if it.Arn == nil {
+				continue
+			}
+			resp, err := c.FraudDetector.ListTagsForResource(ctx, &frauddetector.ListTagsForResourceInput{ResourceARN: it.Arn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*it.Arn] = m
+		}
+		return out, nil
+	})
+	d.FraudDetectorLabelTags = cache.New("FraudDetectorLabelTags", func() (map[string]map[string]string, error) {
+		items, err := d.FraudDetectorLabels.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, it := range items {
+			if it.Arn == nil {
+				continue
+			}
+			resp, err := c.FraudDetector.ListTagsForResource(ctx, &frauddetector.ListTagsForResourceInput{ResourceARN: it.Arn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*it.Arn] = m
+		}
+		return out, nil
+	})
+	d.FraudDetectorOutcomeTags = cache.New("FraudDetectorOutcomeTags", func() (map[string]map[string]string, error) {
+		items, err := d.FraudDetectorOutcomes.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, it := range items {
+			if it.Arn == nil {
+				continue
+			}
+			resp, err := c.FraudDetector.ListTagsForResource(ctx, &frauddetector.ListTagsForResourceInput{ResourceARN: it.Arn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*it.Arn] = m
+		}
+		return out, nil
+	})
+	d.FraudDetectorVariableTags = cache.New("FraudDetectorVariableTags", func() (map[string]map[string]string, error) {
+		items, err := d.FraudDetectorVariables.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, it := range items {
+			if it.Arn == nil {
+				continue
+			}
+			resp, err := c.FraudDetector.ListTagsForResource(ctx, &frauddetector.ListTagsForResourceInput{ResourceARN: it.Arn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*it.Arn] = m
+		}
+		return out, nil
+	})
+	d.EvidentlyProjectTags = cache.New("EvidentlyProjectTags", func() (map[string]map[string]string, error) {
+		projects, err := d.EvidentlyProjects.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, p := range projects {
+			if p.Arn == nil {
+				continue
+			}
+			resp, err := c.Evidently.ListTagsForResource(ctx, &evidently.ListTagsForResourceInput{ResourceArn: p.Arn})
+			if err != nil {
+				continue
+			}
+			out[*p.Arn] = resp.Tags
+		}
+		return out, nil
+	})
+	d.EvidentlyLaunches = cache.New("EvidentlyLaunches", func() (map[string][]evidentlytypes.Launch, error) {
+		projects, err := d.EvidentlyProjects.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]evidentlytypes.Launch)
+		for _, p := range projects {
+			if p.Arn == nil {
+				continue
+			}
+			resp, err := c.Evidently.ListLaunches(ctx, &evidently.ListLaunchesInput{Project: p.Arn})
+			if err != nil {
+				continue
+			}
+			out[*p.Arn] = resp.Launches
+		}
+		return out, nil
+	})
+	d.EvidentlyLaunchDetails = cache.New("EvidentlyLaunchDetails", func() (map[string]evidentlytypes.Launch, error) {
+		launches, err := d.EvidentlyLaunches.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]evidentlytypes.Launch)
+		for proj, items := range launches {
+			for _, l := range items {
+				if l.Arn == nil {
+					continue
+				}
+				desc, err := c.Evidently.GetLaunch(ctx, &evidently.GetLaunchInput{Launch: l.Arn, Project: &proj})
+				if err != nil || desc.Launch == nil {
+					continue
+				}
+				out[*l.Arn] = *desc.Launch
+			}
+		}
+		return out, nil
+	})
+	d.EvidentlyLaunchTags = cache.New("EvidentlyLaunchTags", func() (map[string]map[string]string, error) {
+		launches, err := d.EvidentlyLaunches.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, items := range launches {
+			for _, l := range items {
+				if l.Arn == nil {
+					continue
+				}
+				resp, err := c.Evidently.ListTagsForResource(ctx, &evidently.ListTagsForResourceInput{ResourceArn: l.Arn})
+				if err != nil {
+					continue
+				}
+				out[*l.Arn] = resp.Tags
+			}
+		}
+		return out, nil
+	})
+	d.EvidentlySegments = cache.New("EvidentlySegments", func() (map[string][]evidentlytypes.Segment, error) {
+		out := make(map[string][]evidentlytypes.Segment)
+		resp, err := c.Evidently.ListSegments(ctx, &evidently.ListSegmentsInput{})
+		if err != nil {
+			return nil, err
+		}
+		out["global"] = resp.Segments
+		return out, nil
+	})
+	d.EvidentlySegmentDetails = cache.New("EvidentlySegmentDetails", func() (map[string]evidentlytypes.Segment, error) {
+		segs, err := d.EvidentlySegments.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]evidentlytypes.Segment)
+		for _, items := range segs {
+			for _, s := range items {
+				if s.Arn == nil {
+					continue
+				}
+				desc, err := c.Evidently.GetSegment(ctx, &evidently.GetSegmentInput{Segment: s.Arn})
+				if err != nil || desc.Segment == nil {
+					continue
+				}
+				out[*s.Arn] = *desc.Segment
+			}
+		}
+		return out, nil
+	})
+	d.EvidentlySegmentTags = cache.New("EvidentlySegmentTags", func() (map[string]map[string]string, error) {
+		segs, err := d.EvidentlySegments.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, items := range segs {
+			for _, s := range items {
+				if s.Arn == nil {
+					continue
+				}
+				resp, err := c.Evidently.ListTagsForResource(ctx, &evidently.ListTagsForResourceInput{ResourceArn: s.Arn})
+				if err != nil {
+					continue
+				}
+				out[*s.Arn] = resp.Tags
+			}
+		}
+		return out, nil
+	})
+	d.DataSyncTaskTags = cache.New("DataSyncTaskTags", func() (map[string]map[string]string, error) {
+		tasks, err := d.DataSyncTasks.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, t := range tasks {
+			if t.TaskArn == nil {
+				continue
+			}
+			resp, err := c.DataSync.ListTagsForResource(ctx, &datasync.ListTagsForResourceInput{ResourceArn: t.TaskArn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, tag := range resp.Tags {
+				if tag.Key != nil && tag.Value != nil {
+					m[*tag.Key] = *tag.Value
+				}
+			}
+			out[*t.TaskArn] = m
+		}
+		return out, nil
+	})
+	d.DataSyncLocations = cache.New("DataSyncLocations", func() ([]datasynctypes.LocationListEntry, error) {
+		out, err := c.DataSync.ListLocations(ctx, &datasync.ListLocationsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Locations, nil
+	})
+	d.DataSyncLocationObjectStorageDetails = cache.New("DataSyncLocationObjectStorageDetails", func() (map[string]datasync.DescribeLocationObjectStorageOutput, error) {
+		locs, err := d.DataSyncLocations.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]datasync.DescribeLocationObjectStorageOutput)
+		for _, l := range locs {
+			if l.LocationArn == nil || l.LocationUri == nil {
+				continue
+			}
+			if !strings.HasPrefix(*l.LocationUri, "object-storage://") {
+				continue
+			}
+			desc, err := c.DataSync.DescribeLocationObjectStorage(ctx, &datasync.DescribeLocationObjectStorageInput{LocationArn: l.LocationArn})
+			if err != nil {
+				continue
+			}
+			out[*l.LocationArn] = *desc
+		}
+		return out, nil
+	})
+
 	// DMS
-	d.DMSReplicationInstances = cache.New(func() ([]dmstypes.ReplicationInstance, error) {
+	d.DMSReplicationInstances = cache.New("DMSReplicationInstances", func() ([]dmstypes.ReplicationInstance, error) {
 		out, err := c.DMS.DescribeReplicationInstances(ctx, &databasemigrationservice.DescribeReplicationInstancesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ReplicationInstances, nil
 	})
-	d.DMSEndpoints = cache.New(func() ([]dmstypes.Endpoint, error) {
+	d.DMSEndpoints = cache.New("DMSEndpoints", func() ([]dmstypes.Endpoint, error) {
 		out, err := c.DMS.DescribeEndpoints(ctx, &databasemigrationservice.DescribeEndpointsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Endpoints, nil
 	})
-	d.DMSReplicationTasks = cache.New(func() ([]dmstypes.ReplicationTask, error) {
+	d.DMSReplicationTasks = cache.New("DMSReplicationTasks", func() ([]dmstypes.ReplicationTask, error) {
 		out, err := c.DMS.DescribeReplicationTasks(ctx, &databasemigrationservice.DescribeReplicationTasksInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ReplicationTasks, nil
 	})
-	d.DMSEndpointTags = cache.New(func() (map[string]map[string]string, error) {
+	d.DMSEndpointTags = cache.New("DMSEndpointTags", func() (map[string]map[string]string, error) {
 		eps, err := d.DMSEndpoints.Get()
 		if err != nil {
 			return nil, err
@@ -2200,7 +3773,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.DMSReplicationTaskTags = cache.New(func() (map[string]map[string]string, error) {
+	d.DMSReplicationTaskTags = cache.New("DMSReplicationTaskTags", func() (map[string]map[string]string, error) {
 		tasks, err := d.DMSReplicationTasks.Get()
 		if err != nil {
 			return nil, err
@@ -2226,28 +3799,28 @@ func (d *Data) init() {
 	})
 
 	// Batch
-	d.BatchComputeEnvs = cache.New(func() ([]batchtypes.ComputeEnvironmentDetail, error) {
+	d.BatchComputeEnvs = cache.New("BatchComputeEnvs", func() ([]batchtypes.ComputeEnvironmentDetail, error) {
 		out, err := c.Batch.DescribeComputeEnvironments(ctx, &batch.DescribeComputeEnvironmentsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ComputeEnvironments, nil
 	})
-	d.BatchJobQueues = cache.New(func() ([]batchtypes.JobQueueDetail, error) {
+	d.BatchJobQueues = cache.New("BatchJobQueues", func() ([]batchtypes.JobQueueDetail, error) {
 		out, err := c.Batch.DescribeJobQueues(ctx, &batch.DescribeJobQueuesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.JobQueues, nil
 	})
-	d.BatchSchedulingPolicies = cache.New(func() ([]batchtypes.SchedulingPolicyListingDetail, error) {
+	d.BatchSchedulingPolicies = cache.New("BatchSchedulingPolicies", func() ([]batchtypes.SchedulingPolicyListingDetail, error) {
 		out, err := c.Batch.ListSchedulingPolicies(ctx, &batch.ListSchedulingPoliciesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.SchedulingPolicies, nil
 	})
-	d.BatchComputeEnvTags = cache.New(func() (map[string]map[string]string, error) {
+	d.BatchComputeEnvTags = cache.New("BatchComputeEnvTags", func() (map[string]map[string]string, error) {
 		envs, err := d.BatchComputeEnvs.Get()
 		if err != nil {
 			return nil, err
@@ -2265,7 +3838,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.BatchJobQueueTags = cache.New(func() (map[string]map[string]string, error) {
+	d.BatchJobQueueTags = cache.New("BatchJobQueueTags", func() (map[string]map[string]string, error) {
 		qs, err := d.BatchJobQueues.Get()
 		if err != nil {
 			return nil, err
@@ -2283,7 +3856,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.BatchSchedulingPolicyTags = cache.New(func() (map[string]map[string]string, error) {
+	d.BatchSchedulingPolicyTags = cache.New("BatchSchedulingPolicyTags", func() (map[string]map[string]string, error) {
 		pols, err := d.BatchSchedulingPolicies.Get()
 		if err != nil {
 			return nil, err
@@ -2303,7 +3876,7 @@ func (d *Data) init() {
 	})
 
 	// CodeBuild
-	d.CodeBuildProjects = cache.New(func() ([]codebuildtypes.Project, error) {
+	d.CodeBuildProjects = cache.New("CodeBuildProjects", func() ([]codebuildtypes.Project, error) {
 		list, err := c.CodeBuild.ListProjects(ctx, &codebuild.ListProjectsInput{})
 		if err != nil {
 			return nil, err
@@ -2317,57 +3890,254 @@ func (d *Data) init() {
 		}
 		return out.Projects, nil
 	})
-	d.CodeBuildReportGroups = cache.New(func() ([]string, error) {
+	d.CodeBuildProjectDetails = cache.New("CodeBuildProjectDetails", func() (map[string]codebuildtypes.Project, error) {
+		projects, err := d.CodeBuildProjects.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]codebuildtypes.Project)
+		for _, p := range projects {
+			if p.Name == nil {
+				continue
+			}
+			out[*p.Name] = p
+		}
+		return out, nil
+	})
+	d.CodeBuildReportGroups = cache.New("CodeBuildReportGroups", func() ([]string, error) {
 		out, err := c.CodeBuild.ListReportGroups(ctx, &codebuild.ListReportGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ReportGroups, nil
 	})
+	d.CodeBuildReportGroupDetails = cache.New("CodeBuildReportGroupDetails", func() (map[string]codebuildtypes.ReportGroup, error) {
+		names, err := d.CodeBuildReportGroups.Get()
+		if err != nil {
+			return nil, err
+		}
+		if len(names) == 0 {
+			return map[string]codebuildtypes.ReportGroup{}, nil
+		}
+		out := make(map[string]codebuildtypes.ReportGroup)
+		resp, err := c.CodeBuild.BatchGetReportGroups(ctx, &codebuild.BatchGetReportGroupsInput{ReportGroupArns: names})
+		if err != nil {
+			return nil, err
+		}
+		for _, rg := range resp.ReportGroups {
+			if rg.Arn == nil {
+				continue
+			}
+			out[*rg.Arn] = rg
+		}
+		return out, nil
+	})
+	d.CodeBuildReportGroupTags = cache.New("CodeBuildReportGroupTags", func() (map[string]map[string]string, error) {
+		groups, err := d.CodeBuildReportGroupDetails.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for arn, rg := range groups {
+			m := make(map[string]string)
+			for _, t := range rg.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[arn] = m
+		}
+		return out, nil
+	})
 
 	// CodeDeploy
-	d.CodeDeployApps = cache.New(func() ([]string, error) {
+	d.CodeDeployApps = cache.New("CodeDeployApps", func() ([]string, error) {
 		out, err := c.CodeDeploy.ListApplications(ctx, &codedeploy.ListApplicationsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Applications, nil
 	})
+	d.CodeDeployDeploymentGroups = cache.New("CodeDeployDeploymentGroups", func() (map[string][]string, error) {
+		apps, err := d.CodeDeployApps.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]string)
+		for _, app := range apps {
+			resp, err := c.CodeDeploy.ListDeploymentGroups(ctx, &codedeploy.ListDeploymentGroupsInput{ApplicationName: &app})
+			if err != nil {
+				continue
+			}
+			out[app] = resp.DeploymentGroups
+		}
+		return out, nil
+	})
+	d.CodeDeployDeploymentGroupDetails = cache.New("CodeDeployDeploymentGroupDetails", func() (map[string]codedeploy.GetDeploymentGroupOutput, error) {
+		groups, err := d.CodeDeployDeploymentGroups.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]codedeploy.GetDeploymentGroupOutput)
+		for app, names := range groups {
+			for _, name := range names {
+				resp, err := c.CodeDeploy.GetDeploymentGroup(ctx, &codedeploy.GetDeploymentGroupInput{ApplicationName: &app, DeploymentGroupName: &name})
+				if err != nil {
+					continue
+				}
+				key := app + ":" + name
+				out[key] = *resp
+			}
+		}
+		return out, nil
+	})
+	d.CodeDeployDeploymentConfigs = cache.New("CodeDeployDeploymentConfigs", func() (map[string]codedeploy.GetDeploymentConfigOutput, error) {
+		groups, err := d.CodeDeployDeploymentGroupDetails.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]codedeploy.GetDeploymentConfigOutput)
+		for _, g := range groups {
+			if g.DeploymentGroupInfo == nil || g.DeploymentGroupInfo.DeploymentConfigName == nil {
+				continue
+			}
+			name := *g.DeploymentGroupInfo.DeploymentConfigName
+			if _, ok := out[name]; ok {
+				continue
+			}
+			resp, err := c.CodeDeploy.GetDeploymentConfig(ctx, &codedeploy.GetDeploymentConfigInput{DeploymentConfigName: &name})
+			if err != nil {
+				continue
+			}
+			out[name] = *resp
+		}
+		return out, nil
+	})
 
 	// CodePipeline
-	d.CodePipelines = cache.New(func() ([]codepipelinetypes.PipelineSummary, error) {
+	d.CodePipelines = cache.New("CodePipelines", func() ([]codepipelinetypes.PipelineSummary, error) {
 		out, err := c.CodePipeline.ListPipelines(ctx, &codepipeline.ListPipelinesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Pipelines, nil
 	})
+	d.CodePipelineDetails = cache.New("CodePipelineDetails", func() (map[string]codepipeline.GetPipelineOutput, error) {
+		pipes, err := d.CodePipelines.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]codepipeline.GetPipelineOutput)
+		for _, p := range pipes {
+			if p.Name == nil {
+				continue
+			}
+			resp, err := c.CodePipeline.GetPipeline(ctx, &codepipeline.GetPipelineInput{Name: p.Name})
+			if err != nil {
+				continue
+			}
+			out[*p.Name] = *resp
+		}
+		return out, nil
+	})
 
 	// Cognito
-	d.CognitoUserPools = cache.New(func() ([]cognitoidptypes.UserPoolDescriptionType, error) {
-		out, err := c.CognitoIDP.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{MaxResults: 60})
+	d.CognitoUserPools = cache.New("CognitoUserPools", func() ([]cognitoidptypes.UserPoolDescriptionType, error) {
+		out, err := c.CognitoIDP.ListUserPools(ctx, &cognitoidentityprovider.ListUserPoolsInput{MaxResults: aws.Int32(60)})
 		if err != nil {
 			return nil, err
 		}
 		return out.UserPools, nil
 	})
-	d.CognitoIdentityPools = cache.New(func() ([]cognitoidtypes.IdentityPoolShortDescription, error) {
-		out, err := c.CognitoIdentity.ListIdentityPools(ctx, &cognitoidentity.ListIdentityPoolsInput{MaxResults: 60})
+	d.CognitoUserPoolDetails = cache.New("CognitoUserPoolDetails", func() (map[string]cognitoidptypes.UserPoolType, error) {
+		pools, err := d.CognitoUserPools.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]cognitoidptypes.UserPoolType)
+		for _, p := range pools {
+			if p.Id == nil {
+				continue
+			}
+			desc, err := c.CognitoIDP.DescribeUserPool(ctx, &cognitoidentityprovider.DescribeUserPoolInput{UserPoolId: p.Id})
+			if err != nil || desc.UserPool == nil {
+				continue
+			}
+			out[*p.Id] = *desc.UserPool
+		}
+		return out, nil
+	})
+	d.CognitoUserPoolTags = cache.New("CognitoUserPoolTags", func() (map[string]map[string]string, error) {
+		pools, err := d.CognitoUserPoolDetails.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, p := range pools {
+			if p.Arn == nil {
+				continue
+			}
+			resp, err := c.CognitoIDP.ListTagsForResource(ctx, &cognitoidentityprovider.ListTagsForResourceInput{ResourceArn: p.Arn})
+			if err != nil {
+				continue
+			}
+			out[*p.Arn] = resp.Tags
+		}
+		return out, nil
+	})
+	d.CognitoIdentityPools = cache.New("CognitoIdentityPools", func() ([]cognitoidtypes.IdentityPoolShortDescription, error) {
+		out, err := c.CognitoIdentity.ListIdentityPools(ctx, &cognitoidentity.ListIdentityPoolsInput{MaxResults: aws.Int32(60)})
 		if err != nil {
 			return nil, err
 		}
 		return out.IdentityPools, nil
 	})
+	d.CognitoIdentityPoolDetails = cache.New("CognitoIdentityPoolDetails", func() (map[string]cognitoidentity.DescribeIdentityPoolOutput, error) {
+		pools, err := d.CognitoIdentityPools.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]cognitoidentity.DescribeIdentityPoolOutput)
+		for _, p := range pools {
+			if p.IdentityPoolId == nil {
+				continue
+			}
+			desc, err := c.CognitoIdentity.DescribeIdentityPool(ctx, &cognitoidentity.DescribeIdentityPoolInput{IdentityPoolId: p.IdentityPoolId})
+			if err != nil {
+				continue
+			}
+			out[*p.IdentityPoolId] = *desc
+		}
+		return out, nil
+	})
+	d.CognitoIdentityPoolRoles = cache.New("CognitoIdentityPoolRoles", func() (map[string]cognitoidentity.GetIdentityPoolRolesOutput, error) {
+		pools, err := d.CognitoIdentityPools.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]cognitoidentity.GetIdentityPoolRolesOutput)
+		for _, p := range pools {
+			if p.IdentityPoolId == nil {
+				continue
+			}
+			resp, err := c.CognitoIdentity.GetIdentityPoolRoles(ctx, &cognitoidentity.GetIdentityPoolRolesInput{IdentityPoolId: p.IdentityPoolId})
+			if err != nil {
+				continue
+			}
+			out[*p.IdentityPoolId] = *resp
+		}
+		return out, nil
+	})
 
 	// FSx
-	d.FSxFileSystems = cache.New(func() ([]fsxtypes.FileSystem, error) {
+	d.FSxFileSystems = cache.New("FSxFileSystems", func() ([]fsxtypes.FileSystem, error) {
 		out, err := c.FSx.DescribeFileSystems(ctx, &fsx.DescribeFileSystemsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.FileSystems, nil
 	})
-	d.FSxFileSystemTags = cache.New(func() (map[string]map[string]string, error) {
+	d.FSxFileSystemTags = cache.New("FSxFileSystemTags", func() (map[string]map[string]string, error) {
 		fss, err := d.FSxFileSystems.Get()
 		if err != nil {
 			return nil, err
@@ -2393,7 +4163,7 @@ func (d *Data) init() {
 	})
 
 	// EMR
-	d.EMRClusters = cache.New(func() ([]string, error) {
+	d.EMRClusters = cache.New("EMRClusters", func() ([]string, error) {
 		out, err := c.EMR.ListClusters(ctx, &emr.ListClustersInput{})
 		if err != nil {
 			return nil, err
@@ -2406,16 +4176,69 @@ func (d *Data) init() {
 		}
 		return ids, nil
 	})
+	d.EMRClusterDetails = cache.New("EMRClusterDetails", func() (map[string]emrtypes.Cluster, error) {
+		ids, err := d.EMRClusters.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]emrtypes.Cluster)
+		for _, id := range ids {
+			resp, err := c.EMR.DescribeCluster(ctx, &emr.DescribeClusterInput{ClusterId: &id})
+			if err != nil || resp.Cluster == nil {
+				continue
+			}
+			out[id] = *resp.Cluster
+		}
+		return out, nil
+	})
+	d.EMRSecurityConfigs = cache.New("EMRSecurityConfigs", func() ([]string, error) {
+		out, err := c.EMR.ListSecurityConfigurations(ctx, &emr.ListSecurityConfigurationsInput{})
+		if err != nil {
+			return nil, err
+		}
+		var names []string
+		for _, sc := range out.SecurityConfigurations {
+			if sc.Name != nil {
+				names = append(names, *sc.Name)
+			}
+		}
+		return names, nil
+	})
+	d.EMRSecurityConfigDetails = cache.New("EMRSecurityConfigDetails", func() (map[string]emr.DescribeSecurityConfigurationOutput, error) {
+		names, err := d.EMRSecurityConfigs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]emr.DescribeSecurityConfigurationOutput)
+		for _, name := range names {
+			resp, err := c.EMR.DescribeSecurityConfiguration(ctx, &emr.DescribeSecurityConfigurationInput{Name: &name})
+			if err != nil {
+				continue
+			}
+			out[name] = *resp
+		}
+		return out, nil
+	})
+	d.EMRBlockPublicAccess = cache.New("EMRBlockPublicAccess", func() (emrtypes.BlockPublicAccessConfiguration, error) {
+		out, err := c.EMR.GetBlockPublicAccessConfiguration(ctx, &emr.GetBlockPublicAccessConfigurationInput{})
+		if err != nil {
+			return emrtypes.BlockPublicAccessConfiguration{}, err
+		}
+		if out.BlockPublicAccessConfiguration == nil {
+			return emrtypes.BlockPublicAccessConfiguration{}, nil
+		}
+		return *out.BlockPublicAccessConfiguration, nil
+	})
 
 	// Athena
-	d.AthenaWorkgroups = cache.New(func() ([]athenatypes.WorkgroupSummary, error) {
+	d.AthenaWorkgroups = cache.New("AthenaWorkgroups", func() ([]athenatypes.WorkGroupSummary, error) {
 		out, err := c.Athena.ListWorkGroups(ctx, &athena.ListWorkGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.WorkGroups, nil
 	})
-	d.AthenaWorkgroupDetails = cache.New(func() (map[string]athenatypes.WorkGroup, error) {
+	d.AthenaWorkgroupDetails = cache.New("AthenaWorkgroupDetails", func() (map[string]athenatypes.WorkGroup, error) {
 		summaries, err := d.AthenaWorkgroups.Get()
 		if err != nil {
 			return nil, err
@@ -2433,7 +4256,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AthenaDataCatalogs = cache.New(func() ([]athenatypes.DataCatalog, error) {
+	d.AthenaDataCatalogs = cache.New("AthenaDataCatalogs", func() ([]athenatypes.DataCatalog, error) {
 		out, err := c.Athena.ListDataCatalogs(ctx, &athena.ListDataCatalogsInput{})
 		if err != nil {
 			return nil, err
@@ -2451,7 +4274,7 @@ func (d *Data) init() {
 		}
 		return all, nil
 	})
-	d.AthenaPreparedStatements = cache.New(func() ([]athenatypes.PreparedStatementSummary, error) {
+	d.AthenaPreparedStatements = cache.New("AthenaPreparedStatements", func() ([]athenatypes.PreparedStatementSummary, error) {
 		workgroups, err := d.AthenaWorkgroups.Get()
 		if err != nil {
 			return nil, err
@@ -2471,14 +4294,34 @@ func (d *Data) init() {
 	})
 
 	// AppSync
-	d.AppSyncAPIs = cache.New(func() ([]appsynctypes.GraphqlApi, error) {
+	d.AppSyncAPIs = cache.New("AppSyncAPIs", func() ([]appsynctypes.GraphqlApi, error) {
 		out, err := c.AppSync.ListGraphqlApis(ctx, &appsync.ListGraphqlApisInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.GraphqlApis, nil
 	})
-	d.AppSyncTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AppSyncApiCaches = cache.New("AppSyncApiCaches", func() (map[string]*appsynctypes.ApiCache, error) {
+		apis, err := d.AppSyncAPIs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]*appsynctypes.ApiCache)
+		for _, api := range apis {
+			if api.ApiId == nil || api.Arn == nil {
+				continue
+			}
+			resp, err := c.AppSync.GetApiCache(ctx, &appsync.GetApiCacheInput{ApiId: api.ApiId})
+			if err != nil || resp == nil {
+				continue
+			}
+			if resp.ApiCache != nil {
+				out[*api.Arn] = resp.ApiCache
+			}
+		}
+		return out, nil
+	})
+	d.AppSyncTags = cache.New("AppSyncTags", func() (map[string]map[string]string, error) {
 		apis, err := d.AppSyncAPIs.Get()
 		if err != nil {
 			return nil, err
@@ -2496,7 +4339,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppSyncWAFv2WebACLForResource = cache.New(func() (map[string]bool, error) {
+	d.AppSyncWAFv2WebACLForResource = cache.New("AppSyncWAFv2WebACLForResource", func() (map[string]bool, error) {
 		apis, err := d.AppSyncAPIs.Get()
 		if err != nil {
 			return nil, err
@@ -2521,14 +4364,14 @@ func (d *Data) init() {
 	})
 
 	// API Gateway
-	d.APIGatewayRestAPIs = cache.New(func() ([]apigwtypes.RestApi, error) {
+	d.APIGatewayRestAPIs = cache.New("APIGatewayRestAPIs", func() ([]apigwtypes.RestApi, error) {
 		out, err := c.APIGateway.GetRestApis(ctx, &apigateway.GetRestApisInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Items, nil
 	})
-	d.APIGatewayStages = cache.New(func() (map[string][]apigwtypes.Stage, error) {
+	d.APIGatewayStages = cache.New("APIGatewayStages", func() (map[string][]apigwtypes.Stage, error) {
 		apis, err := d.APIGatewayRestAPIs.Get()
 		if err != nil {
 			return nil, err
@@ -2546,7 +4389,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.APIGatewayTags = cache.New(func() (map[string]map[string]string, error) {
+	d.APIGatewayTags = cache.New("APIGatewayTags", func() (map[string]map[string]string, error) {
 		apis, err := d.APIGatewayRestAPIs.Get()
 		if err != nil {
 			return nil, err
@@ -2565,7 +4408,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.APIGatewayStageTags = cache.New(func() (map[string]map[string]string, error) {
+	d.APIGatewayStageTags = cache.New("APIGatewayStageTags", func() (map[string]map[string]string, error) {
 		stageTags := make(map[string]map[string]string)
 		apis, err := d.APIGatewayRestAPIs.Get()
 		if err != nil {
@@ -2593,14 +4436,14 @@ func (d *Data) init() {
 		}
 		return stageTags, nil
 	})
-	d.APIGatewayDomainNames = cache.New(func() ([]apigwtypes.DomainName, error) {
+	d.APIGatewayDomainNames = cache.New("APIGatewayDomainNames", func() ([]apigwtypes.DomainName, error) {
 		out, err := c.APIGateway.GetDomainNames(ctx, &apigateway.GetDomainNamesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Items, nil
 	})
-	d.APIGatewayStageWAF = cache.New(func() (map[string]bool, error) {
+	d.APIGatewayStageWAF = cache.New("APIGatewayStageWAF", func() (map[string]bool, error) {
 		apis, err := d.APIGatewayRestAPIs.Get()
 		if err != nil {
 			return nil, err
@@ -2635,14 +4478,14 @@ func (d *Data) init() {
 	})
 
 	// API Gateway V2
-	d.APIGatewayV2APIs = cache.New(func() ([]apigwv2types.Api, error) {
+	d.APIGatewayV2APIs = cache.New("APIGatewayV2APIs", func() ([]apigwv2types.Api, error) {
 		out, err := c.APIGatewayV2.GetApis(ctx, &apigatewayv2.GetApisInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Items, nil
 	})
-	d.APIGatewayV2Stages = cache.New(func() (map[string][]apigwv2types.Stage, error) {
+	d.APIGatewayV2Stages = cache.New("APIGatewayV2Stages", func() (map[string][]apigwv2types.Stage, error) {
 		apis, err := d.APIGatewayV2APIs.Get()
 		if err != nil {
 			return nil, err
@@ -2660,7 +4503,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.APIGatewayV2Routes = cache.New(func() (map[string][]apigwv2types.Route, error) {
+	d.APIGatewayV2Routes = cache.New("APIGatewayV2Routes", func() (map[string][]apigwv2types.Route, error) {
 		apis, err := d.APIGatewayV2APIs.Get()
 		if err != nil {
 			return nil, err
@@ -2678,7 +4521,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.APIGatewayV2Tags = cache.New(func() (map[string]map[string]string, error) {
+	d.APIGatewayV2Tags = cache.New("APIGatewayV2Tags", func() (map[string]map[string]string, error) {
 		apis, err := d.APIGatewayV2APIs.Get()
 		if err != nil {
 			return nil, err
@@ -2699,14 +4542,14 @@ func (d *Data) init() {
 	})
 
 	// Amplify
-	d.AmplifyApps = cache.New(func() ([]amplifytypes.App, error) {
+	d.AmplifyApps = cache.New("AmplifyApps", func() ([]amplifytypes.App, error) {
 		out, err := c.Amplify.ListApps(ctx, &amplify.ListAppsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Apps, nil
 	})
-	d.AmplifyBranches = cache.New(func() (map[string][]amplifytypes.Branch, error) {
+	d.AmplifyBranches = cache.New("AmplifyBranches", func() (map[string][]amplifytypes.Branch, error) {
 		apps, err := d.AmplifyApps.Get()
 		if err != nil {
 			return nil, err
@@ -2724,7 +4567,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AmplifyAppTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AmplifyAppTags = cache.New("AmplifyAppTags", func() (map[string]map[string]string, error) {
 		apps, err := d.AmplifyApps.Get()
 		if err != nil {
 			return nil, err
@@ -2742,7 +4585,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AmplifyBranchTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AmplifyBranchTags = cache.New("AmplifyBranchTags", func() (map[string]map[string]string, error) {
 		branchesByApp, err := d.AmplifyBranches.Get()
 		if err != nil {
 			return nil, err
@@ -2764,14 +4607,14 @@ func (d *Data) init() {
 	})
 
 	// AppConfig
-	d.AppConfigApplications = cache.New(func() ([]appconfigtypes.Application, error) {
+	d.AppConfigApplications = cache.New("AppConfigApplications", func() ([]appconfigtypes.Application, error) {
 		out, err := c.AppConfig.ListApplications(ctx, &appconfig.ListApplicationsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Items, nil
 	})
-	d.AppConfigEnvironments = cache.New(func() (map[string][]appconfigtypes.Environment, error) {
+	d.AppConfigEnvironments = cache.New("AppConfigEnvironments", func() (map[string][]appconfigtypes.Environment, error) {
 		apps, err := d.AppConfigApplications.Get()
 		if err != nil {
 			return nil, err
@@ -2789,7 +4632,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppConfigProfiles = cache.New(func() (map[string][]appconfigtypes.ConfigurationProfileSummary, error) {
+	d.AppConfigProfiles = cache.New("AppConfigProfiles", func() (map[string][]appconfigtypes.ConfigurationProfileSummary, error) {
 		apps, err := d.AppConfigApplications.Get()
 		if err != nil {
 			return nil, err
@@ -2807,14 +4650,14 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppConfigDeploymentStrategies = cache.New(func() ([]appconfigtypes.DeploymentStrategy, error) {
+	d.AppConfigDeploymentStrategies = cache.New("AppConfigDeploymentStrategies", func() ([]appconfigtypes.DeploymentStrategy, error) {
 		out, err := c.AppConfig.ListDeploymentStrategies(ctx, &appconfig.ListDeploymentStrategiesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Items, nil
 	})
-	d.AppConfigExtensionAssociations = cache.New(func() ([]appconfigtypes.ExtensionAssociationSummary, error) {
+	d.AppConfigExtensionAssociations = cache.New("AppConfigExtensionAssociations", func() ([]appconfigtypes.ExtensionAssociationSummary, error) {
 		apps, err := d.AppConfigApplications.Get()
 		if err != nil {
 			return nil, err
@@ -2848,7 +4691,7 @@ func (d *Data) init() {
 		return all, nil
 	})
 
-	d.AppConfigHostedConfigVersions = cache.New(func() (map[string][]appconfigtypes.HostedConfigurationVersionSummary, error) {
+	d.AppConfigHostedConfigVersions = cache.New("AppConfigHostedConfigVersions", func() (map[string][]appconfigtypes.HostedConfigurationVersionSummary, error) {
 		apps, err := d.AppConfigApplications.Get()
 		if err != nil {
 			return nil, err
@@ -2878,14 +4721,14 @@ func (d *Data) init() {
 	})
 
 	// AppFlow
-	d.AppFlowFlows = cache.New(func() ([]appflowtypes.FlowDefinition, error) {
+	d.AppFlowFlows = cache.New("AppFlowFlows", func() ([]appflowtypes.FlowDefinition, error) {
 		out, err := c.AppFlow.ListFlows(ctx, &appflow.ListFlowsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Flows, nil
 	})
-	d.AppFlowFlowDetails = cache.New(func() (map[string]appflow.DescribeFlowOutput, error) {
+	d.AppFlowFlowDetails = cache.New("AppFlowFlowDetails", func() (map[string]appflow.DescribeFlowOutput, error) {
 		flows, err := d.AppFlowFlows.Get()
 		if err != nil {
 			return nil, err
@@ -2903,7 +4746,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppFlowTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AppFlowTags = cache.New("AppFlowTags", func() (map[string]map[string]string, error) {
 		flows, err := d.AppFlowFlows.Get()
 		if err != nil {
 			return nil, err
@@ -2923,21 +4766,21 @@ func (d *Data) init() {
 	})
 
 	// AppRunner
-	d.AppRunnerServices = cache.New(func() ([]apprunnertypes.ServiceSummary, error) {
+	d.AppRunnerServices = cache.New("AppRunnerServices", func() ([]apprunnertypes.ServiceSummary, error) {
 		out, err := c.AppRunner.ListServices(ctx, &apprunner.ListServicesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ServiceSummaryList, nil
 	})
-	d.AppRunnerVPCConnectors = cache.New(func() ([]apprunnertypes.VpcConnector, error) {
+	d.AppRunnerVPCConnectors = cache.New("AppRunnerVPCConnectors", func() ([]apprunnertypes.VpcConnector, error) {
 		out, err := c.AppRunner.ListVpcConnectors(ctx, &apprunner.ListVpcConnectorsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.VpcConnectors, nil
 	})
-	d.AppRunnerServiceDetails = cache.New(func() (map[string]apprunnertypes.Service, error) {
+	d.AppRunnerServiceDetails = cache.New("AppRunnerServiceDetails", func() (map[string]apprunnertypes.Service, error) {
 		services, err := d.AppRunnerServices.Get()
 		if err != nil {
 			return nil, err
@@ -2955,7 +4798,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppRunnerServiceTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AppRunnerServiceTags = cache.New("AppRunnerServiceTags", func() (map[string]map[string]string, error) {
 		services, err := d.AppRunnerServices.Get()
 		if err != nil {
 			return nil, err
@@ -2969,11 +4812,17 @@ func (d *Data) init() {
 			if err != nil {
 				continue
 			}
-			out[*svc.ServiceArn] = tags.Tags
+			m := make(map[string]string)
+			for _, t := range tags.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*svc.ServiceArn] = m
 		}
 		return out, nil
 	})
-	d.AppRunnerVPCConnectorTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AppRunnerVPCConnectorTags = cache.New("AppRunnerVPCConnectorTags", func() (map[string]map[string]string, error) {
 		vpcs, err := d.AppRunnerVPCConnectors.Get()
 		if err != nil {
 			return nil, err
@@ -2987,20 +4836,813 @@ func (d *Data) init() {
 			if err != nil {
 				continue
 			}
-			out[*vc.VpcConnectorArn] = tags.Tags
+			m := make(map[string]string)
+			for _, t := range tags.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*vc.VpcConnectorArn] = m
 		}
 		return out, nil
 	})
 
+	// AppStream
+	d.AppStreamFleets = cache.New("AppStreamFleets", func() ([]appstreamtypes.Fleet, error) {
+		out, err := c.AppStream.DescribeFleets(ctx, &appstream.DescribeFleetsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Fleets, nil
+	})
+
+	// AMP
+	d.AMPRuleGroupsNamespaces = cache.New("AMPRuleGroupsNamespaces", func() ([]amptypes.RuleGroupsNamespaceSummary, error) {
+		out, err := c.AMP.ListRuleGroupsNamespaces(ctx, &amp.ListRuleGroupsNamespacesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.RuleGroupsNamespaces, nil
+	})
+
+	// AuditManager
+	d.AuditManagerAssessments = cache.New("AuditManagerAssessments", func() (map[string]auditmanagertypes.Assessment, error) {
+		out := make(map[string]auditmanagertypes.Assessment)
+		list, err := c.AuditManager.ListAssessments(ctx, &auditmanager.ListAssessmentsInput{})
+		if err != nil {
+			return nil, err
+		}
+		for _, item := range list.AssessmentMetadata {
+			if item.Id == nil {
+				continue
+			}
+			assess, err := c.AuditManager.GetAssessment(ctx, &auditmanager.GetAssessmentInput{AssessmentId: item.Id})
+			if err != nil || assess.Assessment == nil {
+				continue
+			}
+			out[*item.Id] = *assess.Assessment
+		}
+		return out, nil
+	})
+
+	// CodeGuru Profiler
+	d.CodeGuruProfilingGroups = cache.New("CodeGuruProfilingGroups", func() (map[string]codeguruprofilertypes.ProfilingGroupDescription, error) {
+		out := make(map[string]codeguruprofilertypes.ProfilingGroupDescription)
+		list, err := c.CodeGuruProfiler.ListProfilingGroups(ctx, &codeguruprofiler.ListProfilingGroupsInput{})
+		if err != nil {
+			return nil, err
+		}
+		for _, name := range list.ProfilingGroupNames {
+			grp, err := c.CodeGuruProfiler.DescribeProfilingGroup(ctx, &codeguruprofiler.DescribeProfilingGroupInput{ProfilingGroupName: &name})
+			if err != nil || grp.ProfilingGroup == nil {
+				continue
+			}
+			key := name
+			if grp.ProfilingGroup.Name != nil {
+				key = *grp.ProfilingGroup.Name
+			}
+			out[key] = *grp.ProfilingGroup
+		}
+		return out, nil
+	})
+	d.CodeGuruProfilerTags = cache.New("CodeGuruProfilerTags", func() (map[string]map[string]string, error) {
+		groups, err := d.CodeGuruProfilingGroups.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, g := range groups {
+			if g.Arn == nil {
+				continue
+			}
+			tags, err := c.CodeGuruProfiler.ListTagsForResource(ctx, &codeguruprofiler.ListTagsForResourceInput{ResourceArn: g.Arn})
+			if err != nil {
+				continue
+			}
+			out[*g.Arn] = tags.Tags
+		}
+		return out, nil
+	})
+
+	// CodeGuru Reviewer
+	d.CodeGuruReviewerAssociations = cache.New("CodeGuruReviewerAssociations", func() ([]codegurureviewertypes.RepositoryAssociationSummary, error) {
+		out, err := c.CodeGuruReviewer.ListRepositoryAssociations(ctx, &codegurureviewer.ListRepositoryAssociationsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.RepositoryAssociationSummaries, nil
+	})
+	d.CodeGuruReviewerTags = cache.New("CodeGuruReviewerTags", func() (map[string]map[string]string, error) {
+		assocs, err := d.CodeGuruReviewerAssociations.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, a := range assocs {
+			if a.AssociationArn == nil {
+				continue
+			}
+			tags, err := c.CodeGuruReviewer.ListTagsForResource(ctx, &codegurureviewer.ListTagsForResourceInput{ResourceArn: a.AssociationArn})
+			if err != nil {
+				continue
+			}
+			out[*a.AssociationArn] = tags.Tags
+		}
+		return out, nil
+	})
+
+	// Connect
+	d.ConnectInstances = cache.New("ConnectInstances", func() ([]connecttypes.InstanceSummary, error) {
+		out, err := c.Connect.ListInstances(ctx, &connect.ListInstancesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.InstanceSummaryList, nil
+	})
+	d.ConnectInstanceContactFlowLogs = cache.New("ConnectInstanceContactFlowLogs", func() (map[string]bool, error) {
+		instances, err := d.ConnectInstances.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]bool)
+		for _, inst := range instances {
+			if inst.Id == nil {
+				continue
+			}
+			attr, err := c.Connect.DescribeInstanceAttribute(ctx, &connect.DescribeInstanceAttributeInput{
+				InstanceId:    inst.Id,
+				AttributeType: connecttypes.InstanceAttributeTypeContactflowLogs,
+			})
+			if err != nil || attr.Attribute == nil || attr.Attribute.Value == nil {
+				continue
+			}
+			out[*inst.Id] = strings.EqualFold(*attr.Attribute.Value, "true")
+		}
+		return out, nil
+	})
+
+	// CustomerProfiles
+	d.CustomerProfilesDomains = cache.New("CustomerProfilesDomains", func() ([]customerprofilestypes.ListDomainItem, error) {
+		out, err := c.CustomerProfiles.ListDomains(ctx, &customerprofiles.ListDomainsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Items, nil
+	})
+	d.CustomerProfilesObjectTypes = cache.New("CustomerProfilesObjectTypes", func() (map[string][]customerprofilestypes.ListProfileObjectTypeItem, error) {
+		domains, err := d.CustomerProfilesDomains.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]customerprofilestypes.ListProfileObjectTypeItem)
+		for _, dom := range domains {
+			if dom.DomainName == nil {
+				continue
+			}
+			resp, err := c.CustomerProfiles.ListProfileObjectTypes(ctx, &customerprofiles.ListProfileObjectTypesInput{DomainName: dom.DomainName})
+			if err != nil {
+				continue
+			}
+			out[*dom.DomainName] = resp.Items
+		}
+		return out, nil
+	})
+	d.CustomerProfilesObjectTypeDetails = cache.New("CustomerProfilesObjectTypeDetails", func() (map[string]customerprofiles.GetProfileObjectTypeOutput, error) {
+		objectTypes, err := d.CustomerProfilesObjectTypes.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]customerprofiles.GetProfileObjectTypeOutput)
+		for domain, items := range objectTypes {
+			for _, item := range items {
+				if item.ObjectTypeName == nil {
+					continue
+				}
+				resp, err := c.CustomerProfiles.GetProfileObjectType(ctx, &customerprofiles.GetProfileObjectTypeInput{
+					DomainName:     aws.String(domain),
+					ObjectTypeName: item.ObjectTypeName,
+				})
+				if err != nil {
+					continue
+				}
+				key := domain + ":" + *item.ObjectTypeName
+				out[key] = *resp
+			}
+		}
+		return out, nil
+	})
+
+	// FIS
+	d.FISExperimentTemplates = cache.New("FISExperimentTemplates", func() ([]fistypes.ExperimentTemplateSummary, error) {
+		out, err := c.FIS.ListExperimentTemplates(ctx, &fis.ListExperimentTemplatesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.ExperimentTemplates, nil
+	})
+	d.FISExperimentTemplateDetails = cache.New("FISExperimentTemplateDetails", func() (map[string]fistypes.ExperimentTemplate, error) {
+		templates, err := d.FISExperimentTemplates.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]fistypes.ExperimentTemplate)
+		for _, t := range templates {
+			if t.Id == nil {
+				continue
+			}
+			resp, err := c.FIS.GetExperimentTemplate(ctx, &fis.GetExperimentTemplateInput{Id: t.Id})
+			if err != nil || resp.ExperimentTemplate == nil {
+				continue
+			}
+			out[*t.Id] = *resp.ExperimentTemplate
+		}
+		return out, nil
+	})
+
+	// FMS
+	d.FMSPolicies = cache.New("FMSPolicies", func() ([]fmstypes.PolicySummary, error) {
+		out, err := c.FMS.ListPolicies(ctx, &fms.ListPoliciesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.PolicyList, nil
+	})
+	d.FMSPolicyDetails = cache.New("FMSPolicyDetails", func() (map[string]fmstypes.Policy, error) {
+		policies, err := d.FMSPolicies.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]fmstypes.Policy)
+		for _, p := range policies {
+			if p.PolicyId == nil {
+				continue
+			}
+			resp, err := c.FMS.GetPolicy(ctx, &fms.GetPolicyInput{PolicyId: p.PolicyId})
+			if err != nil || resp.Policy == nil {
+				continue
+			}
+			out[*p.PolicyId] = *resp.Policy
+		}
+		return out, nil
+	})
+
+	// SecurityHub
+	d.SecurityHubEnabled = cache.New("SecurityHubEnabled", func() (bool, error) {
+		_, err := c.SecurityHub.DescribeHub(ctx, &securityhub.DescribeHubInput{})
+		if err != nil {
+			if strings.Contains(err.Error(), "InvalidAccessException") || strings.Contains(err.Error(), "ResourceNotFoundException") {
+				return false, nil
+			}
+			return false, err
+		}
+		return true, nil
+	})
+
+	// SES
+	d.SESReceiptRuleSets = cache.New("SESReceiptRuleSets", func() (map[string][]sestypes.ReceiptRule, error) {
+		out := make(map[string][]sestypes.ReceiptRule)
+		list, err := c.SES.ListReceiptRuleSets(ctx, &ses.ListReceiptRuleSetsInput{})
+		if err != nil {
+			return nil, err
+		}
+		for _, set := range list.RuleSets {
+			if set.Name == nil {
+				continue
+			}
+			desc, err := c.SES.DescribeReceiptRuleSet(ctx, &ses.DescribeReceiptRuleSetInput{RuleSetName: set.Name})
+			if err != nil {
+				continue
+			}
+			out[*set.Name] = desc.Rules
+		}
+		return out, nil
+	})
+	d.SESv2ConfigurationSets = cache.New("SESv2ConfigurationSets", func() (map[string]sesv2.GetConfigurationSetOutput, error) {
+		out := make(map[string]sesv2.GetConfigurationSetOutput)
+		list, err := c.SESv2.ListConfigurationSets(ctx, &sesv2.ListConfigurationSetsInput{})
+		if err != nil {
+			return nil, err
+		}
+		for _, name := range list.ConfigurationSets {
+			resp, err := c.SESv2.GetConfigurationSet(ctx, &sesv2.GetConfigurationSetInput{ConfigurationSetName: &name})
+			if err != nil {
+				continue
+			}
+			out[name] = *resp
+		}
+		return out, nil
+	})
+
+	// Shield
+	d.ShieldSubscription = cache.New("ShieldSubscription", func() (*shield.DescribeSubscriptionOutput, error) {
+		out, err := c.Shield.DescribeSubscription(ctx, &shield.DescribeSubscriptionInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	})
+	d.ShieldDRTAccess = cache.New("ShieldDRTAccess", func() (*shield.DescribeDRTAccessOutput, error) {
+		out, err := c.Shield.DescribeDRTAccess(ctx, &shield.DescribeDRTAccessInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	})
+
+	// Resource Groups Tagging API
+	d.ResourceTagMappings = cache.New("ResourceTagMappings", func() ([]resourcegroupstaggingapitypes.ResourceTagMapping, error) {
+		var out []resourcegroupstaggingapitypes.ResourceTagMapping
+		p := resourcegroupstaggingapi.NewGetResourcesPaginator(c.ResourceGroupsTagging, &resourcegroupstaggingapi.GetResourcesInput{})
+		for p.HasMorePages() {
+			page, err := p.NextPage(ctx)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, page.ResourceTagMappingList...)
+		}
+		return out, nil
+	})
+
+	// Account
+	d.AccountSecurityContact = cache.New("AccountSecurityContact", func() (*accounttypes.AlternateContact, error) {
+		out, err := c.Account.GetAlternateContact(ctx, &account.GetAlternateContactInput{
+			AlternateContactType: accounttypes.AlternateContactTypeSecurity,
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "ResourceNotFoundException") || strings.Contains(err.Error(), "AccessDeniedException") {
+				return nil, nil
+			}
+			return nil, err
+		}
+		return out.AlternateContact, nil
+	})
+
+	// EventBridge
+	d.EventBridgeBuses = cache.New("EventBridgeBuses", func() ([]eventbridgetypes.EventBus, error) {
+		out, err := c.EventBridge.ListEventBuses(ctx, &eventbridge.ListEventBusesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.EventBuses, nil
+	})
+	d.EventBridgeBusPolicies = cache.New("EventBridgeBusPolicies", func() (map[string]string, error) {
+		buses, err := d.EventBridgeBuses.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]string)
+		for _, b := range buses {
+			if b.Name == nil {
+				continue
+			}
+			desc, err := c.EventBridge.DescribeEventBus(ctx, &eventbridge.DescribeEventBusInput{Name: b.Name})
+			if err != nil {
+				continue
+			}
+			if desc.Policy != nil {
+				out[*b.Name] = *desc.Policy
+			}
+		}
+		return out, nil
+	})
+	d.EventBridgeEndpoints = cache.New("EventBridgeEndpoints", func() ([]eventbridgetypes.Endpoint, error) {
+		out, err := c.EventBridge.ListEndpoints(ctx, &eventbridge.ListEndpointsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Endpoints, nil
+	})
+	d.EventBridgeEndpointDetails = cache.New("EventBridgeEndpointDetails", func() (map[string]eventbridge.DescribeEndpointOutput, error) {
+		endpoints, err := d.EventBridgeEndpoints.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]eventbridge.DescribeEndpointOutput)
+		for _, e := range endpoints {
+			if e.Name == nil {
+				continue
+			}
+			desc, err := c.EventBridge.DescribeEndpoint(ctx, &eventbridge.DescribeEndpointInput{Name: e.Name})
+			if err != nil {
+				continue
+			}
+			out[*e.Name] = *desc
+		}
+		return out, nil
+	})
+
+	// Global Accelerator
+	d.GlobalAccelerators = cache.New("GlobalAccelerators", func() ([]globalacceleratortypes.Accelerator, error) {
+		out, err := c.GlobalAccelerator.ListAccelerators(ctx, &globalaccelerator.ListAcceleratorsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Accelerators, nil
+	})
+	d.GlobalAcceleratorListeners = cache.New("GlobalAcceleratorListeners", func() (map[string][]globalacceleratortypes.Listener, error) {
+		accels, err := d.GlobalAccelerators.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]globalacceleratortypes.Listener)
+		for _, a := range accels {
+			if a.AcceleratorArn == nil {
+				continue
+			}
+			resp, err := c.GlobalAccelerator.ListListeners(ctx, &globalaccelerator.ListListenersInput{AcceleratorArn: a.AcceleratorArn})
+			if err != nil {
+				continue
+			}
+			out[*a.AcceleratorArn] = resp.Listeners
+		}
+		return out, nil
+	})
+	d.GlobalAcceleratorTags = cache.New("GlobalAcceleratorTags", func() (map[string]map[string]string, error) {
+		accels, err := d.GlobalAccelerators.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, a := range accels {
+			if a.AcceleratorArn == nil {
+				continue
+			}
+			tags, err := c.GlobalAccelerator.ListTagsForResource(ctx, &globalaccelerator.ListTagsForResourceInput{ResourceArn: a.AcceleratorArn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range tags.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*a.AcceleratorArn] = m
+		}
+		return out, nil
+	})
+	d.GlobalAcceleratorListenerTags = cache.New("GlobalAcceleratorListenerTags", func() (map[string]map[string]string, error) {
+		listeners, err := d.GlobalAcceleratorListeners.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, ls := range listeners {
+			for _, l := range ls {
+				if l.ListenerArn == nil {
+					continue
+				}
+				tags, err := c.GlobalAccelerator.ListTagsForResource(ctx, &globalaccelerator.ListTagsForResourceInput{ResourceArn: l.ListenerArn})
+				if err != nil {
+					continue
+				}
+				m := make(map[string]string)
+				for _, t := range tags.Tags {
+					if t.Key != nil && t.Value != nil {
+						m[*t.Key] = *t.Value
+					}
+				}
+				out[*l.ListenerArn] = m
+			}
+		}
+		return out, nil
+	})
+
+	// IoT Device Defender custom metrics
+	d.IoTCustomMetrics = cache.New("IoTCustomMetrics", func() (map[string]iot.DescribeCustomMetricOutput, error) {
+		out := make(map[string]iot.DescribeCustomMetricOutput)
+		list, err := c.IoT.ListCustomMetrics(ctx, &iot.ListCustomMetricsInput{})
+		if err != nil {
+			return nil, err
+		}
+		for _, name := range list.MetricNames {
+			desc, err := c.IoT.DescribeCustomMetric(ctx, &iot.DescribeCustomMetricInput{MetricName: &name})
+			if err != nil || desc == nil || desc.MetricArn == nil {
+				continue
+			}
+			out[*desc.MetricArn] = *desc
+		}
+		return out, nil
+	})
+	d.IoTCustomMetricTags = cache.New("IoTCustomMetricTags", func() (map[string]map[string]string, error) {
+		metrics, err := d.IoTCustomMetrics.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for arn := range metrics {
+			if arn == "" {
+				continue
+			}
+			tags, err := c.IoT.ListTagsForResource(ctx, &iot.ListTagsForResourceInput{ResourceArn: &arn})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range tags.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[arn] = m
+		}
+		return out, nil
+	})
+
+	// IoT Events
+	d.IoTEventsAlarmModels = cache.New("IoTEventsAlarmModels", func() ([]ioteventstypes.AlarmModelSummary, error) {
+		out, err := c.IoTEvents.ListAlarmModels(ctx, &iotevents.ListAlarmModelsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.AlarmModelSummaries, nil
+	})
+	d.IoTEventsDetectorModels = cache.New("IoTEventsDetectorModels", func() ([]ioteventstypes.DetectorModelSummary, error) {
+		out, err := c.IoTEvents.ListDetectorModels(ctx, &iotevents.ListDetectorModelsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.DetectorModelSummaries, nil
+	})
+	d.IoTEventsInputs = cache.New("IoTEventsInputs", func() ([]ioteventstypes.InputSummary, error) {
+		out, err := c.IoTEvents.ListInputs(ctx, &iotevents.ListInputsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.InputSummaries, nil
+	})
+	d.IoTEventsTags = cache.New("IoTEventsTags", func() (map[string]map[string]string, error) {
+		out := make(map[string]map[string]string)
+		convertTags := func(tags []ioteventstypes.Tag) map[string]string {
+			m := make(map[string]string)
+			for _, t := range tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			return m
+		}
+		alarms, _ := d.IoTEventsAlarmModels.Get()
+		for _, a := range alarms {
+			if a.AlarmModelName == nil {
+				continue
+			}
+			desc, err := c.IoTEvents.DescribeAlarmModel(ctx, &iotevents.DescribeAlarmModelInput{AlarmModelName: a.AlarmModelName})
+			if err != nil || desc.AlarmModelArn == nil {
+				continue
+			}
+			tags, err := c.IoTEvents.ListTagsForResource(ctx, &iotevents.ListTagsForResourceInput{ResourceArn: desc.AlarmModelArn})
+			if err == nil {
+				out[*desc.AlarmModelArn] = convertTags(tags.Tags)
+			}
+		}
+		dets, _ := d.IoTEventsDetectorModels.Get()
+		for _, a := range dets {
+			if a.DetectorModelName == nil {
+				continue
+			}
+			desc, err := c.IoTEvents.DescribeDetectorModel(ctx, &iotevents.DescribeDetectorModelInput{DetectorModelName: a.DetectorModelName})
+			if err != nil || desc.DetectorModel == nil || desc.DetectorModel.DetectorModelConfiguration == nil || desc.DetectorModel.DetectorModelConfiguration.DetectorModelArn == nil {
+				continue
+			}
+			arn := desc.DetectorModel.DetectorModelConfiguration.DetectorModelArn
+			tags, err := c.IoTEvents.ListTagsForResource(ctx, &iotevents.ListTagsForResourceInput{ResourceArn: arn})
+			if err == nil {
+				out[*arn] = convertTags(tags.Tags)
+			}
+		}
+		inputs, _ := d.IoTEventsInputs.Get()
+		for _, a := range inputs {
+			if a.InputArn == nil {
+				continue
+			}
+			tags, err := c.IoTEvents.ListTagsForResource(ctx, &iotevents.ListTagsForResourceInput{ResourceArn: a.InputArn})
+			if err == nil {
+				out[*a.InputArn] = convertTags(tags.Tags)
+			}
+		}
+		return out, nil
+	})
+
+	// IoT Wireless
+	d.IoTWirelessFuotaTasks = cache.New("IoTWirelessFuotaTasks", func() ([]iotwirelesstypes.FuotaTask, error) {
+		out, err := c.IoTWireless.ListFuotaTasks(ctx, &iotwireless.ListFuotaTasksInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.FuotaTaskList, nil
+	})
+	d.IoTWirelessMulticastGroups = cache.New("IoTWirelessMulticastGroups", func() ([]iotwirelesstypes.MulticastGroup, error) {
+		out, err := c.IoTWireless.ListMulticastGroups(ctx, &iotwireless.ListMulticastGroupsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.MulticastGroupList, nil
+	})
+	d.IoTWirelessServiceProfiles = cache.New("IoTWirelessServiceProfiles", func() ([]iotwirelesstypes.ServiceProfile, error) {
+		out, err := c.IoTWireless.ListServiceProfiles(ctx, &iotwireless.ListServiceProfilesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.ServiceProfileList, nil
+	})
+	d.IoTWirelessTags = cache.New("IoTWirelessTags", func() (map[string]map[string]string, error) {
+		out := make(map[string]map[string]string)
+		convertWirelessTags := func(tags []iotwirelesstypes.Tag) map[string]string {
+			m := make(map[string]string)
+			for _, t := range tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			return m
+		}
+		fuota, _ := d.IoTWirelessFuotaTasks.Get()
+		for _, f := range fuota {
+			if f.Arn == nil {
+				continue
+			}
+			tags, err := c.IoTWireless.ListTagsForResource(ctx, &iotwireless.ListTagsForResourceInput{ResourceArn: f.Arn})
+			if err == nil {
+				out[*f.Arn] = convertWirelessTags(tags.Tags)
+			}
+		}
+		mg, _ := d.IoTWirelessMulticastGroups.Get()
+		for _, g := range mg {
+			if g.Arn == nil {
+				continue
+			}
+			tags, err := c.IoTWireless.ListTagsForResource(ctx, &iotwireless.ListTagsForResourceInput{ResourceArn: g.Arn})
+			if err == nil {
+				out[*g.Arn] = convertWirelessTags(tags.Tags)
+			}
+		}
+		sp, _ := d.IoTWirelessServiceProfiles.Get()
+		for _, s := range sp {
+			if s.Arn == nil {
+				continue
+			}
+			tags, err := c.IoTWireless.ListTagsForResource(ctx, &iotwireless.ListTagsForResourceInput{ResourceArn: s.Arn})
+			if err == nil {
+				out[*s.Arn] = convertWirelessTags(tags.Tags)
+			}
+		}
+		return out, nil
+	})
+
+	// Macie
+	d.MacieSession = cache.New("MacieSession", func() (*macie2.GetMacieSessionOutput, error) {
+		out, err := c.Macie2.GetMacieSession(ctx, &macie2.GetMacieSessionInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	})
+	d.MacieAutomatedDiscoveryConfig = cache.New("MacieAutomatedDiscoveryConfig", func() (*macie2.GetAutomatedDiscoveryConfigurationOutput, error) {
+		out, err := c.Macie2.GetAutomatedDiscoveryConfiguration(ctx, &macie2.GetAutomatedDiscoveryConfigurationInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	})
+
+	// RUM
+	d.RUMAppMonitors = cache.New("RUMAppMonitors", func() ([]rumtypes.AppMonitorSummary, error) {
+		out, err := c.RUM.ListAppMonitors(ctx, &rum.ListAppMonitorsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.AppMonitorSummaries, nil
+	})
+	d.RUMAppMonitorTags = cache.New("RUMAppMonitorTags", func() (map[string]map[string]string, error) {
+		monitors, err := d.RUMAppMonitors.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, m := range monitors {
+			if m.Name == nil {
+				continue
+			}
+			// AppMonitorSummary has no Arn; use Name as key.
+			// Tags can be retrieved from GetAppMonitor details via the AppMonitor.Tags field.
+			out[*m.Name] = map[string]string{}
+		}
+		return out, nil
+	})
+	d.RUMAppMonitorDetails = cache.New("RUMAppMonitorDetails", func() (map[string]rum.GetAppMonitorOutput, error) {
+		monitors, err := d.RUMAppMonitors.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]rum.GetAppMonitorOutput)
+		for _, m := range monitors {
+			if m.Name == nil {
+				continue
+			}
+			resp, err := c.RUM.GetAppMonitor(ctx, &rum.GetAppMonitorInput{Name: m.Name})
+			if err != nil {
+				continue
+			}
+			out[*m.Name] = *resp
+		}
+		return out, nil
+	})
+
+	// Service Catalog
+	d.ServiceCatalogPortfolios = cache.New("ServiceCatalogPortfolios", func() ([]servicecatalogtypes.PortfolioDetail, error) {
+		out, err := c.ServiceCatalog.ListPortfolios(ctx, &servicecatalog.ListPortfoliosInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.PortfolioDetails, nil
+	})
+	d.ServiceCatalogPortfolioTags = cache.New("ServiceCatalogPortfolioTags", func() (map[string]map[string]string, error) {
+		ports, err := d.ServiceCatalogPortfolios.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, p := range ports {
+			if p.Id == nil {
+				continue
+			}
+			if p.ARN == nil {
+				continue
+			}
+			desc, err := c.ServiceCatalog.DescribePortfolio(ctx, &servicecatalog.DescribePortfolioInput{Id: p.Id})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range desc.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*p.Id] = m
+		}
+		return out, nil
+	})
+	d.ServiceCatalogPortfolioShares = cache.New("ServiceCatalogPortfolioShares", func() (map[string][]string, error) {
+		ports, err := d.ServiceCatalogPortfolios.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]string)
+		for _, p := range ports {
+			if p.Id == nil {
+				continue
+			}
+			share, err := c.ServiceCatalog.ListPortfolioAccess(ctx, &servicecatalog.ListPortfolioAccessInput{PortfolioId: p.Id})
+			if err != nil {
+				continue
+			}
+			out[*p.Id] = share.AccountIds
+		}
+		return out, nil
+	})
+
+	// MQ
+	d.MQBrokerEngineVersions = cache.New("MQBrokerEngineVersions", func() (map[mqtypes.EngineType]map[string]bool, error) {
+		out := make(map[mqtypes.EngineType]map[string]bool)
+		for _, et := range []mqtypes.EngineType{mqtypes.EngineTypeActivemq, mqtypes.EngineTypeRabbitmq} {
+			etStr := string(et)
+			resp, err := c.MQ.DescribeBrokerEngineTypes(ctx, &mq.DescribeBrokerEngineTypesInput{EngineType: &etStr})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]bool)
+			for _, t := range resp.BrokerEngineTypes {
+				for _, v := range t.EngineVersions {
+					if v.Name != nil {
+						m[*v.Name] = true
+					}
+				}
+			}
+			out[et] = m
+		}
+		return out, nil
+	})
+
+	// CloudTrail Event Data Stores
+	d.CloudTrailEventDataStores = cache.New("CloudTrailEventDataStores", func() ([]cloudtrailtypes.EventDataStore, error) {
+		out, err := c.CloudTrail.ListEventDataStores(ctx, &cloudtrail.ListEventDataStoresInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.EventDataStores, nil
+	})
+
 	// AppIntegrations
-	d.AppIntegrationsEventIntegrations = cache.New(func() ([]appintegrationstypes.EventIntegration, error) {
+	d.AppIntegrationsEventIntegrations = cache.New("AppIntegrationsEventIntegrations", func() ([]appintegrationstypes.EventIntegration, error) {
 		out, err := c.AppIntegrations.ListEventIntegrations(ctx, &appintegrations.ListEventIntegrationsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.EventIntegrations, nil
 	})
-	d.AppIntegrationsTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AppIntegrationsTags = cache.New("AppIntegrationsTags", func() (map[string]map[string]string, error) {
 		evs, err := d.AppIntegrationsEventIntegrations.Get()
 		if err != nil {
 			return nil, err
@@ -3020,14 +5662,14 @@ func (d *Data) init() {
 	})
 
 	// AppMesh
-	d.AppMeshMeshes = cache.New(func() ([]appmeshtypes.MeshRef, error) {
+	d.AppMeshMeshes = cache.New("AppMeshMeshes", func() ([]appmeshtypes.MeshRef, error) {
 		out, err := c.AppMesh.ListMeshes(ctx, &appmesh.ListMeshesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Meshes, nil
 	})
-	d.AppMeshMeshDetails = cache.New(func() (map[string]appmeshtypes.MeshData, error) {
+	d.AppMeshMeshDetails = cache.New("AppMeshMeshDetails", func() (map[string]appmeshtypes.MeshData, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
@@ -3045,7 +5687,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshVirtualNodes = cache.New(func() (map[string][]appmeshtypes.VirtualNodeRef, error) {
+	d.AppMeshVirtualNodes = cache.New("AppMeshVirtualNodes", func() (map[string][]appmeshtypes.VirtualNodeRef, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
@@ -3063,7 +5705,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshVirtualNodeDetails = cache.New(func() (map[string]appmeshtypes.VirtualNodeData, error) {
+	d.AppMeshVirtualNodeDetails = cache.New("AppMeshVirtualNodeDetails", func() (map[string]appmeshtypes.VirtualNodeData, error) {
 		vnsByMesh, err := d.AppMeshVirtualNodes.Get()
 		if err != nil {
 			return nil, err
@@ -3083,7 +5725,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshVirtualRouters = cache.New(func() (map[string][]appmeshtypes.VirtualRouterRef, error) {
+	d.AppMeshVirtualRouters = cache.New("AppMeshVirtualRouters", func() (map[string][]appmeshtypes.VirtualRouterRef, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
@@ -3101,7 +5743,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshVirtualServices = cache.New(func() (map[string][]appmeshtypes.VirtualServiceRef, error) {
+	d.AppMeshVirtualServices = cache.New("AppMeshVirtualServices", func() (map[string][]appmeshtypes.VirtualServiceRef, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
@@ -3119,7 +5761,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshVirtualGateways = cache.New(func() (map[string][]appmeshtypes.VirtualGatewayRef, error) {
+	d.AppMeshVirtualGateways = cache.New("AppMeshVirtualGateways", func() (map[string][]appmeshtypes.VirtualGatewayRef, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
@@ -3137,7 +5779,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshVirtualGatewayDetails = cache.New(func() (map[string]appmeshtypes.VirtualGatewayData, error) {
+	d.AppMeshVirtualGatewayDetails = cache.New("AppMeshVirtualGatewayDetails", func() (map[string]appmeshtypes.VirtualGatewayData, error) {
 		vgsByMesh, err := d.AppMeshVirtualGateways.Get()
 		if err != nil {
 			return nil, err
@@ -3157,7 +5799,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshRoutes = cache.New(func() (map[string][]appmeshtypes.RouteRef, error) {
+	d.AppMeshRoutes = cache.New("AppMeshRoutes", func() (map[string][]appmeshtypes.RouteRef, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
@@ -3184,7 +5826,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshGatewayRoutes = cache.New(func() (map[string][]appmeshtypes.GatewayRouteRef, error) {
+	d.AppMeshGatewayRoutes = cache.New("AppMeshGatewayRoutes", func() (map[string][]appmeshtypes.GatewayRouteRef, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
@@ -3211,112 +5853,79 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.AppMeshTags = cache.New(func() (map[string]map[string]string, error) {
+	d.AppMeshTags = cache.New("AppMeshTags", func() (map[string]map[string]string, error) {
 		meshes, err := d.AppMeshMeshes.Get()
 		if err != nil {
 			return nil, err
 		}
 		out := make(map[string]map[string]string)
-		for _, m := range meshes {
-			if m.Arn == nil {
-				continue
+		collectMeshTags := func(arn *string) {
+			if arn == nil {
+				return
 			}
-			tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: m.Arn})
+			tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: arn})
 			if err != nil {
-				continue
+				return
 			}
-			out[*m.Arn] = tags.Tags
+			m := make(map[string]string)
+			for _, t := range tags.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*arn] = m
+		}
+		for _, m := range meshes {
+			collectMeshTags(m.Arn)
 		}
 		vns, _ := d.AppMeshVirtualNodes.Get()
-		for mesh, items := range vns {
+		for _, items := range vns {
 			for _, vn := range items {
-				if vn.Arn == nil {
-					continue
-				}
-				tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: vn.Arn})
-				if err != nil {
-					continue
-				}
-				out[*vn.Arn] = tags.Tags
+				collectMeshTags(vn.Arn)
 			}
 		}
 		vrs, _ := d.AppMeshVirtualRouters.Get()
 		for _, items := range vrs {
 			for _, vr := range items {
-				if vr.Arn == nil {
-					continue
-				}
-				tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: vr.Arn})
-				if err != nil {
-					continue
-				}
-				out[*vr.Arn] = tags.Tags
+				collectMeshTags(vr.Arn)
 			}
 		}
 		vss, _ := d.AppMeshVirtualServices.Get()
 		for _, items := range vss {
 			for _, vs := range items {
-				if vs.Arn == nil {
-					continue
-				}
-				tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: vs.Arn})
-				if err != nil {
-					continue
-				}
-				out[*vs.Arn] = tags.Tags
+				collectMeshTags(vs.Arn)
 			}
 		}
 		vgs, _ := d.AppMeshVirtualGateways.Get()
 		for _, items := range vgs {
 			for _, vg := range items {
-				if vg.Arn == nil {
-					continue
-				}
-				tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: vg.Arn})
-				if err != nil {
-					continue
-				}
-				out[*vg.Arn] = tags.Tags
+				collectMeshTags(vg.Arn)
 			}
 		}
 		routes, _ := d.AppMeshRoutes.Get()
 		for _, items := range routes {
 			for _, r := range items {
-				if r.Arn == nil {
-					continue
-				}
-				tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: r.Arn})
-				if err != nil {
-					continue
-				}
-				out[*r.Arn] = tags.Tags
+				collectMeshTags(r.Arn)
 			}
 		}
 		gwRoutes, _ := d.AppMeshGatewayRoutes.Get()
 		for _, items := range gwRoutes {
 			for _, r := range items {
-				if r.Arn == nil {
-					continue
-				}
-				tags, err := c.AppMesh.ListTagsForResource(ctx, &appmesh.ListTagsForResourceInput{ResourceArn: r.Arn})
-				if err != nil {
-					continue
-				}
-				out[*r.Arn] = tags.Tags
+				collectMeshTags(r.Arn)
 			}
 		}
 		return out, nil
 	})
 
 	// AutoScaling
-	d.AutoScalingGroups = cache.New(func() ([]autoscalingtypes.AutoScalingGroup, error) {
+	d.AutoScalingGroups = cache.New("AutoScalingGroups", func() ([]autoscalingtypes.AutoScalingGroup, error) {
 		out, err := c.AutoScaling.DescribeAutoScalingGroups(ctx, &autoscaling.DescribeAutoScalingGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.AutoScalingGroups, nil
 	})
-	d.AutoScalingLaunchConfigs = cache.New(func() ([]autoscalingtypes.LaunchConfiguration, error) {
+	d.AutoScalingLaunchConfigs = cache.New("AutoScalingLaunchConfigs", func() ([]autoscalingtypes.LaunchConfiguration, error) {
 		out, err := c.AutoScaling.DescribeLaunchConfigurations(ctx, &autoscaling.DescribeLaunchConfigurationsInput{})
 		if err != nil {
 			return nil, err
@@ -3325,65 +5934,322 @@ func (d *Data) init() {
 	})
 
 	// Kinesis
-	d.KinesisStreams = cache.New(func() ([]string, error) {
+	d.KinesisStreams = cache.New("KinesisStreams", func() ([]string, error) {
 		out, err := c.Kinesis.ListStreams(ctx, &kinesis.ListStreamsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.StreamNames, nil
 	})
+	d.KinesisStreamDetails = cache.New("KinesisStreamDetails", func() (map[string]kinesis.DescribeStreamOutput, error) {
+		streams, err := d.KinesisStreams.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]kinesis.DescribeStreamOutput)
+		for _, name := range streams {
+			desc, err := c.Kinesis.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: &name})
+			if err != nil {
+				continue
+			}
+			out[name] = *desc
+		}
+		return out, nil
+	})
+
+	// Firehose
+	d.FirehoseDeliveryStreams = cache.New("FirehoseDeliveryStreams", func() ([]string, error) {
+		out, err := c.Firehose.ListDeliveryStreams(ctx, &firehose.ListDeliveryStreamsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.DeliveryStreamNames, nil
+	})
+	d.FirehoseDeliveryDetails = cache.New("FirehoseDeliveryDetails", func() (map[string]firehosetypes.DeliveryStreamDescription, error) {
+		streams, err := d.FirehoseDeliveryStreams.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]firehosetypes.DeliveryStreamDescription)
+		for _, name := range streams {
+			desc, err := c.Firehose.DescribeDeliveryStream(ctx, &firehose.DescribeDeliveryStreamInput{DeliveryStreamName: &name})
+			if err != nil || desc.DeliveryStreamDescription == nil {
+				continue
+			}
+			out[name] = *desc.DeliveryStreamDescription
+		}
+		return out, nil
+	})
+
+	// Kinesis Video
+	d.KinesisVideoStreams = cache.New("KinesisVideoStreams", func() ([]kinesisvideotypes.StreamInfo, error) {
+		out, err := c.KinesisVideo.ListStreams(ctx, &kinesisvideo.ListStreamsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.StreamInfoList, nil
+	})
+
+	// MSK
+	d.MSKClusters = cache.New("MSKClusters", func() ([]kafkatypes.Cluster, error) {
+		out, err := c.Kafka.ListClustersV2(ctx, &kafka.ListClustersV2Input{})
+		if err != nil {
+			return nil, err
+		}
+		return out.ClusterInfoList, nil
+	})
+	d.MSKClusterTags = cache.New("MSKClusterTags", func() (map[string]map[string]string, error) {
+		clusters, err := d.MSKClusters.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, cinfo := range clusters {
+			if cinfo.ClusterArn == nil {
+				continue
+			}
+			resp, err := c.Kafka.ListTagsForResource(ctx, &kafka.ListTagsForResourceInput{ResourceArn: cinfo.ClusterArn})
+			if err != nil {
+				continue
+			}
+			out[*cinfo.ClusterArn] = resp.Tags
+		}
+		return out, nil
+	})
+
+	// MSK Connect
+	d.MSKConnectors = cache.New("MSKConnectors", func() ([]kafkaconnecttypes.ConnectorSummary, error) {
+		out, err := c.KafkaConnect.ListConnectors(ctx, &kafkaconnect.ListConnectorsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Connectors, nil
+	})
+	d.MSKConnectorDetails = cache.New("MSKConnectorDetails", func() (map[string]kafkaconnect.DescribeConnectorOutput, error) {
+		connectors, err := d.MSKConnectors.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]kafkaconnect.DescribeConnectorOutput)
+		for _, csum := range connectors {
+			if csum.ConnectorArn == nil {
+				continue
+			}
+			desc, err := c.KafkaConnect.DescribeConnector(ctx, &kafkaconnect.DescribeConnectorInput{ConnectorArn: csum.ConnectorArn})
+			if err != nil || desc == nil {
+				continue
+			}
+			out[*csum.ConnectorArn] = *desc
+		}
+		return out, nil
+	})
+
+	// Lightsail
+	d.LightsailBuckets = cache.New("LightsailBuckets", func() ([]lightsailtypes.Bucket, error) {
+		out, err := c.Lightsail.GetBuckets(ctx, &lightsail.GetBucketsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Buckets, nil
+	})
+	d.LightsailCertificates = cache.New("LightsailCertificates", func() ([]lightsailtypes.CertificateSummary, error) {
+		out, err := c.Lightsail.GetCertificates(ctx, &lightsail.GetCertificatesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Certificates, nil
+	})
+	d.LightsailDisks = cache.New("LightsailDisks", func() ([]lightsailtypes.Disk, error) {
+		out, err := c.Lightsail.GetDisks(ctx, &lightsail.GetDisksInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.Disks, nil
+	})
 
 	// Route53
-	d.Route53HostedZones = cache.New(func() ([]route53types.HostedZone, error) {
+	d.Route53HostedZones = cache.New("Route53HostedZones", func() ([]route53types.HostedZone, error) {
 		out, err := c.Route53.ListHostedZones(ctx, &route53.ListHostedZonesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.HostedZones, nil
 	})
-	d.Route53HealthChecks = cache.New(func() ([]route53types.HealthCheck, error) {
+	d.Route53HealthChecks = cache.New("Route53HealthChecks", func() ([]route53types.HealthCheck, error) {
 		out, err := c.Route53.ListHealthChecks(ctx, &route53.ListHealthChecksInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.HealthChecks, nil
 	})
+	d.Route53HostedZoneTags = cache.New("Route53HostedZoneTags", func() (map[string]map[string]string, error) {
+		zones, err := d.Route53HostedZones.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, z := range zones {
+			if z.Id == nil {
+				continue
+			}
+			resp, err := c.Route53.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{ResourceType: route53types.TagResourceTypeHostedzone, ResourceId: z.Id})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.ResourceTagSet.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*z.Id] = m
+		}
+		return out, nil
+	})
+	d.Route53HealthCheckTags = cache.New("Route53HealthCheckTags", func() (map[string]map[string]string, error) {
+		hcs, err := d.Route53HealthChecks.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, hc := range hcs {
+			if hc.Id == nil {
+				continue
+			}
+			resp, err := c.Route53.ListTagsForResource(ctx, &route53.ListTagsForResourceInput{ResourceType: route53types.TagResourceTypeHealthcheck, ResourceId: hc.Id})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.ResourceTagSet.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*hc.Id] = m
+		}
+		return out, nil
+	})
+	d.Route53QueryLoggingConfigs = cache.New("Route53QueryLoggingConfigs", func() (map[string][]route53types.QueryLoggingConfig, error) {
+		zones, err := d.Route53HostedZones.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]route53types.QueryLoggingConfig)
+		for _, z := range zones {
+			if z.Id == nil {
+				continue
+			}
+			resp, err := c.Route53.ListQueryLoggingConfigs(ctx, &route53.ListQueryLoggingConfigsInput{HostedZoneId: z.Id})
+			if err != nil {
+				continue
+			}
+			out[*z.Id] = resp.QueryLoggingConfigs
+		}
+		return out, nil
+	})
+
+	// Route53 Resolver
+	d.Route53ResolverFirewallDomainLists = cache.New("Route53ResolverFirewallDomainLists", func() ([]resolvertype.FirewallDomainListMetadata, error) {
+		out, err := c.Route53Resolver.ListFirewallDomainLists(ctx, &route53resolver.ListFirewallDomainListsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.FirewallDomainLists, nil
+	})
+	d.Route53ResolverFirewallRuleGroups = cache.New("Route53ResolverFirewallRuleGroups", func() ([]resolvertype.FirewallRuleGroupMetadata, error) {
+		out, err := c.Route53Resolver.ListFirewallRuleGroups(ctx, &route53resolver.ListFirewallRuleGroupsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.FirewallRuleGroups, nil
+	})
+	d.Route53ResolverFirewallRuleGroupAssociations = cache.New("Route53ResolverFirewallRuleGroupAssociations", func() ([]resolvertype.FirewallRuleGroupAssociation, error) {
+		out, err := c.Route53Resolver.ListFirewallRuleGroupAssociations(ctx, &route53resolver.ListFirewallRuleGroupAssociationsInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.FirewallRuleGroupAssociations, nil
+	})
+	d.Route53ResolverRules = cache.New("Route53ResolverRules", func() ([]resolvertype.ResolverRule, error) {
+		out, err := c.Route53Resolver.ListResolverRules(ctx, &route53resolver.ListResolverRulesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.ResolverRules, nil
+	})
+	d.Route53ResolverTags = cache.New("Route53ResolverTags", func() (map[string]map[string]string, error) {
+		out := make(map[string]map[string]string)
+		collect := func(arn *string) {
+			if arn == nil {
+				return
+			}
+			resp, err := c.Route53Resolver.ListTagsForResource(ctx, &route53resolver.ListTagsForResourceInput{ResourceArn: arn})
+			if err != nil {
+				return
+			}
+			m := make(map[string]string)
+			for _, t := range resp.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*arn] = m
+		}
+		dls, _ := d.Route53ResolverFirewallDomainLists.Get()
+		for _, d := range dls {
+			collect(d.Arn)
+		}
+		rgs, _ := d.Route53ResolverFirewallRuleGroups.Get()
+		for _, r := range rgs {
+			collect(r.Arn)
+		}
+		assocs, _ := d.Route53ResolverFirewallRuleGroupAssociations.Get()
+		for _, a := range assocs {
+			collect(a.Arn)
+		}
+		rules, _ := d.Route53ResolverRules.Get()
+		for _, r := range rules {
+			collect(r.Arn)
+		}
+		return out, nil
+	})
 
 	// SageMaker
-	d.SageMakerNotebooks = cache.New(func() ([]sagemakertypes.NotebookInstanceSummary, error) {
+	d.SageMakerNotebooks = cache.New("SageMakerNotebooks", func() ([]sagemakertypes.NotebookInstanceSummary, error) {
 		out, err := c.SageMaker.ListNotebookInstances(ctx, &sagemaker.ListNotebookInstancesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.NotebookInstances, nil
 	})
-	d.SageMakerEndpointConfigs = cache.New(func() ([]sagemakertypes.EndpointConfigSummary, error) {
+	d.SageMakerEndpointConfigs = cache.New("SageMakerEndpointConfigs", func() ([]sagemakertypes.EndpointConfigSummary, error) {
 		out, err := c.SageMaker.ListEndpointConfigs(ctx, &sagemaker.ListEndpointConfigsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.EndpointConfigs, nil
 	})
-	d.SageMakerDomains = cache.New(func() ([]sagemakertypes.DomainDetails, error) {
+	d.SageMakerDomains = cache.New("SageMakerDomains", func() ([]sagemakertypes.DomainDetails, error) {
 		out, err := c.SageMaker.ListDomains(ctx, &sagemaker.ListDomainsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Domains, nil
 	})
-	d.SageMakerModels = cache.New(func() ([]sagemakertypes.ModelSummary, error) {
+	d.SageMakerModels = cache.New("SageMakerModels", func() ([]sagemakertypes.ModelSummary, error) {
 		out, err := c.SageMaker.ListModels(ctx, &sagemaker.ListModelsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Models, nil
 	})
-	d.SageMakerNotebookDetails = cache.New(func() (map[string]sagemakertypes.NotebookInstance, error) {
+	d.SageMakerNotebookDetails = cache.New("SageMakerNotebookDetails", func() (map[string]sagemaker.DescribeNotebookInstanceOutput, error) {
 		summaries, err := d.SageMakerNotebooks.Get()
 		if err != nil {
 			return nil, err
 		}
-		out := make(map[string]sagemakertypes.NotebookInstance)
+		out := make(map[string]sagemaker.DescribeNotebookInstanceOutput)
 		for _, nb := range summaries {
 			if nb.NotebookInstanceName == nil {
 				continue
@@ -3396,12 +6262,12 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.SageMakerEndpointConfigDetails = cache.New(func() (map[string]sagemakertypes.EndpointConfig, error) {
+	d.SageMakerEndpointConfigDetails = cache.New("SageMakerEndpointConfigDetails", func() (map[string]sagemaker.DescribeEndpointConfigOutput, error) {
 		summaries, err := d.SageMakerEndpointConfigs.Get()
 		if err != nil {
 			return nil, err
 		}
-		out := make(map[string]sagemakertypes.EndpointConfig)
+		out := make(map[string]sagemaker.DescribeEndpointConfigOutput)
 		for _, ec := range summaries {
 			if ec.EndpointConfigName == nil {
 				continue
@@ -3414,7 +6280,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.SageMakerDomainTags = cache.New(func() (map[string]map[string]string, error) {
+	d.SageMakerDomainTags = cache.New("SageMakerDomainTags", func() (map[string]map[string]string, error) {
 		domains, err := d.SageMakerDomains.Get()
 		if err != nil {
 			return nil, err
@@ -3438,12 +6304,12 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.SageMakerModelDetails = cache.New(func() (map[string]sagemakertypes.Model, error) {
+	d.SageMakerModelDetails = cache.New("SageMakerModelDetails", func() (map[string]sagemaker.DescribeModelOutput, error) {
 		models, err := d.SageMakerModels.Get()
 		if err != nil {
 			return nil, err
 		}
-		out := make(map[string]sagemakertypes.Model)
+		out := make(map[string]sagemaker.DescribeModelOutput)
 		for _, m := range models {
 			if m.ModelName == nil {
 				continue
@@ -3456,14 +6322,14 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.SageMakerFeatureGroups = cache.New(func() ([]sagemakertypes.FeatureGroupSummary, error) {
+	d.SageMakerFeatureGroups = cache.New("SageMakerFeatureGroups", func() ([]sagemakertypes.FeatureGroupSummary, error) {
 		out, err := c.SageMaker.ListFeatureGroups(ctx, &sagemaker.ListFeatureGroupsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.FeatureGroupSummaries, nil
 	})
-	d.SageMakerFeatureGroupTags = cache.New(func() (map[string]map[string]string, error) {
+	d.SageMakerFeatureGroupTags = cache.New("SageMakerFeatureGroupTags", func() (map[string]map[string]string, error) {
 		groups, err := d.SageMakerFeatureGroups.Get()
 		if err != nil {
 			return nil, err
@@ -3487,14 +6353,14 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.SageMakerImages = cache.New(func() ([]sagemakertypes.ImageSummary, error) {
+	d.SageMakerImages = cache.New("SageMakerImages", func() ([]sagemakertypes.Image, error) {
 		out, err := c.SageMaker.ListImages(ctx, &sagemaker.ListImagesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Images, nil
 	})
-	d.SageMakerImageDetails = cache.New(func() (map[string]sagemaker.DescribeImageOutput, error) {
+	d.SageMakerImageDetails = cache.New("SageMakerImageDetails", func() (map[string]sagemaker.DescribeImageOutput, error) {
 		images, err := d.SageMakerImages.Get()
 		if err != nil {
 			return nil, err
@@ -3512,7 +6378,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.SageMakerImageTags = cache.New(func() (map[string]map[string]string, error) {
+	d.SageMakerImageTags = cache.New("SageMakerImageTags", func() (map[string]map[string]string, error) {
 		images, err := d.SageMakerImages.Get()
 		if err != nil {
 			return nil, err
@@ -3536,14 +6402,14 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.SageMakerAppImageConfigs = cache.New(func() ([]sagemakertypes.AppImageConfigSummary, error) {
+	d.SageMakerAppImageConfigs = cache.New("SageMakerAppImageConfigs", func() ([]sagemakertypes.AppImageConfigDetails, error) {
 		out, err := c.SageMaker.ListAppImageConfigs(ctx, &sagemaker.ListAppImageConfigsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.AppImageConfigs, nil
 	})
-	d.SageMakerAppImageConfigTags = cache.New(func() (map[string]map[string]string, error) {
+	d.SageMakerAppImageConfigTags = cache.New("SageMakerAppImageConfigTags", func() (map[string]map[string]string, error) {
 		apps, err := d.SageMakerAppImageConfigs.Get()
 		if err != nil {
 			return nil, err
@@ -3569,14 +6435,14 @@ func (d *Data) init() {
 	})
 
 	// Transfer
-	d.TransferServers = cache.New(func() ([]transfertypes.ListedServer, error) {
+	d.TransferServers = cache.New("TransferServers", func() ([]transfertypes.ListedServer, error) {
 		out, err := c.Transfer.ListServers(ctx, &transfer.ListServersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Servers, nil
 	})
-	d.TransferServerDetails = cache.New(func() (map[string]transfertypes.DescribedServer, error) {
+	d.TransferServerDetails = cache.New("TransferServerDetails", func() (map[string]transfertypes.DescribedServer, error) {
 		servers, err := d.TransferServers.Get()
 		if err != nil {
 			return nil, err
@@ -3594,14 +6460,14 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.TransferAgreements = cache.New(func() ([]transfertypes.ListedAgreement, error) {
+	d.TransferAgreements = cache.New("TransferAgreements", func() ([]transfertypes.ListedAgreement, error) {
 		out, err := c.Transfer.ListAgreements(ctx, &transfer.ListAgreementsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Agreements, nil
 	})
-	d.TransferAgreementDetails = cache.New(func() (map[string]transfertypes.DescribedAgreement, error) {
+	d.TransferAgreementDetails = cache.New("TransferAgreementDetails", func() (map[string]transfertypes.DescribedAgreement, error) {
 		agreements, err := d.TransferAgreements.Get()
 		if err != nil {
 			return nil, err
@@ -3619,64 +6485,64 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.TransferCertificates = cache.New(func() ([]transfertypes.ListedCertificate, error) {
+	d.TransferCertificates = cache.New("TransferCertificates", func() ([]transfertypes.ListedCertificate, error) {
 		out, err := c.Transfer.ListCertificates(ctx, &transfer.ListCertificatesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Certificates, nil
 	})
-	d.TransferCertificateDetails = cache.New(func() (map[string]transfertypes.DescribedCertificate, error) {
+	d.TransferCertificateDetails = cache.New("TransferCertificateDetails", func() (map[string]transfertypes.DescribedCertificate, error) {
 		certs, err := d.TransferCertificates.Get()
 		if err != nil {
 			return nil, err
 		}
 		out := make(map[string]transfertypes.DescribedCertificate)
-		for _, c := range certs {
-			if c.CertificateId == nil {
+		for _, cert := range certs {
+			if cert.CertificateId == nil {
 				continue
 			}
-			desc, err := c.Transfer.DescribeCertificate(ctx, &transfer.DescribeCertificateInput{CertificateId: c.CertificateId})
+			desc, err := c.Transfer.DescribeCertificate(ctx, &transfer.DescribeCertificateInput{CertificateId: cert.CertificateId})
 			if err != nil || desc.Certificate == nil {
 				continue
 			}
-			out[*c.CertificateId] = *desc.Certificate
+			out[*cert.CertificateId] = *desc.Certificate
 		}
 		return out, nil
 	})
-	d.TransferConnectors = cache.New(func() ([]transfertypes.ListedConnector, error) {
+	d.TransferConnectors = cache.New("TransferConnectors", func() ([]transfertypes.ListedConnector, error) {
 		out, err := c.Transfer.ListConnectors(ctx, &transfer.ListConnectorsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Connectors, nil
 	})
-	d.TransferConnectorDetails = cache.New(func() (map[string]transfertypes.DescribedConnector, error) {
+	d.TransferConnectorDetails = cache.New("TransferConnectorDetails", func() (map[string]transfertypes.DescribedConnector, error) {
 		connectors, err := d.TransferConnectors.Get()
 		if err != nil {
 			return nil, err
 		}
 		out := make(map[string]transfertypes.DescribedConnector)
-		for _, c := range connectors {
-			if c.ConnectorId == nil {
+		for _, conn := range connectors {
+			if conn.ConnectorId == nil {
 				continue
 			}
-			desc, err := c.Transfer.DescribeConnector(ctx, &transfer.DescribeConnectorInput{ConnectorId: c.ConnectorId})
+			desc, err := c.Transfer.DescribeConnector(ctx, &transfer.DescribeConnectorInput{ConnectorId: conn.ConnectorId})
 			if err != nil || desc.Connector == nil {
 				continue
 			}
-			out[*c.ConnectorId] = *desc.Connector
+			out[*conn.ConnectorId] = *desc.Connector
 		}
 		return out, nil
 	})
-	d.TransferProfiles = cache.New(func() ([]transfertypes.ListedProfile, error) {
+	d.TransferProfiles = cache.New("TransferProfiles", func() ([]transfertypes.ListedProfile, error) {
 		out, err := c.Transfer.ListProfiles(ctx, &transfer.ListProfilesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Profiles, nil
 	})
-	d.TransferProfileDetails = cache.New(func() (map[string]transfertypes.DescribedProfile, error) {
+	d.TransferProfileDetails = cache.New("TransferProfileDetails", func() (map[string]transfertypes.DescribedProfile, error) {
 		profiles, err := d.TransferProfiles.Get()
 		if err != nil {
 			return nil, err
@@ -3694,14 +6560,14 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.TransferWorkflows = cache.New(func() ([]transfertypes.ListedWorkflow, error) {
+	d.TransferWorkflows = cache.New("TransferWorkflows", func() ([]transfertypes.ListedWorkflow, error) {
 		out, err := c.Transfer.ListWorkflows(ctx, &transfer.ListWorkflowsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Workflows, nil
 	})
-	d.TransferWorkflowDetails = cache.New(func() (map[string]transfertypes.DescribedWorkflow, error) {
+	d.TransferWorkflowDetails = cache.New("TransferWorkflowDetails", func() (map[string]transfertypes.DescribedWorkflow, error) {
 		workflows, err := d.TransferWorkflows.Get()
 		if err != nil {
 			return nil, err
@@ -3719,7 +6585,7 @@ func (d *Data) init() {
 		}
 		return out, nil
 	})
-	d.TransferTags = cache.New(func() (map[string]map[string]string, error) {
+	d.TransferTags = cache.New("TransferTags", func() (map[string]map[string]string, error) {
 		out := make(map[string]map[string]string)
 		collect := func(arn *string) {
 			if arn == nil {
@@ -3729,7 +6595,13 @@ func (d *Data) init() {
 			if err != nil {
 				return
 			}
-			out[*arn] = tags.Tags
+			m := make(map[string]string)
+			for _, t := range tags.Tags {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*arn] = m
 		}
 		servers, _ := d.TransferServers.Get()
 		for _, s := range servers {
@@ -3740,12 +6612,12 @@ func (d *Data) init() {
 			collect(a.Arn)
 		}
 		certs, _ := d.TransferCertificates.Get()
-		for _, c := range certs {
-			collect(c.Arn)
+		for _, cert := range certs {
+			collect(cert.Arn)
 		}
 		connectors, _ := d.TransferConnectors.Get()
-		for _, c := range connectors {
-			collect(c.Arn)
+		for _, conn := range connectors {
+			collect(conn.Arn)
 		}
 		profiles, _ := d.TransferProfiles.Get()
 		for _, p := range profiles {
@@ -3759,14 +6631,14 @@ func (d *Data) init() {
 	})
 
 	// MQ
-	d.MQBrokers = cache.New(func() ([]mqtypes.BrokerSummary, error) {
+	d.MQBrokers = cache.New("MQBrokers", func() ([]mqtypes.BrokerSummary, error) {
 		out, err := c.MQ.ListBrokers(ctx, &mq.ListBrokersInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.BrokerSummaries, nil
 	})
-	d.MQBrokerDetails = cache.New(func() (map[string]mq.DescribeBrokerOutput, error) {
+	d.MQBrokerDetails = cache.New("MQBrokerDetails", func() (map[string]mq.DescribeBrokerOutput, error) {
 		brokers, err := d.MQBrokers.Get()
 		if err != nil {
 			return nil, err
@@ -3786,76 +6658,371 @@ func (d *Data) init() {
 	})
 
 	// Network Firewall
-	d.NetworkFirewalls = cache.New(func() ([]networkfirewall.ListFirewallsOutput, error) {
+	d.NetworkFirewalls = cache.New("NetworkFirewalls", func() ([]networkfirewall.ListFirewallsOutput, error) {
 		out, err := c.NetworkFirewall.ListFirewalls(ctx, &networkfirewall.ListFirewallsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return []networkfirewall.ListFirewallsOutput{*out}, nil
 	})
+	d.NetworkFirewallDetails = cache.New("NetworkFirewallDetails", func() (map[string]networkfirewall.DescribeFirewallOutput, error) {
+		lists, err := d.NetworkFirewalls.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]networkfirewall.DescribeFirewallOutput)
+		for _, list := range lists {
+			for _, fw := range list.Firewalls {
+				if fw.FirewallArn == nil {
+					continue
+				}
+				desc, err := c.NetworkFirewall.DescribeFirewall(ctx, &networkfirewall.DescribeFirewallInput{FirewallArn: fw.FirewallArn})
+				if err != nil || desc == nil {
+					continue
+				}
+				out[*fw.FirewallArn] = *desc
+			}
+		}
+		return out, nil
+	})
+	d.NetworkFirewallPolicies = cache.New("NetworkFirewallPolicies", func() (map[string]networkfirewall.DescribeFirewallPolicyOutput, error) {
+		details, err := d.NetworkFirewallDetails.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]networkfirewall.DescribeFirewallPolicyOutput)
+		for _, dsc := range details {
+			if dsc.Firewall == nil || dsc.Firewall.FirewallPolicyArn == nil {
+				continue
+			}
+			resp, err := c.NetworkFirewall.DescribeFirewallPolicy(ctx, &networkfirewall.DescribeFirewallPolicyInput{FirewallPolicyArn: dsc.Firewall.FirewallPolicyArn})
+			if err != nil || resp == nil {
+				continue
+			}
+			out[*dsc.Firewall.FirewallPolicyArn] = *resp
+		}
+		return out, nil
+	})
+	d.NetworkFirewallLogging = cache.New("NetworkFirewallLogging", func() (map[string]networkfirewall.DescribeLoggingConfigurationOutput, error) {
+		lists, err := d.NetworkFirewalls.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]networkfirewall.DescribeLoggingConfigurationOutput)
+		for _, list := range lists {
+			for _, fw := range list.Firewalls {
+				if fw.FirewallArn == nil {
+					continue
+				}
+				resp, err := c.NetworkFirewall.DescribeLoggingConfiguration(ctx, &networkfirewall.DescribeLoggingConfigurationInput{FirewallArn: fw.FirewallArn})
+				if err != nil || resp == nil {
+					continue
+				}
+				out[*fw.FirewallArn] = *resp
+			}
+		}
+		return out, nil
+	})
+	d.NetworkFirewallRuleGroups = cache.New("NetworkFirewallRuleGroups", func() (map[string]networkfirewall.DescribeRuleGroupOutput, error) {
+		policies, err := d.NetworkFirewallPolicies.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]networkfirewall.DescribeRuleGroupOutput)
+		for _, pol := range policies {
+			if pol.FirewallPolicy == nil {
+				continue
+			}
+			for _, ref := range pol.FirewallPolicy.StatelessRuleGroupReferences {
+				if ref.ResourceArn == nil {
+					continue
+				}
+				if _, ok := out[*ref.ResourceArn]; ok {
+					continue
+				}
+				resp, err := c.NetworkFirewall.DescribeRuleGroup(ctx, &networkfirewall.DescribeRuleGroupInput{RuleGroupArn: ref.ResourceArn})
+				if err != nil || resp == nil {
+					continue
+				}
+				out[*ref.ResourceArn] = *resp
+			}
+			for _, ref := range pol.FirewallPolicy.StatefulRuleGroupReferences {
+				if ref.ResourceArn == nil {
+					continue
+				}
+				if _, ok := out[*ref.ResourceArn]; ok {
+					continue
+				}
+				resp, err := c.NetworkFirewall.DescribeRuleGroup(ctx, &networkfirewall.DescribeRuleGroupInput{RuleGroupArn: ref.ResourceArn})
+				if err != nil || resp == nil {
+					continue
+				}
+				out[*ref.ResourceArn] = *resp
+			}
+		}
+		return out, nil
+	})
 
 	// WAF
-	d.WAFWebACLs = cache.New(func() ([]waftypes.WebACLSummary, error) {
+	d.WAFWebACLs = cache.New("WAFWebACLs", func() ([]waftypes.WebACLSummary, error) {
 		out, err := c.WAF.ListWebACLs(ctx, &waf.ListWebACLsInput{Limit: 100})
 		if err != nil {
 			return nil, err
 		}
 		return out.WebACLs, nil
 	})
-	d.WAFRules = cache.New(func() ([]waftypes.RuleSummary, error) {
+	d.WAFRules = cache.New("WAFRules", func() ([]waftypes.RuleSummary, error) {
 		out, err := c.WAF.ListRules(ctx, &waf.ListRulesInput{Limit: 100})
 		if err != nil {
 			return nil, err
 		}
 		return out.Rules, nil
 	})
-	d.WAFRuleGroups = cache.New(func() ([]waftypes.RuleGroupSummary, error) {
+	d.WAFRuleGroups = cache.New("WAFRuleGroups", func() ([]waftypes.RuleGroupSummary, error) {
 		out, err := c.WAF.ListRuleGroups(ctx, &waf.ListRuleGroupsInput{Limit: 100})
 		if err != nil {
 			return nil, err
 		}
 		return out.RuleGroups, nil
 	})
+	d.WAFWebACLDetails = cache.New("WAFWebACLDetails", func() (map[string]waftypes.WebACL, error) {
+		acls, err := d.WAFWebACLs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]waftypes.WebACL)
+		for _, a := range acls {
+			if a.WebACLId == nil {
+				continue
+			}
+			resp, err := c.WAF.GetWebACL(ctx, &waf.GetWebACLInput{WebACLId: a.WebACLId})
+			if err != nil || resp.WebACL == nil {
+				continue
+			}
+			out[*a.WebACLId] = *resp.WebACL
+		}
+		return out, nil
+	})
+	d.WAFRuleDetails = cache.New("WAFRuleDetails", func() (map[string]waftypes.Rule, error) {
+		rules, err := d.WAFRules.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]waftypes.Rule)
+		for _, r := range rules {
+			if r.RuleId == nil {
+				continue
+			}
+			resp, err := c.WAF.GetRule(ctx, &waf.GetRuleInput{RuleId: r.RuleId})
+			if err != nil || resp.Rule == nil {
+				continue
+			}
+			out[*r.RuleId] = *resp.Rule
+		}
+		return out, nil
+	})
+	d.WAFRuleGroupDetails = cache.New("WAFRuleGroupDetails", func() (map[string]waftypes.RuleGroup, error) {
+		rgs, err := d.WAFRuleGroups.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]waftypes.RuleGroup)
+		for _, rg := range rgs {
+			if rg.RuleGroupId == nil {
+				continue
+			}
+			resp, err := c.WAF.GetRuleGroup(ctx, &waf.GetRuleGroupInput{RuleGroupId: rg.RuleGroupId})
+			if err != nil || resp.RuleGroup == nil {
+				continue
+			}
+			out[*rg.RuleGroupId] = *resp.RuleGroup
+		}
+		return out, nil
+	})
+	d.WAFLoggingConfigurations = cache.New("WAFLoggingConfigurations", func() (map[string]waf.GetLoggingConfigurationOutput, error) {
+		acls, err := d.WAFWebACLs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]waf.GetLoggingConfigurationOutput)
+		for _, a := range acls {
+			if a.WebACLId == nil {
+				continue
+			}
+			resp, err := c.WAF.GetLoggingConfiguration(ctx, &waf.GetLoggingConfigurationInput{ResourceArn: a.WebACLId})
+			if err != nil {
+				continue
+			}
+			out[*a.WebACLId] = *resp
+		}
+		return out, nil
+	})
 
 	// WAF Regional
-	d.WAFRegionalWebACLs = cache.New(func() ([]wafregionaltypes.WebACLSummary, error) {
+	d.WAFRegionalWebACLs = cache.New("WAFRegionalWebACLs", func() ([]wafregionaltypes.WebACLSummary, error) {
 		out, err := c.WAFRegional.ListWebACLs(ctx, &wafregional.ListWebACLsInput{Limit: 100})
 		if err != nil {
 			return nil, err
 		}
 		return out.WebACLs, nil
 	})
-	d.WAFRegionalRules = cache.New(func() ([]wafregionaltypes.RuleSummary, error) {
+	d.WAFRegionalRules = cache.New("WAFRegionalRules", func() ([]wafregionaltypes.RuleSummary, error) {
 		out, err := c.WAFRegional.ListRules(ctx, &wafregional.ListRulesInput{Limit: 100})
 		if err != nil {
 			return nil, err
 		}
 		return out.Rules, nil
 	})
-	d.WAFRegionalRuleGroups = cache.New(func() ([]wafregionaltypes.RuleGroupSummary, error) {
+	d.WAFRegionalRuleGroups = cache.New("WAFRegionalRuleGroups", func() ([]wafregionaltypes.RuleGroupSummary, error) {
 		out, err := c.WAFRegional.ListRuleGroups(ctx, &wafregional.ListRuleGroupsInput{Limit: 100})
 		if err != nil {
 			return nil, err
 		}
 		return out.RuleGroups, nil
 	})
+	d.WAFRegionalWebACLDetails = cache.New("WAFRegionalWebACLDetails", func() (map[string]wafregionaltypes.WebACL, error) {
+		acls, err := d.WAFRegionalWebACLs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]wafregionaltypes.WebACL)
+		for _, a := range acls {
+			if a.WebACLId == nil {
+				continue
+			}
+			resp, err := c.WAFRegional.GetWebACL(ctx, &wafregional.GetWebACLInput{WebACLId: a.WebACLId})
+			if err != nil || resp.WebACL == nil {
+				continue
+			}
+			out[*a.WebACLId] = *resp.WebACL
+		}
+		return out, nil
+	})
+	d.WAFRegionalRuleDetails = cache.New("WAFRegionalRuleDetails", func() (map[string]wafregionaltypes.Rule, error) {
+		rules, err := d.WAFRegionalRules.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]wafregionaltypes.Rule)
+		for _, r := range rules {
+			if r.RuleId == nil {
+				continue
+			}
+			resp, err := c.WAFRegional.GetRule(ctx, &wafregional.GetRuleInput{RuleId: r.RuleId})
+			if err != nil || resp.Rule == nil {
+				continue
+			}
+			out[*r.RuleId] = *resp.Rule
+		}
+		return out, nil
+	})
+	d.WAFRegionalRuleGroupDetails = cache.New("WAFRegionalRuleGroupDetails", func() (map[string]wafregionaltypes.RuleGroup, error) {
+		rgs, err := d.WAFRegionalRuleGroups.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]wafregionaltypes.RuleGroup)
+		for _, rg := range rgs {
+			if rg.RuleGroupId == nil {
+				continue
+			}
+			resp, err := c.WAFRegional.GetRuleGroup(ctx, &wafregional.GetRuleGroupInput{RuleGroupId: rg.RuleGroupId})
+			if err != nil || resp.RuleGroup == nil {
+				continue
+			}
+			out[*rg.RuleGroupId] = *resp.RuleGroup
+		}
+		return out, nil
+	})
+	d.WAFRegionalLoggingConfigurations = cache.New("WAFRegionalLoggingConfigurations", func() (map[string]wafregional.GetLoggingConfigurationOutput, error) {
+		acls, err := d.WAFRegionalWebACLs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]wafregional.GetLoggingConfigurationOutput)
+		for _, a := range acls {
+			if a.WebACLId == nil {
+				continue
+			}
+			resp, err := c.WAFRegional.GetLoggingConfiguration(ctx, &wafregional.GetLoggingConfigurationInput{ResourceArn: a.WebACLId})
+			if err != nil {
+				continue
+			}
+			out[*a.WebACLId] = *resp
+		}
+		return out, nil
+	})
 
 	// WAFv2
-	d.WAFv2WebACLs = cache.New(func() ([]wafv2types.WebACLSummary, error) {
+	d.WAFv2WebACLs = cache.New("WAFv2WebACLs", func() ([]wafv2types.WebACLSummary, error) {
 		out, err := c.WAFv2.ListWebACLs(ctx, &wafv2.ListWebACLsInput{Scope: wafv2types.ScopeRegional})
 		if err != nil {
 			return nil, err
 		}
 		return out.WebACLs, nil
 	})
-	d.WAFv2RuleGroups = cache.New(func() ([]wafv2types.RuleGroupSummary, error) {
+	d.WAFv2RuleGroups = cache.New("WAFv2RuleGroups", func() ([]wafv2types.RuleGroupSummary, error) {
 		out, err := c.WAFv2.ListRuleGroups(ctx, &wafv2.ListRuleGroupsInput{Scope: wafv2types.ScopeRegional})
 		if err != nil {
 			return nil, err
 		}
 		return out.RuleGroups, nil
 	})
-	d.WAFv2WebACLForResource = cache.New(func() (map[string]bool, error) {
+	d.WAFv2WebACLDetails = cache.New("WAFv2WebACLDetails", func() (map[string]wafv2types.WebACL, error) {
+		acls, err := d.WAFv2WebACLs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]wafv2types.WebACL)
+		for _, a := range acls {
+			if a.Id == nil || a.Name == nil {
+				continue
+			}
+			resp, err := c.WAFv2.GetWebACL(ctx, &wafv2.GetWebACLInput{Id: a.Id, Name: a.Name, Scope: wafv2types.ScopeRegional})
+			if err != nil || resp.WebACL == nil {
+				continue
+			}
+			out[*a.ARN] = *resp.WebACL
+		}
+		return out, nil
+	})
+	d.WAFv2RuleGroupDetails = cache.New("WAFv2RuleGroupDetails", func() (map[string]wafv2types.RuleGroup, error) {
+		rgs, err := d.WAFv2RuleGroups.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]wafv2types.RuleGroup)
+		for _, rg := range rgs {
+			if rg.Id == nil || rg.Name == nil {
+				continue
+			}
+			resp, err := c.WAFv2.GetRuleGroup(ctx, &wafv2.GetRuleGroupInput{Id: rg.Id, Name: rg.Name, Scope: wafv2types.ScopeRegional})
+			if err != nil || resp.RuleGroup == nil {
+				continue
+			}
+			out[*rg.ARN] = *resp.RuleGroup
+		}
+		return out, nil
+	})
+	d.WAFv2LoggingConfigs = cache.New("WAFv2LoggingConfigs", func() (map[string]wafv2.GetLoggingConfigurationOutput, error) {
+		acls, err := d.WAFv2WebACLs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]wafv2.GetLoggingConfigurationOutput)
+		for _, a := range acls {
+			if a.ARN == nil {
+				continue
+			}
+			resp, err := c.WAFv2.GetLoggingConfiguration(ctx, &wafv2.GetLoggingConfigurationInput{ResourceArn: a.ARN})
+			if err != nil {
+				continue
+			}
+			out[*a.ARN] = *resp
+		}
+		return out, nil
+	})
+	d.WAFv2WebACLForResource = cache.New("WAFv2WebACLForResource", func() (map[string]bool, error) {
 		lbs, err := d.ELBv2LoadBalancers.Get()
 		if err != nil {
 			return nil, err
@@ -3880,34 +7047,114 @@ func (d *Data) init() {
 	})
 
 	// Workspaces
-	d.Workspaces = cache.New(func() ([]workspacestypes.Workspace, error) {
+	d.Workspaces = cache.New("Workspaces", func() ([]workspacestypes.Workspace, error) {
 		out, err := c.Workspaces.DescribeWorkspaces(ctx, &workspaces.DescribeWorkspacesInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Workspaces, nil
 	})
+	d.WorkspacesConnectionAlias = cache.New("WorkspacesConnectionAlias", func() ([]workspacestypes.ConnectionAlias, error) {
+		out, err := c.Workspaces.DescribeConnectionAliases(ctx, &workspaces.DescribeConnectionAliasesInput{})
+		if err != nil {
+			return nil, err
+		}
+		return out.ConnectionAliases, nil
+	})
+	d.WorkspacesTags = cache.New("WorkspacesTags", func() (map[string]map[string]string, error) {
+		items, err := d.Workspaces.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, w := range items {
+			if w.WorkspaceId == nil {
+				continue
+			}
+			resp, err := c.Workspaces.DescribeTags(ctx, &workspaces.DescribeTagsInput{ResourceId: w.WorkspaceId})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.TagList {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*w.WorkspaceId] = m
+		}
+		return out, nil
+	})
+	d.WorkspacesConnectionAliasTags = cache.New("WorkspacesConnectionAliasTags", func() (map[string]map[string]string, error) {
+		items, err := d.WorkspacesConnectionAlias.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string]map[string]string)
+		for _, a := range items {
+			if a.AliasId == nil {
+				continue
+			}
+			resp, err := c.Workspaces.DescribeTags(ctx, &workspaces.DescribeTagsInput{ResourceId: a.AliasId})
+			if err != nil {
+				continue
+			}
+			m := make(map[string]string)
+			for _, t := range resp.TagList {
+				if t.Key != nil && t.Value != nil {
+					m[*t.Key] = *t.Value
+				}
+			}
+			out[*a.AliasId] = m
+		}
+		return out, nil
+	})
 
 	// ElasticBeanstalk
-	d.ElasticBeanstalkApps = cache.New(func() ([]ebtypes.ApplicationDescription, error) {
+	d.ElasticBeanstalkApps = cache.New("ElasticBeanstalkApps", func() ([]ebtypes.ApplicationDescription, error) {
 		out, err := c.ElasticBeanstalk.DescribeApplications(ctx, &elasticbeanstalk.DescribeApplicationsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Applications, nil
 	})
-	d.ElasticBeanstalkEnvs = cache.New(func() ([]ebtypes.EnvironmentDescription, error) {
+	d.ElasticBeanstalkEnvs = cache.New("ElasticBeanstalkEnvs", func() ([]ebtypes.EnvironmentDescription, error) {
 		out, err := c.ElasticBeanstalk.DescribeEnvironments(ctx, &elasticbeanstalk.DescribeEnvironmentsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.Environments, nil
 	})
-	d.ElasticBeanstalkAppVersions = cache.New(func() ([]ebtypes.ApplicationVersionDescription, error) {
+	d.ElasticBeanstalkAppVersions = cache.New("ElasticBeanstalkAppVersions", func() ([]ebtypes.ApplicationVersionDescription, error) {
 		out, err := c.ElasticBeanstalk.DescribeApplicationVersions(ctx, &elasticbeanstalk.DescribeApplicationVersionsInput{})
 		if err != nil {
 			return nil, err
 		}
 		return out.ApplicationVersions, nil
+	})
+	d.ElasticBeanstalkEnvSettings = cache.New("ElasticBeanstalkEnvSettings", func() (map[string][]ebtypes.ConfigurationOptionSetting, error) {
+		envs, err := d.ElasticBeanstalkEnvs.Get()
+		if err != nil {
+			return nil, err
+		}
+		out := make(map[string][]ebtypes.ConfigurationOptionSetting)
+		for _, env := range envs {
+			if env.EnvironmentName == nil || env.ApplicationName == nil {
+				continue
+			}
+			resp, err := c.ElasticBeanstalk.DescribeConfigurationSettings(ctx, &elasticbeanstalk.DescribeConfigurationSettingsInput{
+				ApplicationName: env.ApplicationName,
+				EnvironmentName: env.EnvironmentName,
+			})
+			if err != nil {
+				continue
+			}
+			for _, cfg := range resp.ConfigurationSettings {
+				if cfg.EnvironmentName != nil {
+					out[*cfg.EnvironmentName] = cfg.OptionSettings
+				}
+			}
+		}
+		return out, nil
 	})
 }

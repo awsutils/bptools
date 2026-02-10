@@ -26,7 +26,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if inst.ReplicationInstanceArn != nil {
 					id = *inst.ReplicationInstanceArn
 				}
-				ok := inst.AutoMinorVersionUpgrade != nil && *inst.AutoMinorVersionUpgrade
+				ok := inst.AutoMinorVersionUpgrade
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AutoMinorVersionUpgrade: %v", inst.AutoMinorVersionUpgrade)})
 			}
 			return res, nil
@@ -131,8 +131,8 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if e.EndpointArn != nil {
 					id = *e.EndpointArn
 				}
-				ok := e.IamAuth != nil && *e.IamAuth
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("IamAuth: %v", e.IamAuth)})
+				ok := e.NeptuneSettings != nil && e.NeptuneSettings.IamAuthEnabled != nil && *e.NeptuneSettings.IamAuthEnabled
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("IamAuthEnabled: %v", ok)})
 			}
 			return res, nil
 		},
@@ -183,7 +183,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if inst.ReplicationInstanceArn != nil {
 					id = *inst.ReplicationInstanceArn
 				}
-				res = append(res, EnabledResource{ID: id, Enabled: inst.MultiAZ != nil && *inst.MultiAZ})
+				res = append(res, EnabledResource{ID: id, Enabled: inst.MultiAZ})
 			}
 			return res, nil
 		},
@@ -206,7 +206,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if inst.ReplicationInstanceArn != nil {
 					id = *inst.ReplicationInstanceArn
 				}
-				public := inst.PubliclyAccessible != nil && *inst.PubliclyAccessible
+				public := inst.PubliclyAccessible
 				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: fmt.Sprintf("Public: %v", public)})
 			}
 			return res, nil

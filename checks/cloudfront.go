@@ -38,7 +38,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			var res []LoggingResource
 			for id, cfg := range configs {
-				logging := cfg.Logging != nil && cfg.Logging.Enabled && cfg.Logging.Bucket != nil && *cfg.Logging.Bucket != ""
+				logging := cfg.Logging != nil && cfg.Logging.Enabled != nil && *cfg.Logging.Enabled && cfg.Logging.Bucket != nil && *cfg.Logging.Bucket != ""
 				res = append(res, LoggingResource{ID: cfID(id, cfg), Logging: logging})
 			}
 			return res, nil
@@ -107,12 +107,12 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for id, cfg := range configs {
 				enabled := false
-				if cfg.DefaultCacheBehavior.TrustedKeyGroups != nil && cfg.DefaultCacheBehavior.TrustedKeyGroups.Quantity > 0 {
+				if cfg.DefaultCacheBehavior.TrustedKeyGroups != nil && cfg.DefaultCacheBehavior.TrustedKeyGroups.Quantity != nil && *cfg.DefaultCacheBehavior.TrustedKeyGroups.Quantity > 0 {
 					enabled = true
 				}
 				if !enabled {
 					for _, cb := range cfg.CacheBehaviors.Items {
-						if cb.TrustedKeyGroups != nil && cb.TrustedKeyGroups.Quantity > 0 {
+						if cb.TrustedKeyGroups != nil && cb.TrustedKeyGroups.Quantity != nil && *cb.TrustedKeyGroups.Quantity > 0 {
 							enabled = true
 							break
 						}
@@ -132,14 +132,14 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			deprecated := map[cftypes.MinimumProtocolVersion]bool{
-				cftypes.MinimumProtocolVersionSslv3:        true,
-				cftypes.MinimumProtocolVersionTlsv1:        true,
-				cftypes.MinimumProtocolVersionTlsv1_2016:   true,
-				cftypes.MinimumProtocolVersionTlsv1_1_2016: true,
+				cftypes.MinimumProtocolVersionSSLv3:      true,
+				cftypes.MinimumProtocolVersionTLSv1:      true,
+				cftypes.MinimumProtocolVersionTLSv12016:  true,
+				cftypes.MinimumProtocolVersionTLSv112016: true,
 			}
 			var res []ConfigResource
 			for id, cfg := range configs {
-				ver := cftypes.MinimumProtocolVersionTlsv1_2_2019
+				ver := cftypes.MinimumProtocolVersionTLSv122019
 				if cfg.ViewerCertificate != nil {
 					ver = cfg.ViewerCertificate.MinimumProtocolVersion
 				}
@@ -182,7 +182,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			var res []ConfigResource
 			for id, cfg := range configs {
-				ok := cfg.OriginGroups != nil && cfg.OriginGroups.Quantity > 0
+				ok := cfg.OriginGroups != nil && cfg.OriginGroups.Quantity != nil && *cfg.OriginGroups.Quantity > 0
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: "Origin groups configured"})
 			}
 			return res, nil
@@ -263,11 +263,11 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			var res []ConfigResource
 			for id, cfg := range configs {
-				ver := cftypes.MinimumProtocolVersionTlsv1_2_2019
+				ver := cftypes.MinimumProtocolVersionTLSv122019
 				if cfg.ViewerCertificate != nil {
 					ver = cfg.ViewerCertificate.MinimumProtocolVersion
 				}
-				ok := ver == cftypes.MinimumProtocolVersionTlsv1_2_2019 || ver == cftypes.MinimumProtocolVersionTlsv1_2_2021
+				ok := ver == cftypes.MinimumProtocolVersionTLSv122019 || ver == cftypes.MinimumProtocolVersionTLSv122021
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: fmt.Sprintf("MinProtocol: %s", ver)})
 			}
 			return res, nil
@@ -282,11 +282,11 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			var res []ConfigResource
 			for id, cfg := range configs {
-				ver := cftypes.MinimumProtocolVersionTlsv1_2_2019
+				ver := cftypes.MinimumProtocolVersionTLSv122019
 				if cfg.ViewerCertificate != nil {
 					ver = cfg.ViewerCertificate.MinimumProtocolVersion
 				}
-				ok := ver == cftypes.MinimumProtocolVersionTlsv1_2_2019 || ver == cftypes.MinimumProtocolVersionTlsv1_2_2021
+				ok := ver == cftypes.MinimumProtocolVersionTLSv122019 || ver == cftypes.MinimumProtocolVersionTLSv122021
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: fmt.Sprintf("MinProtocol: %s", ver)})
 			}
 			return res, nil

@@ -12,7 +12,9 @@ import (
 )
 
 func bucketName(b s3types.Bucket) string {
-	if b.Name != nil { return *b.Name }
+	if b.Name != nil {
+		return *b.Name
+	}
 	return "unknown"
 }
 
@@ -21,14 +23,18 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(TaggedCheck("s3-bucket-tagged", "Check S3 bucket tagged", "s3", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []TaggedResource
 			for _, b := range buckets {
 				tags := make(map[string]string)
 				out, err := d.Clients.S3.GetBucketTagging(d.Ctx, &s3.GetBucketTaggingInput{Bucket: b.Name})
 				if err == nil {
 					for _, t := range out.TagSet {
-						if t.Key != nil && t.Value != nil { tags[*t.Key] = *t.Value }
+						if t.Key != nil && t.Value != nil {
+							tags[*t.Key] = *t.Value
+						}
 					}
 				}
 				res = append(res, TaggedResource{ID: bucketName(b), Tags: tags})
@@ -40,7 +46,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(EnabledCheck("s3-bucket-versioning-enabled", "Check versioning", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketVersioning(d.Ctx, &s3.GetBucketVersioningInput{Bucket: b.Name})
@@ -54,7 +62,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(EnabledCheck("s3-bucket-server-side-encryption-enabled", "Check SSE", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, b := range buckets {
 				_, err := d.Clients.S3.GetBucketEncryption(d.Ctx, &s3.GetBucketEncryptionInput{Bucket: b.Name})
@@ -67,7 +77,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(LoggingCheck("s3-bucket-logging-enabled", "Check bucket logging", "s3", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []LoggingResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketLogging(d.Ctx, &s3.GetBucketLoggingInput{Bucket: b.Name})
@@ -81,11 +93,13 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(ConfigCheck("s3-bucket-public-read-prohibited", "Check no public read", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketPolicyStatus(d.Ctx, &s3.GetBucketPolicyStatusInput{Bucket: b.Name})
-				public := err == nil && out.PolicyStatus != nil && out.PolicyStatus.IsPublic
+					public := err == nil && out.PolicyStatus != nil && out.PolicyStatus.IsPublic != nil && *out.PolicyStatus.IsPublic
 				res = append(res, ConfigResource{ID: bucketName(b), Passing: !public, Detail: fmt.Sprintf("Public: %v", public)})
 			}
 			return res, nil
@@ -94,7 +108,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(ConfigCheck("s3-bucket-public-write-prohibited", "Check no public write", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetPublicAccessBlock(d.Ctx, &s3.GetPublicAccessBlockInput{Bucket: b.Name})
@@ -109,7 +125,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(ConfigCheck("s3-bucket-level-public-access-prohibited", "Check bucket public access blocked", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetPublicAccessBlock(d.Ctx, &s3.GetPublicAccessBlockInput{Bucket: b.Name})
@@ -127,7 +145,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(ConfigCheck("s3-bucket-ssl-requests-only", "Check SSL only", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketPolicy(d.Ctx, &s3.GetBucketPolicyInput{Bucket: b.Name})
@@ -143,7 +163,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 		checker.Register(EnabledCheck(cid, "Check replication", "s3", d,
 			func(d *awsdata.Data) ([]EnabledResource, error) {
 				buckets, err := d.S3Buckets.Get()
-				if err != nil { return nil, err }
+				if err != nil {
+					return nil, err
+				}
 				var res []EnabledResource
 				for _, b := range buckets {
 					out, err := d.Clients.S3.GetBucketReplication(d.Ctx, &s3.GetBucketReplicationInput{Bucket: b.Name})
@@ -159,7 +181,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(EnabledCheck("s3-bucket-default-lock-enabled", "Check object lock", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, b := range buckets {
 				_, err := d.Clients.S3.GetObjectLockConfiguration(d.Ctx, &s3.GetObjectLockConfigurationInput{Bucket: b.Name})
@@ -172,7 +196,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(EnabledCheck("s3-bucket-mfa-delete-enabled", "Check MFA delete", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketVersioning(d.Ctx, &s3.GetBucketVersioningInput{Bucket: b.Name})
@@ -186,7 +212,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(ConfigCheck("s3-bucket-acl-prohibited", "Check ACL prohibited", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketAcl(d.Ctx, &s3.GetBucketAclInput{Bucket: b.Name})
@@ -207,7 +235,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(ConfigCheck("s3-default-encryption-kms", "Check KMS encryption", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketEncryption(d.Ctx, &s3.GetBucketEncryptionInput{Bucket: b.Name})
@@ -228,7 +258,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 	checker.Register(EnabledCheck("s3-event-notifications-enabled", "Check event notifications", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketNotificationConfiguration(d.Ctx, &s3.GetBucketNotificationConfigurationInput{Bucket: b.Name})
@@ -244,7 +276,9 @@ func RegisterS3Checks(d *awsdata.Data) {
 		checker.Register(ConfigCheck(cid, "Check lifecycle policy", "s3", d,
 			func(d *awsdata.Data) ([]ConfigResource, error) {
 				buckets, err := d.S3Buckets.Get()
-				if err != nil { return nil, err }
+				if err != nil {
+					return nil, err
+				}
 				var res []ConfigResource
 				for _, b := range buckets {
 					_, err := d.Clients.S3.GetBucketLifecycleConfiguration(d.Ctx, &s3.GetBucketLifecycleConfigurationInput{Bucket: b.Name})
@@ -261,9 +295,13 @@ func RegisterS3Checks(d *awsdata.Data) {
 		checker.Register(SingleCheck(cid, "Check account public access block", "s3", d,
 			func(d *awsdata.Data) (bool, string, error) {
 				acctID, err := d.AccountID.Get()
-				if err != nil { return false, "", err }
+				if err != nil {
+					return false, "", err
+				}
 				out, err := d.Clients.S3Control.GetPublicAccessBlock(d.Ctx, &s3control.GetPublicAccessBlockInput{AccountId: &acctID})
-				if err != nil { return false, "No account-level public access block", nil }
+				if err != nil {
+					return false, "No account-level public access block", nil
+				}
 				cfg := out.PublicAccessBlockConfiguration
 				blocked := cfg.BlockPublicAcls != nil && *cfg.BlockPublicAcls &&
 					cfg.IgnorePublicAcls != nil && *cfg.IgnorePublicAcls &&

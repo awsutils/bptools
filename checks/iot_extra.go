@@ -1,0 +1,187 @@
+package checks
+
+import (
+	"bptools/awsdata"
+	"bptools/checker"
+)
+
+// RegisterIoTExtraChecks registers IoT Device Defender, IoT Events, and IoT Wireless checks.
+func RegisterIoTExtraChecks(d *awsdata.Data) {
+	checker.Register(TaggedCheck(
+		"iotdevicedefender-custom-metric-tagged",
+		"This rule checks iotdevicedefender custom metric tagged.",
+		"iot",
+		d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			metrics, err := d.IoTCustomMetrics.Get()
+			if err != nil {
+				return nil, err
+			}
+			tags, err := d.IoTCustomMetricTags.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for arn := range metrics {
+				res = append(res, TaggedResource{ID: arn, Tags: tags[arn]})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(TaggedCheck(
+		"iotevents-alarm-model-tagged",
+		"This rule checks iotevents alarm model tagged.",
+		"iotevents",
+		d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			models, err := d.IoTEventsAlarmModels.Get()
+			if err != nil {
+				return nil, err
+			}
+			tags, err := d.IoTEventsTags.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, m := range models {
+				id := "unknown"
+				if m.AlarmModelName != nil {
+					id = *m.AlarmModelName
+				}
+				res = append(res, TaggedResource{ID: id, Tags: tags[id]})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(TaggedCheck(
+		"iotevents-detector-model-tagged",
+		"This rule checks iotevents detector model tagged.",
+		"iotevents",
+		d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			models, err := d.IoTEventsDetectorModels.Get()
+			if err != nil {
+				return nil, err
+			}
+			tags, err := d.IoTEventsTags.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, m := range models {
+				id := "unknown"
+				if m.DetectorModelName != nil {
+					id = *m.DetectorModelName
+				}
+				res = append(res, TaggedResource{ID: id, Tags: tags[id]})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(TaggedCheck(
+		"iotevents-input-tagged",
+		"This rule checks iotevents input tagged.",
+		"iotevents",
+		d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			inputs, err := d.IoTEventsInputs.Get()
+			if err != nil {
+				return nil, err
+			}
+			tags, err := d.IoTEventsTags.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, m := range inputs {
+				id := "unknown"
+				if m.InputArn != nil {
+					id = *m.InputArn
+				}
+				res = append(res, TaggedResource{ID: id, Tags: tags[id]})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(TaggedCheck(
+		"iotwireless-fuota-task-tagged",
+		"This rule checks iotwireless fuota task tagged.",
+		"iotwireless",
+		d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			items, err := d.IoTWirelessFuotaTasks.Get()
+			if err != nil {
+				return nil, err
+			}
+			tags, err := d.IoTWirelessTags.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, it := range items {
+				id := "unknown"
+				if it.Arn != nil {
+					id = *it.Arn
+				}
+				res = append(res, TaggedResource{ID: id, Tags: tags[id]})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(TaggedCheck(
+		"iotwireless-multicast-group-tagged",
+		"This rule checks iotwireless multicast group tagged.",
+		"iotwireless",
+		d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			items, err := d.IoTWirelessMulticastGroups.Get()
+			if err != nil {
+				return nil, err
+			}
+			tags, err := d.IoTWirelessTags.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, it := range items {
+				id := "unknown"
+				if it.Arn != nil {
+					id = *it.Arn
+				}
+				res = append(res, TaggedResource{ID: id, Tags: tags[id]})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(TaggedCheck(
+		"iotwireless-service-profile-tagged",
+		"This rule checks iotwireless service profile tagged.",
+		"iotwireless",
+		d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			items, err := d.IoTWirelessServiceProfiles.Get()
+			if err != nil {
+				return nil, err
+			}
+			tags, err := d.IoTWirelessTags.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, it := range items {
+				id := "unknown"
+				if it.Arn != nil {
+					id = *it.Arn
+				}
+				res = append(res, TaggedResource{ID: id, Tags: tags[id]})
+			}
+			return res, nil
+		},
+	))
+}

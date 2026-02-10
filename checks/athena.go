@@ -46,7 +46,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 				if s.StatementName != nil {
 					id = *s.StatementName
 				}
-				res = append(res, DescriptionResource{ID: id, Description: s.Description})
+				res = append(res, DescriptionResource{ID: id, Description: nil})
 			}
 			return res, nil
 		},
@@ -104,7 +104,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 			}
 			var res []EnabledResource
 			for name, wg := range wgs {
-				enabled := wg.Configuration != nil && wg.Configuration.EnforceWorkGroupConfiguration
+				enabled := wg.Configuration != nil && wg.Configuration.EnforceWorkGroupConfiguration != nil && *wg.Configuration.EnforceWorkGroupConfiguration
 				res = append(res, EnabledResource{ID: name, Enabled: enabled})
 			}
 			return res, nil
@@ -124,7 +124,10 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 			}
 			var res []EnabledResource
 			for name, wg := range wgs {
-				enabled := wg.Configuration != nil && wg.Configuration.EngineVersion != nil && wg.Configuration.EngineVersion.SelectedEngineVersion != nil && wg.Configuration.EngineVersion.AutoUpgrade
+				enabled := wg.Configuration != nil &&
+					wg.Configuration.EngineVersion != nil &&
+					wg.Configuration.EngineVersion.SelectedEngineVersion != nil &&
+					*wg.Configuration.EngineVersion.SelectedEngineVersion == "AUTO"
 				res = append(res, EnabledResource{ID: name, Enabled: enabled})
 			}
 			return res, nil
@@ -144,7 +147,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 			}
 			var res []LoggingResource
 			for name, wg := range wgs {
-				logging := wg.Configuration != nil && wg.Configuration.PublishCloudWatchMetricsEnabled
+				logging := wg.Configuration != nil && wg.Configuration.PublishCloudWatchMetricsEnabled != nil && *wg.Configuration.PublishCloudWatchMetricsEnabled
 				res = append(res, LoggingResource{ID: name, Logging: logging})
 			}
 			return res, nil

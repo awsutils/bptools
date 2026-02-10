@@ -29,7 +29,8 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 				if g.AutoScalingGroupName != nil {
 					id = *g.AutoScalingGroupName
 				}
-				res = append(res, EnabledResource{ID: id, Enabled: g.CapacityRebalance})
+				enabled := g.CapacityRebalance != nil && *g.CapacityRebalance
+				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
 		},
@@ -52,8 +53,12 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 				if g.AutoScalingGroupName != nil {
 					id = *g.AutoScalingGroupName
 				}
-				ok := strings.EqualFold(string(g.HealthCheckType), "ELB") || len(g.TargetGroupARNs) > 0
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("HealthCheckType: %s", g.HealthCheckType)})
+				healthCheckType := ""
+				if g.HealthCheckType != nil {
+					healthCheckType = *g.HealthCheckType
+				}
+				ok := strings.EqualFold(healthCheckType, "ELB") || len(g.TargetGroupARNs) > 0
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("HealthCheckType: %s", healthCheckType)})
 			}
 			return res, nil
 		},

@@ -75,7 +75,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for name, c := range clusters {
-				public := c.ResourcesVpcConfig != nil && c.ResourcesVpcConfig.EndpointPublicAccess != nil && *c.ResourcesVpcConfig.EndpointPublicAccess
+				public := c.ResourcesVpcConfig != nil && c.ResourcesVpcConfig.EndpointPublicAccess
 				res = append(res, ConfigResource{ID: name, Passing: !public, Detail: fmt.Sprintf("PublicAccess: %v", public)})
 			}
 			return res, nil

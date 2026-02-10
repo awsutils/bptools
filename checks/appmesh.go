@@ -217,7 +217,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for name, m := range meshes {
-				ok := m.Spec.EgressFilter != nil && m.Spec.EgressFilter.Type == appmeshtypes.MeshEgressFilterTypeDropAll
+				ok := m.Spec.EgressFilter != nil && m.Spec.EgressFilter.Type == appmeshtypes.EgressFilterTypeDropAll
 				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("EgressFilter: %v", m.Spec.EgressFilter)})
 			}
 			return res, nil
@@ -258,8 +258,10 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for key, vg := range vgs {
 				path := ""
-				if vg.Spec.Logging != nil && vg.Spec.Logging.AccessLog != nil && vg.Spec.Logging.AccessLog.File != nil && vg.Spec.Logging.AccessLog.File.Path != nil {
-					path = *vg.Spec.Logging.AccessLog.File.Path
+				if vg.Spec.Logging != nil && vg.Spec.Logging.AccessLog != nil {
+					if fileLog, ok := vg.Spec.Logging.AccessLog.(*appmeshtypes.VirtualGatewayAccessLogMemberFile); ok && fileLog.Value.Path != nil {
+						path = *fileLog.Value.Path
+					}
 				}
 				ok := path != ""
 				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: fmt.Sprintf("Log path: %s", path)})
@@ -302,8 +304,10 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for key, vn := range vns {
 				ok := true
-				if vn.Spec.ServiceDiscovery != nil && vn.Spec.ServiceDiscovery.AwsCloudMap != nil {
-					ok = vn.Spec.ServiceDiscovery.AwsCloudMap.IpPreference != ""
+				if vn.Spec.ServiceDiscovery != nil {
+					if cloudMap, ok := vn.Spec.ServiceDiscovery.(*appmeshtypes.ServiceDiscoveryMemberAwsCloudMap); ok {
+						ok = cloudMap.Value.IpPreference != ""
+					}
 				}
 				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: "Cloud Map IP preference set"})
 			}
@@ -325,8 +329,10 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for key, vn := range vns {
 				ok := true
-				if vn.Spec.ServiceDiscovery != nil && vn.Spec.ServiceDiscovery.Dns != nil {
-					ok = vn.Spec.ServiceDiscovery.Dns.IpPreference != ""
+				if vn.Spec.ServiceDiscovery != nil {
+					if dns, ok := vn.Spec.ServiceDiscovery.(*appmeshtypes.ServiceDiscoveryMemberDns); ok {
+						ok = dns.Value.IpPreference != ""
+					}
 				}
 				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: "DNS IP preference set"})
 			}
@@ -348,8 +354,10 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for key, vn := range vns {
 				path := ""
-				if vn.Spec.Logging != nil && vn.Spec.Logging.AccessLog != nil && vn.Spec.Logging.AccessLog.File != nil && vn.Spec.Logging.AccessLog.File.Path != nil {
-					path = *vn.Spec.Logging.AccessLog.File.Path
+				if vn.Spec.Logging != nil && vn.Spec.Logging.AccessLog != nil {
+					if fileLog, ok := vn.Spec.Logging.AccessLog.(*appmeshtypes.AccessLogMemberFile); ok && fileLog.Value.Path != nil {
+						path = *fileLog.Value.Path
+					}
 				}
 				ok := path != ""
 				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: fmt.Sprintf("Log path: %s", path)})

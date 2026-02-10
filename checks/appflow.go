@@ -49,11 +49,11 @@ func RegisterAppFlowChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for name, f := range details {
-				trigger := appflowtypes.TriggerTypeOnDemand
+				trigger := appflowtypes.TriggerTypeOndemand
 				if f.TriggerConfig != nil {
 					trigger = f.TriggerConfig.TriggerType
 				}
-				ok := trigger != appflowtypes.TriggerTypeOnDemand
+				ok := trigger != appflowtypes.TriggerTypeOndemand
 				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("TriggerType: %s", trigger)})
 			}
 			return res, nil

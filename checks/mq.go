@@ -10,6 +10,65 @@ import (
 )
 
 func RegisterMQChecks(d *awsdata.Data) {
+	checker.Register(ConfigCheck(
+		"active-mq-supported-version",
+		"This rule checks active mq supported version.",
+		"mq",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			brokers, err := d.MQBrokerDetails.Get()
+			if err != nil {
+				return nil, err
+			}
+			versions, err := d.MQBrokerEngineVersions.Get()
+			if err != nil {
+				return nil, err
+			}
+			supported := versions[mqtypes.EngineTypeActivemq]
+			var res []ConfigResource
+			for id, b := range brokers {
+				if b.EngineType != mqtypes.EngineTypeActivemq {
+					continue
+				}
+				ok := false
+				if b.EngineVersion != nil {
+					ok = supported[*b.EngineVersion]
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("EngineVersion: %v", b.EngineVersion)})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"rabbit-mq-supported-version",
+		"This rule checks rabbit mq supported version.",
+		"mq",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			brokers, err := d.MQBrokerDetails.Get()
+			if err != nil {
+				return nil, err
+			}
+			versions, err := d.MQBrokerEngineVersions.Get()
+			if err != nil {
+				return nil, err
+			}
+			supported := versions[mqtypes.EngineTypeRabbitmq]
+			var res []ConfigResource
+			for id, b := range brokers {
+				if b.EngineType != mqtypes.EngineTypeRabbitmq {
+					continue
+				}
+				ok := false
+				if b.EngineVersion != nil {
+					ok = supported[*b.EngineVersion]
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("EngineVersion: %v", b.EngineVersion)})
+			}
+			return res, nil
+		},
+	))
 	// mq-automatic-minor-version-upgrade-enabled + mq-auto-minor-version-upgrade-enabled
 	for _, id := range []string{"mq-automatic-minor-version-upgrade-enabled", "mq-auto-minor-version-upgrade-enabled"} {
 		cid := id

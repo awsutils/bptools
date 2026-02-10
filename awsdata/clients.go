@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/accessanalyzer"
+	"github.com/aws/aws-sdk-go-v2/service/account"
 	"github.com/aws/aws-sdk-go-v2/service/acm"
 	"github.com/aws/aws-sdk-go-v2/service/acmpca"
 	"github.com/aws/aws-sdk-go-v2/service/amp"
@@ -38,9 +39,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider"
 	"github.com/aws/aws-sdk-go-v2/service/connect"
 	"github.com/aws/aws-sdk-go-v2/service/customerprofiles"
+	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
 	"github.com/aws/aws-sdk-go-v2/service/datasync"
 	"github.com/aws/aws-sdk-go-v2/service/dax"
-	"github.com/aws/aws-sdk-go-v2/service/databasemigrationservice"
 	"github.com/aws/aws-sdk-go-v2/service/docdb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
@@ -54,17 +55,23 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2"
 	"github.com/aws/aws-sdk-go-v2/service/elasticsearchservice"
 	"github.com/aws/aws-sdk-go-v2/service/emr"
+	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
 	"github.com/aws/aws-sdk-go-v2/service/evidently"
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
 	"github.com/aws/aws-sdk-go-v2/service/fis"
 	"github.com/aws/aws-sdk-go-v2/service/fms"
 	"github.com/aws/aws-sdk-go-v2/service/frauddetector"
 	"github.com/aws/aws-sdk-go-v2/service/fsx"
+	"github.com/aws/aws-sdk-go-v2/service/globalaccelerator"
 	"github.com/aws/aws-sdk-go-v2/service/glue"
 	"github.com/aws/aws-sdk-go-v2/service/guardduty"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/inspector2"
 	"github.com/aws/aws-sdk-go-v2/service/iot"
+	"github.com/aws/aws-sdk-go-v2/service/iotevents"
+	"github.com/aws/aws-sdk-go-v2/service/iotsitewise"
+	"github.com/aws/aws-sdk-go-v2/service/iottwinmaker"
+	"github.com/aws/aws-sdk-go-v2/service/iotwireless"
 	"github.com/aws/aws-sdk-go-v2/service/ivs"
 	"github.com/aws/aws-sdk-go-v2/service/kafka"
 	"github.com/aws/aws-sdk-go-v2/service/kafkaconnect"
@@ -83,6 +90,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/rds"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftserverless"
+	"github.com/aws/aws-sdk-go-v2/service/resourcegroupstaggingapi"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53resolver"
 	"github.com/aws/aws-sdk-go-v2/service/rum"
@@ -91,6 +99,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sagemaker"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/aws/aws-sdk-go-v2/service/securityhub"
+	"github.com/aws/aws-sdk-go-v2/service/servicecatalog"
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	"github.com/aws/aws-sdk-go-v2/service/sfn"
@@ -98,6 +107,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	"github.com/aws/aws-sdk-go-v2/service/storagegateway"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/transfer"
 	"github.com/aws/aws-sdk-go-v2/service/waf"
@@ -113,6 +123,7 @@ type Clients struct {
 	ACMPCA                 *acmpca.Client
 	AMP                    *amp.Client
 	Amplify                *amplify.Client
+	Account                *account.Client
 	APIGateway             *apigateway.Client
 	APIGatewayV2           *apigatewayv2.Client
 	AppConfig              *appconfig.Client
@@ -159,16 +170,22 @@ type Clients struct {
 	Elasticsearch          *elasticsearchservice.Client
 	EMR                    *emr.Client
 	Evidently              *evidently.Client
+	EventBridge            *eventbridge.Client
 	Firehose               *firehose.Client
 	FIS                    *fis.Client
 	FMS                    *fms.Client
 	FraudDetector          *frauddetector.Client
 	FSx                    *fsx.Client
+	GlobalAccelerator      *globalaccelerator.Client
 	Glue                   *glue.Client
 	GuardDuty              *guardduty.Client
 	IAM                    *iam.Client
 	Inspector2             *inspector2.Client
 	IoT                    *iot.Client
+	IoTEvents              *iotevents.Client
+	IoTSiteWise            *iotsitewise.Client
+	IoTTwinMaker           *iottwinmaker.Client
+	IoTWireless            *iotwireless.Client
 	IVS                    *ivs.Client
 	Kafka                  *kafka.Client
 	KafkaConnect           *kafkaconnect.Client
@@ -187,6 +204,7 @@ type Clients struct {
 	RDS                    *rds.Client
 	Redshift               *redshift.Client
 	RedshiftServerless     *redshiftserverless.Client
+	ResourceGroupsTagging  *resourcegroupstaggingapi.Client
 	Route53                *route53.Client
 	Route53Resolver        *route53resolver.Client
 	RUM                    *rum.Client
@@ -199,10 +217,12 @@ type Clients struct {
 	SESv2                  *sesv2.Client
 	SFN                    *sfn.Client
 	Shield                 *shield.Client
+	ServiceCatalog         *servicecatalog.Client
 	SNS                    *sns.Client
 	SQS                    *sqs.Client
 	SSM                    *ssm.Client
 	STS                    *sts.Client
+	StorageGateway         *storagegateway.Client
 	Transfer               *transfer.Client
 	WAF                    *waf.Client
 	WAFRegional            *wafregional.Client
@@ -222,6 +242,7 @@ func NewClients(ctx context.Context) (*Clients, error) {
 		ACMPCA:                 acmpca.NewFromConfig(cfg),
 		AMP:                    amp.NewFromConfig(cfg),
 		Amplify:                amplify.NewFromConfig(cfg),
+		Account:                account.NewFromConfig(cfg),
 		APIGateway:             apigateway.NewFromConfig(cfg),
 		APIGatewayV2:           apigatewayv2.NewFromConfig(cfg),
 		AppConfig:              appconfig.NewFromConfig(cfg),
@@ -268,16 +289,22 @@ func NewClients(ctx context.Context) (*Clients, error) {
 		Elasticsearch:          elasticsearchservice.NewFromConfig(cfg),
 		EMR:                    emr.NewFromConfig(cfg),
 		Evidently:              evidently.NewFromConfig(cfg),
+		EventBridge:            eventbridge.NewFromConfig(cfg),
 		Firehose:               firehose.NewFromConfig(cfg),
 		FIS:                    fis.NewFromConfig(cfg),
 		FMS:                    fms.NewFromConfig(cfg),
 		FraudDetector:          frauddetector.NewFromConfig(cfg),
 		FSx:                    fsx.NewFromConfig(cfg),
+		GlobalAccelerator:      globalaccelerator.NewFromConfig(cfg),
 		Glue:                   glue.NewFromConfig(cfg),
 		GuardDuty:              guardduty.NewFromConfig(cfg),
 		IAM:                    iam.NewFromConfig(cfg),
 		Inspector2:             inspector2.NewFromConfig(cfg),
 		IoT:                    iot.NewFromConfig(cfg),
+		IoTEvents:              iotevents.NewFromConfig(cfg),
+		IoTSiteWise:            iotsitewise.NewFromConfig(cfg),
+		IoTTwinMaker:           iottwinmaker.NewFromConfig(cfg),
+		IoTWireless:            iotwireless.NewFromConfig(cfg),
 		IVS:                    ivs.NewFromConfig(cfg),
 		Kafka:                  kafka.NewFromConfig(cfg),
 		KafkaConnect:           kafkaconnect.NewFromConfig(cfg),
@@ -296,6 +323,7 @@ func NewClients(ctx context.Context) (*Clients, error) {
 		RDS:                    rds.NewFromConfig(cfg),
 		Redshift:               redshift.NewFromConfig(cfg),
 		RedshiftServerless:     redshiftserverless.NewFromConfig(cfg),
+		ResourceGroupsTagging:  resourcegroupstaggingapi.NewFromConfig(cfg),
 		Route53:                route53.NewFromConfig(cfg),
 		Route53Resolver:        route53resolver.NewFromConfig(cfg),
 		RUM:                    rum.NewFromConfig(cfg),
@@ -308,10 +336,12 @@ func NewClients(ctx context.Context) (*Clients, error) {
 		SESv2:                  sesv2.NewFromConfig(cfg),
 		SFN:                    sfn.NewFromConfig(cfg),
 		Shield:                 shield.NewFromConfig(cfg),
+		ServiceCatalog:         servicecatalog.NewFromConfig(cfg),
 		SNS:                    sns.NewFromConfig(cfg),
 		SQS:                    sqs.NewFromConfig(cfg),
 		SSM:                    ssm.NewFromConfig(cfg),
 		STS:                    sts.NewFromConfig(cfg),
+		StorageGateway:         storagegateway.NewFromConfig(cfg),
 		Transfer:               transfer.NewFromConfig(cfg),
 		WAF:                    waf.NewFromConfig(cfg),
 		WAFRegional:            wafregional.NewFromConfig(cfg),

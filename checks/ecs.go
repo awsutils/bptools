@@ -78,8 +78,8 @@ func RegisterECSChecks(d *awsdata.Data) {
 				if cp.CapacityProviderArn != nil {
 					id = *cp.CapacityProviderArn
 				}
-				ok := cp.ManagedTerminationProtection == ecstypes.ManagedTerminationProtectionEnabled
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("ManagedTerminationProtection: %s", cp.ManagedTerminationProtection)})
+				ok := cp.AutoScalingGroupProvider != nil && cp.AutoScalingGroupProvider.ManagedTerminationProtection == ecstypes.ManagedTerminationProtectionEnabled
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("ManagedTerminationProtection: %s", cp.AutoScalingGroupProvider.ManagedTerminationProtection)})
 			}
 			return res, nil
 		},
@@ -236,7 +236,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 				ok := true
 				for _, v := range td.Volumes {
 					if v.EfsVolumeConfiguration != nil {
-						ok = v.EfsVolumeConfiguration.TransitEncryption == ecstypes.TransitEncryptionEnabled
+						ok = v.EfsVolumeConfiguration.TransitEncryption == ecstypes.EFSTransitEncryptionEnabled
 						if !ok {
 							break
 						}
@@ -360,13 +360,18 @@ func RegisterECSChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for arn, td := range tasks {
+				isWindows := td.RuntimePlatform != nil &&
+					(td.RuntimePlatform.OperatingSystemFamily == ecstypes.OSFamilyWindowsServer2019Full ||
+						td.RuntimePlatform.OperatingSystemFamily == ecstypes.OSFamilyWindowsServer2022Full)
+				if !isWindows {
+					res = append(res, ConfigResource{ID: arn, Passing: true, Detail: "Not Windows"})
+					continue
+				}
 				ok := true
 				for _, c := range td.ContainerDefinitions {
-					if c.OperatingSystemFamily == ecstypes.OSFamilyWindowsServer2019Full || c.OperatingSystemFamily == ecstypes.OSFamilyWindowsServer2022Full {
-						if c.User == nil || strings.EqualFold(*c.User, "Administrator") {
-							ok = false
-							break
-						}
+					if c.User == nil || strings.EqualFold(*c.User, "Administrator") {
+						ok = false
+						break
 					}
 				}
 				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Windows user non-admin"})

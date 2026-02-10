@@ -121,7 +121,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 				if rg.ReplicationGroupId != nil {
 					id = *rg.ReplicationGroupId
 				}
-				res = append(res, EncryptionResource{ID: id, Encrypted: rg.AtRestEncryptionEnabled})
+				res = append(res, EncryptionResource{ID: id, Encrypted: rg.AtRestEncryptionEnabled != nil && *rg.AtRestEncryptionEnabled})
 			}
 			return res, nil
 		},
@@ -142,7 +142,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 				if rg.ReplicationGroupId != nil {
 					id = *rg.ReplicationGroupId
 				}
-				res = append(res, EncryptionResource{ID: id, Encrypted: rg.TransitEncryptionEnabled})
+				res = append(res, EncryptionResource{ID: id, Encrypted: rg.TransitEncryptionEnabled != nil && *rg.TransitEncryptionEnabled})
 			}
 			return res, nil
 		},
@@ -185,7 +185,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 				if rg.ReplicationGroupId != nil {
 					id = *rg.ReplicationGroupId
 				}
-				ok := rg.AuthTokenEnabled
+				ok := rg.AuthTokenEnabled != nil && *rg.AuthTokenEnabled
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AuthTokenEnabled: %v", ok)})
 			}
 			return res, nil

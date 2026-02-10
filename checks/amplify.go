@@ -85,7 +85,8 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 			}
 			var res []EnabledResource
 			for _, app := range apps {
-				res = append(res, EnabledResource{ID: appID(app.AppArn, app.AppId, app.Name), Enabled: app.EnableBranchAutoDeletion})
+				enabled := app.EnableBranchAutoDeletion != nil && *app.EnableBranchAutoDeletion
+				res = append(res, EnabledResource{ID: appID(app.AppArn, app.AppId, app.Name), Enabled: enabled})
 			}
 			return res, nil
 		},
@@ -152,7 +153,8 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for _, branches := range branchesByApp {
 				for _, b := range branches {
-					res = append(res, EnabledResource{ID: branchID(b.BranchArn, b.BranchName), Enabled: b.EnablePerformanceMode})
+					enabled := b.EnablePerformanceMode != nil && *b.EnablePerformanceMode
+					res = append(res, EnabledResource{ID: branchID(b.BranchArn, b.BranchName), Enabled: enabled})
 				}
 			}
 			return res, nil

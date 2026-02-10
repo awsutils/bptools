@@ -173,7 +173,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for _, c := range clusters {
 				id := *c.ClusterIdentifier
-				enabled := len(c.AvailabilityZones) > 1
+				enabled := c.MultiAZ != nil && strings.EqualFold(*c.MultiAZ, "true")
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil

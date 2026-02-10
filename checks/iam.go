@@ -167,10 +167,10 @@ func hasFullAccess(doc *policyDocument) bool {
 
 func hasBlockedKMSActions(doc *policyDocument) bool {
 	blocked := map[string]bool{
-		"kms:decrypt":              true,
-		"kms:reencryptfrom":        true,
-		"kms:reencrypt*":           true,
-		"kms:*":                    true,
+		"kms:decrypt":       true,
+		"kms:reencryptfrom": true,
+		"kms:reencrypt*":    true,
+		"kms:*":             true,
 	}
 	for _, stmt := range doc.Statement {
 		if !strings.EqualFold(stmt.Effect, "Allow") {

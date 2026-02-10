@@ -3,6 +3,8 @@ package checks
 import (
 	"bptools/awsdata"
 	"bptools/checker"
+
+	guarddutytypes "github.com/aws/aws-sdk-go-v2/service/guardduty/types"
 )
 
 // RegisterGuardDutyChecks registers GuardDuty checks.
@@ -20,7 +22,7 @@ func RegisterGuardDutyChecks(d *awsdata.Data) {
 			}
 			var res []EnabledResource
 			for id, det := range dets {
-				res = append(res, EnabledResource{ID: id, Enabled: det.Enable != nil && *det.Enable})
+				res = append(res, EnabledResource{ID: id, Enabled: det.Status == guarddutytypes.DetectorStatusEnabled})
 			}
 			return res, nil
 		},
@@ -53,10 +55,10 @@ func RegisterGuardDutyChecks(d *awsdata.Data) {
 				var res []EnabledResource
 				for id, det := range dets {
 					enabled := false
-					if det.Enable != nil && *det.Enable {
+					if det.Status == guarddutytypes.DetectorStatusEnabled {
 						for _, ft := range det.Features {
-							if ft.Name != nil && *ft.Name == f {
-								enabled = ft.Status != nil && *ft.Status == "ENABLED"
+							if string(ft.Name) == f {
+								enabled = ft.Status == guarddutytypes.FeatureStatusEnabled
 								break
 							}
 						}

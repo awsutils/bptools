@@ -16,7 +16,7 @@ import (
 var deprecatedRuntimes = map[lambdatypes.Runtime]bool{
 	lambdatypes.RuntimeNodejs:       true,
 	lambdatypes.RuntimeNodejs43:     true,
-	lambdatypes.RuntimeNodejs43Edge: true,
+	lambdatypes.RuntimeNodejs43edge: true,
 	lambdatypes.RuntimeNodejs610:    true,
 	lambdatypes.RuntimeNodejs810:    true,
 	lambdatypes.RuntimeNodejs10x:    true,

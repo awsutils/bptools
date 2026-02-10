@@ -57,7 +57,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 			}
 			var res []EnabledResource
 			for name, attr := range attrs {
-				enabled := attr.CrossZoneLoadBalancing != nil && attr.CrossZoneLoadBalancing.Enabled != nil && *attr.CrossZoneLoadBalancing.Enabled
+				enabled := attr.CrossZoneLoadBalancing != nil && attr.CrossZoneLoadBalancing.Enabled
 				res = append(res, EnabledResource{ID: name, Enabled: enabled})
 			}
 			return res, nil
@@ -174,7 +174,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 			}
 			var res []LoggingResource
 			for name, attr := range attrs {
-				logging := attr.AccessLog != nil && attr.AccessLog.Enabled != nil && *attr.AccessLog.Enabled
+				logging := attr.AccessLog != nil && attr.AccessLog.Enabled
 				res = append(res, LoggingResource{ID: name, Logging: logging})
 			}
 			return res, nil
@@ -264,6 +264,54 @@ func RegisterELBChecks(d *awsdata.Data) {
 					}
 				}
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Only TLS/HTTPS listeners allowed"})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"clb-multiple-az",
+		"This rule checks clb multiple az.",
+		"elb",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			lbs, err := d.ELBClassicLBs.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, lb := range lbs {
+				id := elbID(lb)
+				ok := len(lb.AvailabilityZones) > 1
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AZ count: %d", len(lb.AvailabilityZones))})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"clb-desync-mode-check",
+		"This rule checks clb desync mode check.",
+		"elb",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			attrs, err := d.ELBClassicAttributes.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for name, a := range attrs {
+				mode := ""
+				for _, extra := range a.AdditionalAttributes {
+					if extra.Key != nil && *extra.Key == "elb.http.desync_mitigation_mode" {
+						if extra.Value != nil {
+							mode = *extra.Value
+						}
+						break
+					}
+				}
+				ok := mode == "" || mode == "defensive" || mode == "strictest"
+				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Desync mode: %s", mode)})
 			}
 			return res, nil
 		},

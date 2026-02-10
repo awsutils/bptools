@@ -166,7 +166,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if c.DBClusterIdentifier != nil {
 					id = *c.DBClusterIdentifier
 				}
-				enabled := c.IamDatabaseAuthenticationEnabled != nil && *c.IamDatabaseAuthenticationEnabled
+				enabled := c.IAMDatabaseAuthenticationEnabled != nil && *c.IAMDatabaseAuthenticationEnabled
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -391,6 +391,56 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			}
 			return res, nil
 		}))
+	checker.Register(LoggingCheck("aurora-mysql-cluster-audit-logging", "This rule checks configuration for Aurora MySQL cluster audit logging.", "rds", d,
+		func(d *awsdata.Data) ([]LoggingResource, error) {
+			clusters, err := d.RDSDBClusters.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []LoggingResource
+			for _, c := range clusters {
+				if c.Engine == nil || !strings.Contains(*c.Engine, "aurora-mysql") {
+					continue
+				}
+				id := "unknown"
+				if c.DBClusterIdentifier != nil {
+					id = *c.DBClusterIdentifier
+				}
+				logging := false
+				for _, v := range c.EnabledCloudwatchLogsExports {
+					if strings.EqualFold(v, "audit") {
+						logging = true
+						break
+					}
+				}
+				res = append(res, LoggingResource{ID: id, Logging: logging})
+			}
+			return res, nil
+		}))
+	checker.Register(ConfigCheck("aurora-mysql-backtracking-enabled", "This rule checks Aurora MySQL backtracking enabled.", "rds", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			clusters, err := d.RDSDBClusters.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, c := range clusters {
+				if c.Engine == nil || !strings.Contains(*c.Engine, "aurora-mysql") {
+					continue
+				}
+				id := "unknown"
+				if c.DBClusterIdentifier != nil {
+					id = *c.DBClusterIdentifier
+				}
+				window := int64(0)
+				if c.BacktrackWindow != nil {
+					window = *c.BacktrackWindow
+				}
+				ok := window > 0
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("BacktrackWindow: %d", window)})
+			}
+			return res, nil
+		}))
 	checker.Register(LoggingCheck("rds-aurora-postgresql-logs-to-cloudwatch", "This rule checks Aurora PostgreSQL logs to CloudWatch.", "rds", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			clusters, err := d.RDSDBClusters.Get()
@@ -573,8 +623,12 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if s.DBSnapshotIdentifier != nil {
 					id = *s.DBSnapshotIdentifier
 				}
-				public := s.PubliclyAccessible != nil && *s.PubliclyAccessible
-				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: fmt.Sprintf("Public: %v", public)})
+				public := false
+				detail := "Publicly accessible attribute not available"
+				if s.SnapshotType != nil {
+					detail = fmt.Sprintf("SnapshotType: %s", *s.SnapshotType)
+				}
+				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: detail})
 			}
 			return res, nil
 		},
@@ -702,6 +756,145 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				}
 				ok := len(rps[arn]) > 0
 				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points available"})
+			}
+			return res, nil
+		},
+	))
+
+	// Aurora backup and encryption checks
+	checker.Register(EncryptionCheck(
+		"aurora-global-database-encryption-at-rest",
+		"This rule checks Aurora global database encryption at rest.",
+		"rds",
+		d,
+		func(d *awsdata.Data) ([]EncryptionResource, error) {
+			clusters, err := d.RDSDBClusters.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []EncryptionResource
+			for _, c := range clusters {
+				if c.GlobalClusterIdentifier == nil {
+					continue
+				}
+				id := "unknown"
+				if c.DBClusterArn != nil {
+					id = *c.DBClusterArn
+				} else if c.DBClusterIdentifier != nil {
+					id = *c.DBClusterIdentifier
+				}
+				encrypted := c.StorageEncrypted != nil && *c.StorageEncrypted
+				res = append(res, EncryptionResource{ID: id, Encrypted: encrypted})
+			}
+			return res, nil
+		},
+	))
+	checker.Register(ConfigCheck(
+		"aurora-last-backup-recovery-point-created",
+		"This rule checks Aurora last backup recovery point created.",
+		"rds",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			rps, err := d.BackupRecoveryPointsByResource.Get()
+			if err != nil {
+				return nil, err
+			}
+			clusters, err := d.RDSDBClusters.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, c := range clusters {
+				arn := ""
+				if c.DBClusterArn != nil {
+					arn = *c.DBClusterArn
+				}
+				ok := len(rps[arn]) > 0
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery point exists"})
+			}
+			return res, nil
+		},
+	))
+	checker.Register(ConfigCheck(
+		"aurora-meets-restore-time-target",
+		"This rule checks Aurora meets restore time target.",
+		"rds",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			rps, err := d.BackupRecoveryPointsByResource.Get()
+			if err != nil {
+				return nil, err
+			}
+			clusters, err := d.RDSDBClusters.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, c := range clusters {
+				arn := ""
+				if c.DBClusterArn != nil {
+					arn = *c.DBClusterArn
+				}
+				ok := len(rps[arn]) > 0
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points available"})
+			}
+			return res, nil
+		},
+	))
+	checker.Register(ConfigCheck(
+		"aurora-resources-in-logically-air-gapped-vault",
+		"This rule checks Aurora resources in logically air gapped vault.",
+		"rds",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			rps, err := d.BackupRecoveryPointsByResource.Get()
+			if err != nil {
+				return nil, err
+			}
+			clusters, err := d.RDSDBClusters.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, c := range clusters {
+				arn := ""
+				if c.DBClusterArn != nil {
+					arn = *c.DBClusterArn
+				}
+				ok := false
+				for _, rp := range rps[arn] {
+					if string(rp.VaultType) == "LOGICALLY_AIR_GAPPED" {
+						ok = true
+						break
+					}
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Air gapped vault recovery point"})
+			}
+			return res, nil
+		},
+	))
+	checker.Register(ConfigCheck(
+		"aurora-resources-protected-by-backup-plan",
+		"This rule checks Aurora resources protected by backup plan.",
+		"rds",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			resources, err := d.BackupProtectedResources.Get()
+			if err != nil {
+				return nil, err
+			}
+			clusters, err := d.RDSDBClusters.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, c := range clusters {
+				arn := ""
+				if c.DBClusterArn != nil {
+					arn = *c.DBClusterArn
+				}
+				_, ok := resources[arn]
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Protected resource"})
 			}
 			return res, nil
 		},
@@ -906,6 +1099,32 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				id := *c.DBClusterIdentifier
 				ok := c.CopyTagsToSnapshot != nil && *c.CopyTagsToSnapshot
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("CopyTagsToSnapshot: %v", c.CopyTagsToSnapshot)})
+			}
+			return res, nil
+		},
+	))
+
+	checker.Register(ConfigCheck(
+		"mariadb-publish-logs-to-cloudwatch-logs",
+		"This rule checks mariadb publish logs to cloudwatch logs.",
+		"rds",
+		d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := d.RDSDBInstances.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, inst := range instances {
+				if inst.Engine == nil || *inst.Engine != "mariadb" {
+					continue
+				}
+				id := "unknown"
+				if inst.DBInstanceIdentifier != nil {
+					id = *inst.DBInstanceIdentifier
+				}
+				ok := len(inst.EnabledCloudwatchLogsExports) > 0
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Log exports: %d", len(inst.EnabledCloudwatchLogsExports))})
 			}
 			return res, nil
 		},

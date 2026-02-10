@@ -31,4 +31,25 @@ func RegisterAccountChecks(d *awsdata.Data) {
 			return false, "No organization info returned", nil
 		},
 	))
+
+	checker.Register(SingleCheck(
+		"security-account-information-provided",
+		"This rule checks security account information provided.",
+		"account",
+		d,
+		func(d *awsdata.Data) (bool, string, error) {
+			contact, err := d.AccountSecurityContact.Get()
+			if err != nil {
+				return false, err.Error(), err
+			}
+			if contact == nil {
+				return false, "Security alternate contact not set", nil
+			}
+			ok := contact.EmailAddress != nil && *contact.EmailAddress != "" && contact.Name != nil && *contact.Name != ""
+			if ok {
+				return true, "Security alternate contact provided", nil
+			}
+			return false, "Security alternate contact incomplete", nil
+		},
+	))
 }
