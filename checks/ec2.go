@@ -2,13 +2,18 @@ package checks
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"time"
 
 	"bptools/awsdata"
 	"bptools/checker"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	ssmtypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
 
 func ec2TagsToMap(tags []ec2types.Tag) map[string]string {
@@ -225,36 +230,250 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-instance-launched-with-allowed-ami + approved-amis-by-id + approved-amis-by-tag
-	for _, cid := range []string{"ec2-instance-launched-with-allowed-ami", "approved-amis-by-id", "approved-amis-by-tag"} {
-		checker.Register(ConfigCheck(cid, "Check AMI approval", "ec2", d,
-			func(d *awsdata.Data) ([]ConfigResource, error) {
-				instances, err := allInstances(d)
-				if err != nil {
-					return nil, err
+	parseCSV := func(value string) []string {
+		var out []string
+		for _, v := range strings.Split(value, ",") {
+			v = strings.TrimSpace(v)
+			if v == "" {
+				continue
+			}
+			out = append(out, v)
+		}
+		return out
+	}
+	type tagFilter struct {
+		key   string
+		value string
+	}
+	parseTagFilters := func(value string) []tagFilter {
+		parts := parseCSV(value)
+		var filters []tagFilter
+		for _, p := range parts {
+			kv := strings.SplitN(p, "=", 2)
+			key := strings.TrimSpace(kv[0])
+			if key == "" {
+				continue
+			}
+			filter := tagFilter{key: key}
+			if len(kv) == 2 {
+				filter.value = strings.TrimSpace(kv[1])
+			}
+			filters = append(filters, filter)
+		}
+		return filters
+	}
+	containsAnyAllowedTag := func(tags []ec2types.Tag, filters []tagFilter) bool {
+		for _, f := range filters {
+			for _, t := range tags {
+				if t.Key == nil || *t.Key != f.key {
+					continue
 				}
-				var res []ConfigResource
-				for _, i := range instances {
-					res = append(res, ConfigResource{ID: instanceID(i), Passing: true, Detail: "AMI check requires configuration"})
+				if f.value == "" {
+					return true
 				}
-				return res, nil
-			}))
+				if t.Value != nil && *t.Value == f.value {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	loadImagesByID := func(imageIDs []string) (map[string]ec2types.Image, error) {
+		out := make(map[string]ec2types.Image)
+		seen := make(map[string]bool)
+		for _, id := range imageIDs {
+			if id == "" || seen[id] {
+				continue
+			}
+			seen[id] = true
+		}
+		var ids []string
+		for id := range seen {
+			ids = append(ids, id)
+		}
+		for start := 0; start < len(ids); start += 100 {
+			end := start + 100
+			if end > len(ids) {
+				end = len(ids)
+			}
+			resp, err := d.Clients.EC2.DescribeImages(d.Ctx, &ec2.DescribeImagesInput{ImageIds: ids[start:end]})
+			if err != nil {
+				return nil, err
+			}
+			for _, img := range resp.Images {
+				if img.ImageId != nil {
+					out[*img.ImageId] = img
+				}
+			}
+		}
+		return out, nil
 	}
 
-	// desired-instance-tenancy + desired-instance-type
-	for _, cid := range []string{"desired-instance-tenancy", "desired-instance-type"} {
-		checker.Register(ConfigCheck(cid, "Check instance configuration", "ec2", d,
-			func(d *awsdata.Data) ([]ConfigResource, error) {
-				instances, err := allInstances(d)
-				if err != nil {
-					return nil, err
+	checker.Register(ConfigCheck("approved-amis-by-id", "This rule checks approved amis by id.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			allowed := make(map[string]bool)
+			for _, id := range parseCSV(os.Getenv("BPTOOLS_APPROVED_AMI_IDS")) {
+				allowed[id] = true
+			}
+			var res []ConfigResource
+			for _, i := range instances {
+				id := instanceID(i)
+				imageID := ""
+				if i.ImageId != nil {
+					imageID = *i.ImageId
 				}
+				if len(allowed) == 0 {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No approved AMI IDs configured (BPTOOLS_APPROVED_AMI_IDS)"})
+					continue
+				}
+				ok := allowed[imageID]
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AMI %s approved-by-id: %v", imageID, ok)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("approved-amis-by-tag", "This rule checks approved amis by tag.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			filters := parseTagFilters(os.Getenv("BPTOOLS_APPROVED_AMI_TAGS"))
+			if len(filters) == 0 {
 				var res []ConfigResource
 				for _, i := range instances {
-					res = append(res, ConfigResource{ID: instanceID(i), Passing: true, Detail: "Requires configuration parameter"})
+					res = append(res, ConfigResource{ID: instanceID(i), Passing: false, Detail: "No approved AMI tag filters configured (BPTOOLS_APPROVED_AMI_TAGS)"})
 				}
 				return res, nil
-			}))
-	}
+			}
+			var imageIDs []string
+			for _, i := range instances {
+				if i.ImageId != nil {
+					imageIDs = append(imageIDs, *i.ImageId)
+				}
+			}
+			imagesByID, err := loadImagesByID(imageIDs)
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, i := range instances {
+				id := instanceID(i)
+				imageID := ""
+				if i.ImageId != nil {
+					imageID = *i.ImageId
+				}
+				img, ok := imagesByID[imageID]
+				if !ok {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: fmt.Sprintf("AMI metadata not found: %s", imageID)})
+					continue
+				}
+				passing := containsAnyAllowedTag(img.Tags, filters)
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: fmt.Sprintf("AMI %s approved-by-tag: %v", imageID, passing)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-instance-launched-with-allowed-ami", "This rule checks EC2 instance launched with allowed AMI.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			allowedIDs := make(map[string]bool)
+			for _, id := range parseCSV(os.Getenv("BPTOOLS_APPROVED_AMI_IDS")) {
+				allowedIDs[id] = true
+			}
+			filters := parseTagFilters(os.Getenv("BPTOOLS_APPROVED_AMI_TAGS"))
+			var imageIDs []string
+			for _, i := range instances {
+				if i.ImageId != nil {
+					imageIDs = append(imageIDs, *i.ImageId)
+				}
+			}
+			imagesByID, err := loadImagesByID(imageIDs)
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, i := range instances {
+				id := instanceID(i)
+				imageID := ""
+				if i.ImageId != nil {
+					imageID = *i.ImageId
+				}
+				byID := len(allowedIDs) > 0 && allowedIDs[imageID]
+				byTag := false
+				if len(filters) > 0 {
+					if img, ok := imagesByID[imageID]; ok {
+						byTag = containsAnyAllowedTag(img.Tags, filters)
+					}
+				}
+				if len(allowedIDs) == 0 && len(filters) == 0 {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No AMI allowlist configured (BPTOOLS_APPROVED_AMI_IDS or BPTOOLS_APPROVED_AMI_TAGS)"})
+					continue
+				}
+				passing := byID || byTag
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: fmt.Sprintf("AMI %s allowed (by-id=%v by-tag=%v)", imageID, byID, byTag)})
+			}
+			return res, nil
+		}))
+
+	// desired-instance-tenancy + desired-instance-type
+	checker.Register(ConfigCheck("desired-instance-tenancy", "This rule checks desired instance tenancy.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			allowed := make(map[string]bool)
+			for _, v := range parseCSV(os.Getenv("BPTOOLS_ALLOWED_INSTANCE_TENANCIES")) {
+				allowed[strings.ToLower(v)] = true
+			}
+			var res []ConfigResource
+			for _, i := range instances {
+				id := instanceID(i)
+				tenancy := strings.ToLower(string(i.Placement.Tenancy))
+				if tenancy == "" {
+					tenancy = "default"
+				}
+				if len(allowed) == 0 {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No allowed tenancies configured (BPTOOLS_ALLOWED_INSTANCE_TENANCIES)"})
+					continue
+				}
+				ok := allowed[tenancy]
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Tenancy=%s allowed=%v", tenancy, ok)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("desired-instance-type", "This rule checks desired instance type.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			allowed := make(map[string]bool)
+			for _, v := range parseCSV(os.Getenv("BPTOOLS_ALLOWED_INSTANCE_TYPES")) {
+				allowed[strings.ToLower(v)] = true
+			}
+			var res []ConfigResource
+			for _, i := range instances {
+				id := instanceID(i)
+				itype := strings.ToLower(string(i.InstanceType))
+				if len(allowed) == 0 {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No allowed instance types configured (BPTOOLS_ALLOWED_INSTANCE_TYPES)"})
+					continue
+				}
+				ok := allowed[itype]
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("InstanceType=%s allowed=%v", itype, ok)})
+			}
+			return res, nil
+		}))
 
 	// ec2-ebs-encryption-by-default
 	checker.Register(SingleCheck("ec2-ebs-encryption-by-default", "Check EBS encryption by default", "ec2", d,
@@ -569,7 +788,123 @@ func RegisterEC2Checks(d *awsdata.Data) {
 	// ec2-spot-fleet-request-ct-encryption-at-rest
 	checker.Register(ConfigCheck("ec2-spot-fleet-request-ct-encryption-at-rest", "Check spot fleet encryption", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			return []ConfigResource{{ID: "account", Passing: true, Detail: "Requires spot fleet inspection"}}, nil
+			ebsDefault, err := d.EC2EBSEncryptionByDefault.Get()
+			if err != nil {
+				return nil, err
+			}
+			resolveLaunchTemplateData := func(spec *ec2types.FleetLaunchTemplateSpecification) (*ec2types.ResponseLaunchTemplateData, error) {
+				if spec == nil {
+					return nil, nil
+				}
+				version := "$Default"
+				if spec.Version != nil && *spec.Version != "" {
+					version = *spec.Version
+				}
+				in := &ec2.DescribeLaunchTemplateVersionsInput{Versions: []string{version}}
+				if spec.LaunchTemplateId != nil && *spec.LaunchTemplateId != "" {
+					in.LaunchTemplateId = spec.LaunchTemplateId
+				} else if spec.LaunchTemplateName != nil && *spec.LaunchTemplateName != "" {
+					in.LaunchTemplateName = spec.LaunchTemplateName
+				} else {
+					return nil, nil
+				}
+				out, err := d.Clients.EC2.DescribeLaunchTemplateVersions(d.Ctx, in)
+				if err != nil {
+					return nil, err
+				}
+				if len(out.LaunchTemplateVersions) == 0 {
+					return nil, nil
+				}
+				return out.LaunchTemplateVersions[0].LaunchTemplateData, nil
+			}
+			specEncrypted := func(spec ec2types.SpotFleetLaunchSpecification) bool {
+				hasEBS := false
+				allEncrypted := true
+				for _, bdm := range spec.BlockDeviceMappings {
+					if bdm.Ebs == nil {
+						continue
+					}
+					hasEBS = true
+					if bdm.Ebs.Encrypted == nil || !*bdm.Ebs.Encrypted {
+						allEncrypted = false
+					}
+				}
+				if hasEBS {
+					return allEncrypted
+				}
+				return ebsDefault
+			}
+			ltDataEncrypted := func(data *ec2types.ResponseLaunchTemplateData) bool {
+				if data == nil {
+					return ebsDefault
+				}
+				hasEBS := false
+				allEncrypted := true
+				for _, bdm := range data.BlockDeviceMappings {
+					if bdm.Ebs == nil {
+						continue
+					}
+					hasEBS = true
+					if bdm.Ebs.Encrypted == nil || !*bdm.Ebs.Encrypted {
+						allEncrypted = false
+					}
+				}
+				if hasEBS {
+					return allEncrypted
+				}
+				return ebsDefault
+			}
+			var next *string
+			var requests []ec2types.SpotFleetRequestConfig
+			for {
+				out, err := d.Clients.EC2.DescribeSpotFleetRequests(d.Ctx, &ec2.DescribeSpotFleetRequestsInput{NextToken: next})
+				if err != nil {
+					return nil, err
+				}
+				requests = append(requests, out.SpotFleetRequestConfigs...)
+				if out.NextToken == nil || *out.NextToken == "" {
+					break
+				}
+				next = out.NextToken
+			}
+			var res []ConfigResource
+			for _, req := range requests {
+				reqID := ""
+				if req.SpotFleetRequestId != nil {
+					reqID = *req.SpotFleetRequestId
+				}
+				if req.SpotFleetRequestConfig == nil {
+					res = append(res, ConfigResource{ID: reqID, Passing: false, Detail: "Missing spot fleet configuration"})
+					continue
+				}
+				cfg := req.SpotFleetRequestConfig
+				passing := true
+				detail := "All EBS mappings encrypted"
+				for _, spec := range cfg.LaunchSpecifications {
+					if !specEncrypted(spec) {
+						passing = false
+						detail = "Unencrypted EBS block device in launch specification"
+						break
+					}
+				}
+				if passing {
+					for _, cfgLT := range cfg.LaunchTemplateConfigs {
+						data, err := resolveLaunchTemplateData(cfgLT.LaunchTemplateSpecification)
+						if err != nil {
+							passing = false
+							detail = fmt.Sprintf("Cannot inspect launch template: %v", err)
+							break
+						}
+						if !ltDataEncrypted(data) {
+							passing = false
+							detail = "Unencrypted EBS block device in launch template"
+							break
+						}
+					}
+				}
+				res = append(res, ConfigResource{ID: reqID, Passing: passing, Detail: detail})
+			}
+			return res, nil
 		}))
 
 	// Tagged checks
@@ -684,30 +1019,209 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		checker.Register(TaggedCheck(id, "This rule checks tagging for EC2 resource", "ec2", d, fn))
 	}
 
-	// Carrier gateway, traffic mirror, network insights tagged checks - stub with skip
-	stubTagged := []string{
-		"ec2-carrier-gateway-tagged",
-		"ec2-network-insights-access-scope-analysis-tagged", "ec2-network-insights-access-scope-tagged",
-		"ec2-network-insights-analysis-tagged", "ec2-network-insights-path-tagged",
-		"ec2-traffic-mirror-filter-tagged", "ec2-traffic-mirror-session-tagged", "ec2-traffic-mirror-target-tagged",
-		"ec2-transit-gateway-multicast-domain-tagged",
-	}
-	for _, id := range stubTagged {
-		cid := id
-		checker.Register(&BaseCheck{CheckID: cid, Desc: "Tagged check", Svc: "ec2",
-			RunFunc: func() []checker.Result {
-				return []checker.Result{{CheckID: cid, Status: checker.StatusSkip, Message: "Requires additional API calls"}}
-			}})
-	}
+	checker.Register(TaggedCheck("ec2-carrier-gateway-tagged", "This rule checks tagging for EC2 carrier gateway exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeCarrierGateways(d.Ctx, &ec2.DescribeCarrierGatewaysInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.CarrierGateways {
+				id := ""
+				if item.CarrierGatewayId != nil {
+					id = *item.CarrierGatewayId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
 
-	// Description stubs
-	for _, id := range []string{"ec2-traffic-mirror-filter-description", "ec2-traffic-mirror-session-description", "ec2-traffic-mirror-target-description"} {
-		cid := id
-		checker.Register(&BaseCheck{CheckID: cid, Desc: "Description check", Svc: "ec2",
-			RunFunc: func() []checker.Result {
-				return []checker.Result{{CheckID: cid, Status: checker.StatusSkip, Message: "Requires additional API calls"}}
-			}})
-	}
+	checker.Register(TaggedCheck("ec2-network-insights-access-scope-tagged", "This rule checks tagging for EC2 network insights access scope exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeNetworkInsightsAccessScopes(d.Ctx, &ec2.DescribeNetworkInsightsAccessScopesInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.NetworkInsightsAccessScopes {
+				id := ""
+				if item.NetworkInsightsAccessScopeId != nil {
+					id = *item.NetworkInsightsAccessScopeId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(TaggedCheck("ec2-network-insights-access-scope-analysis-tagged", "This rule checks tagging for EC2 network insights access scope analysis exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeNetworkInsightsAccessScopeAnalyses(d.Ctx, &ec2.DescribeNetworkInsightsAccessScopeAnalysesInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.NetworkInsightsAccessScopeAnalyses {
+				id := ""
+				if item.NetworkInsightsAccessScopeAnalysisId != nil {
+					id = *item.NetworkInsightsAccessScopeAnalysisId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(TaggedCheck("ec2-network-insights-analysis-tagged", "This rule checks tagging for EC2 network insights analysis exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeNetworkInsightsAnalyses(d.Ctx, &ec2.DescribeNetworkInsightsAnalysesInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.NetworkInsightsAnalyses {
+				id := ""
+				if item.NetworkInsightsAnalysisId != nil {
+					id = *item.NetworkInsightsAnalysisId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(TaggedCheck("ec2-network-insights-path-tagged", "This rule checks tagging for EC2 network insights path exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeNetworkInsightsPaths(d.Ctx, &ec2.DescribeNetworkInsightsPathsInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.NetworkInsightsPaths {
+				id := ""
+				if item.NetworkInsightsPathId != nil {
+					id = *item.NetworkInsightsPathId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(TaggedCheck("ec2-traffic-mirror-filter-tagged", "This rule checks tagging for EC2 traffic mirror filter exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeTrafficMirrorFilters(d.Ctx, &ec2.DescribeTrafficMirrorFiltersInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.TrafficMirrorFilters {
+				id := ""
+				if item.TrafficMirrorFilterId != nil {
+					id = *item.TrafficMirrorFilterId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(TaggedCheck("ec2-traffic-mirror-session-tagged", "This rule checks tagging for EC2 traffic mirror session exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeTrafficMirrorSessions(d.Ctx, &ec2.DescribeTrafficMirrorSessionsInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.TrafficMirrorSessions {
+				id := ""
+				if item.TrafficMirrorSessionId != nil {
+					id = *item.TrafficMirrorSessionId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(TaggedCheck("ec2-traffic-mirror-target-tagged", "This rule checks tagging for EC2 traffic mirror target exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeTrafficMirrorTargets(d.Ctx, &ec2.DescribeTrafficMirrorTargetsInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.TrafficMirrorTargets {
+				id := ""
+				if item.TrafficMirrorTargetId != nil {
+					id = *item.TrafficMirrorTargetId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(TaggedCheck("ec2-transit-gateway-multicast-domain-tagged", "This rule checks tagging for EC2 transit gateway multicast domain exist.", "ec2", d,
+		func(d *awsdata.Data) ([]TaggedResource, error) {
+			out, err := d.Clients.EC2.DescribeTransitGatewayMulticastDomains(d.Ctx, &ec2.DescribeTransitGatewayMulticastDomainsInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []TaggedResource
+			for _, item := range out.TransitGatewayMulticastDomains {
+				id := ""
+				if item.TransitGatewayMulticastDomainId != nil {
+					id = *item.TransitGatewayMulticastDomainId
+				}
+				res = append(res, TaggedResource{ID: id, Tags: ec2TagsToMap(item.Tags)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(DescriptionCheck("ec2-traffic-mirror-filter-description", "This rule checks descriptions for EC2 traffic mirror filter exist.", "ec2", d,
+		func(d *awsdata.Data) ([]DescriptionResource, error) {
+			out, err := d.Clients.EC2.DescribeTrafficMirrorFilters(d.Ctx, &ec2.DescribeTrafficMirrorFiltersInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []DescriptionResource
+			for _, item := range out.TrafficMirrorFilters {
+				id := ""
+				if item.TrafficMirrorFilterId != nil {
+					id = *item.TrafficMirrorFilterId
+				}
+				res = append(res, DescriptionResource{ID: id, Description: item.Description, HasDescription: item.Description != nil && *item.Description != ""})
+			}
+			return res, nil
+		}))
+
+	checker.Register(DescriptionCheck("ec2-traffic-mirror-session-description", "This rule checks descriptions for EC2 traffic mirror session exist.", "ec2", d,
+		func(d *awsdata.Data) ([]DescriptionResource, error) {
+			out, err := d.Clients.EC2.DescribeTrafficMirrorSessions(d.Ctx, &ec2.DescribeTrafficMirrorSessionsInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []DescriptionResource
+			for _, item := range out.TrafficMirrorSessions {
+				id := ""
+				if item.TrafficMirrorSessionId != nil {
+					id = *item.TrafficMirrorSessionId
+				}
+				res = append(res, DescriptionResource{ID: id, Description: item.Description, HasDescription: item.Description != nil && *item.Description != ""})
+			}
+			return res, nil
+		}))
+
+	checker.Register(DescriptionCheck("ec2-traffic-mirror-target-description", "This rule checks descriptions for EC2 traffic mirror target exist.", "ec2", d,
+		func(d *awsdata.Data) ([]DescriptionResource, error) {
+			out, err := d.Clients.EC2.DescribeTrafficMirrorTargets(d.Ctx, &ec2.DescribeTrafficMirrorTargetsInput{})
+			if err != nil {
+				return nil, err
+			}
+			var res []DescriptionResource
+			for _, item := range out.TrafficMirrorTargets {
+				id := ""
+				if item.TrafficMirrorTargetId != nil {
+					id = *item.TrafficMirrorTargetId
+				}
+				res = append(res, DescriptionResource{ID: id, Description: item.Description, HasDescription: item.Description != nil && *item.Description != ""})
+			}
+			return res, nil
+		}))
 
 	// Security group checks
 	checker.Register(ConfigCheck("ec2-security-group-attached-to-eni", "Check SG attached to ENI", "ec2", d,
@@ -768,32 +1282,553 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	// Managed instance checks - stubs
-	for _, id := range []string{
-		"ec2-managedinstance-applications-blacklisted", "ec2-managedinstance-applications-required",
-		"ec2-managedinstance-association-compliance-status-check", "ec2-managedinstance-inventory-blacklisted",
-		"ec2-managedinstance-patch-compliance-status-check", "ec2-managedinstance-platform-check",
-	} {
-		cid := id
-		checker.Register(&BaseCheck{CheckID: cid, Desc: "Managed instance check", Svc: "ec2",
-			RunFunc: func() []checker.Result {
-				return []checker.Result{{CheckID: cid, Status: checker.StatusSkip, Message: "Requires SSM configuration"}}
-			}})
+	loadManagedInstances := func() ([]ssmtypes.InstanceInformation, error) {
+		var out []ssmtypes.InstanceInformation
+		var next *string
+		for {
+			resp, err := d.Clients.SSM.DescribeInstanceInformation(d.Ctx, &ssm.DescribeInstanceInformationInput{NextToken: next})
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, resp.InstanceInformationList...)
+			if resp.NextToken == nil || *resp.NextToken == "" {
+				break
+			}
+			next = resp.NextToken
+		}
+		return out, nil
 	}
 
-	// Backup/restore stubs
-	for _, id := range []string{
-		"ec2-last-backup-recovery-point-created", "ec2-meets-restore-time-target",
-		"ec2-resources-in-logically-air-gapped-vault", "ec2-resources-protected-by-backup-plan",
-		"ebs-in-backup-plan", "ebs-last-backup-recovery-point-created", "ebs-meets-restore-time-target",
-		"ebs-resources-in-logically-air-gapped-vault", "ebs-resources-protected-by-backup-plan",
-	} {
-		cid := id
-		checker.Register(&BaseCheck{CheckID: cid, Desc: "Backup check", Svc: "ec2",
-			RunFunc: func() []checker.Result {
-				return []checker.Result{{CheckID: cid, Status: checker.StatusSkip, Message: "Requires backup plan evaluation"}}
-			}})
+	loadInventoryByType := func(typeName string) (map[string][]map[string]string, error) {
+		var next *string
+		out := make(map[string][]map[string]string)
+		for {
+			resp, err := d.Clients.SSM.GetInventory(d.Ctx, &ssm.GetInventoryInput{
+				NextToken: next,
+				ResultAttributes: []ssmtypes.ResultAttribute{
+					{TypeName: aws.String(typeName)},
+				},
+			})
+			if err != nil {
+				return nil, err
+			}
+			for _, ent := range resp.Entities {
+				if ent.Id == nil {
+					continue
+				}
+				item, ok := ent.Data[typeName]
+				if !ok {
+					continue
+				}
+				out[*ent.Id] = append(out[*ent.Id], item.Content...)
+			}
+			if resp.NextToken == nil || *resp.NextToken == "" {
+				break
+			}
+			next = resp.NextToken
+		}
+		return out, nil
 	}
+
+	checker.Register(ConfigCheck("ec2-managedinstance-platform-check", "This rule checks configuration for EC2 managedinstance platform.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			infos, err := loadManagedInstances()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, info := range infos {
+				id := ""
+				if info.InstanceId != nil {
+					id = *info.InstanceId
+				}
+				pt := string(info.PlatformType)
+				ok := info.PlatformType == ssmtypes.PlatformTypeLinux || info.PlatformType == ssmtypes.PlatformTypeWindows || info.PlatformType == ssmtypes.PlatformTypeMacos
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("PlatformType: %s", pt)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-managedinstance-association-compliance-status-check", "This rule checks configuration for EC2 managedinstance association compliance status.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			infos, err := loadManagedInstances()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, info := range infos {
+				id := ""
+				if info.InstanceId != nil {
+					id = *info.InstanceId
+				}
+				status := ""
+				if info.AssociationStatus != nil {
+					status = *info.AssociationStatus
+				}
+				ok := strings.EqualFold(status, "Success")
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AssociationStatus: %s", status)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-managedinstance-patch-compliance-status-check", "This rule checks configuration for EC2 managedinstance patch compliance status.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			infos, err := loadManagedInstances()
+			if err != nil {
+				return nil, err
+			}
+			var ids []string
+			for _, info := range infos {
+				if info.InstanceId != nil {
+					ids = append(ids, *info.InstanceId)
+				}
+			}
+			if len(ids) == 0 {
+				return []ConfigResource{}, nil
+			}
+			states := make(map[string]ssmtypes.InstancePatchState)
+			for start := 0; start < len(ids); start += 50 {
+				end := start + 50
+				if end > len(ids) {
+					end = len(ids)
+				}
+				out, err := d.Clients.SSM.DescribeInstancePatchStates(d.Ctx, &ssm.DescribeInstancePatchStatesInput{InstanceIds: ids[start:end]})
+				if err != nil {
+					return nil, err
+				}
+				for _, st := range out.InstancePatchStates {
+					if st.InstanceId != nil {
+						states[*st.InstanceId] = st
+					}
+				}
+			}
+			var res []ConfigResource
+			for _, id := range ids {
+				state, ok := states[id]
+				if !ok {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No patch state available"})
+					continue
+				}
+				pendingReboot := state.InstalledPendingRebootCount != nil && *state.InstalledPendingRebootCount > 0
+				passing := state.MissingCount == 0 && state.FailedCount == 0 && !pendingReboot
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: fmt.Sprintf("Missing=%d Failed=%d PendingReboot=%v", state.MissingCount, state.FailedCount, pendingReboot)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-managedinstance-applications-required", "This rule checks EC2 managedinstance applications required.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			infos, err := loadManagedInstances()
+			if err != nil {
+				return nil, err
+			}
+			apps, err := loadInventoryByType("AWS:Application")
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, info := range infos {
+				if info.InstanceId == nil {
+					continue
+				}
+				id := *info.InstanceId
+				count := len(apps[id])
+				res = append(res, ConfigResource{ID: id, Passing: count > 0, Detail: fmt.Sprintf("Discovered applications: %d", count)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-managedinstance-applications-blacklisted", "This rule checks EC2 managedinstance applications blacklisted.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			infos, err := loadManagedInstances()
+			if err != nil {
+				return nil, err
+			}
+			apps, err := loadInventoryByType("AWS:Application")
+			if err != nil {
+				return nil, err
+			}
+			blacklisted := []string{"telnet", "rsh", "rlogin", "vsftpd", "wu-ftp"}
+			var res []ConfigResource
+			for _, info := range infos {
+				if info.InstanceId == nil {
+					continue
+				}
+				id := *info.InstanceId
+				found := ""
+				for _, app := range apps[id] {
+					name := strings.ToLower(app["Name"])
+					pkg := strings.ToLower(app["PackageId"])
+					for _, bad := range blacklisted {
+						if strings.Contains(name, bad) || strings.Contains(pkg, bad) {
+							found = bad
+							break
+						}
+					}
+					if found != "" {
+						break
+					}
+				}
+				passing := found == ""
+				detail := "No blacklisted applications detected"
+				if !passing {
+					detail = fmt.Sprintf("Blacklisted application detected: %s", found)
+				}
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-managedinstance-inventory-blacklisted", "This rule checks EC2 managedinstance inventory blacklisted.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			infos, err := loadManagedInstances()
+			if err != nil {
+				return nil, err
+			}
+			apps, err := loadInventoryByType("AWS:Application")
+			if err != nil {
+				return nil, err
+			}
+			comps, err := loadInventoryByType("AWS:AWSComponent")
+			if err != nil {
+				return nil, err
+			}
+			blacklisted := []string{"telnet", "rsh", "rlogin", "ftp"}
+			var res []ConfigResource
+			for _, info := range infos {
+				if info.InstanceId == nil {
+					continue
+				}
+				id := *info.InstanceId
+				found := ""
+				checkItems := append([]map[string]string{}, apps[id]...)
+				checkItems = append(checkItems, comps[id]...)
+				for _, item := range checkItems {
+					for _, value := range item {
+						lv := strings.ToLower(value)
+						for _, bad := range blacklisted {
+							if strings.Contains(lv, bad) {
+								found = bad
+								break
+							}
+						}
+						if found != "" {
+							break
+						}
+					}
+					if found != "" {
+						break
+					}
+				}
+				passing := found == ""
+				detail := "No blacklisted inventory items detected"
+				if !passing {
+					detail = fmt.Sprintf("Blacklisted inventory content detected: %s", found)
+				}
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	buildEC2InstanceARN := func(region, account, instanceID string) string {
+		return fmt.Sprintf("arn:aws:ec2:%s:%s:instance/%s", region, account, instanceID)
+	}
+	buildEBSVolumeARN := func(region, account, volumeID string) string {
+		return fmt.Sprintf("arn:aws:ec2:%s:%s:volume/%s", region, account, volumeID)
+	}
+
+	loadBackupState := func() (map[string]bool, map[string]time.Time, map[string]bool, error) {
+		protected, err := d.BackupProtectedResources.Get()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		vaults, err := d.BackupVaultLockConfigs.Get()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		isProtected := make(map[string]bool)
+		lastBackup := make(map[string]time.Time)
+		inProtectedVault := make(map[string]bool)
+		for arn, resource := range protected {
+			isProtected[arn] = true
+			if resource.LastBackupTime != nil {
+				lastBackup[arn] = *resource.LastBackupTime
+			}
+			vaultProtected := false
+			if resource.LastBackupVaultArn != nil {
+				parts := strings.Split(*resource.LastBackupVaultArn, ":")
+				if len(parts) > 0 {
+					name := parts[len(parts)-1]
+					name = strings.TrimPrefix(name, "backup-vault/")
+					if vault, ok := vaults[name]; ok {
+						if vault.Locked != nil && *vault.Locked {
+							vaultProtected = true
+						}
+						if strings.Contains(strings.ToUpper(string(vault.VaultType)), "LOGICALLY_AIR_GAPPED") {
+							vaultProtected = true
+						}
+					}
+				}
+			}
+			inProtectedVault[arn] = vaultProtected
+		}
+		return isProtected, lastBackup, inProtectedVault, nil
+	}
+
+	checker.Register(ConfigCheck("ec2-resources-protected-by-backup-plan", "This rule checks EC2 resources protected by backup plan.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			isProtected, _, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, instance := range instances {
+				id := instanceID(instance)
+				arn := buildEC2InstanceARN(region, accountID, id)
+				res = append(res, ConfigResource{ID: id, Passing: isProtected[arn], Detail: fmt.Sprintf("Protected by backup plan: %v", isProtected[arn])})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-last-backup-recovery-point-created", "This rule checks EC2 last backup recovery point created.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			_, lastBackup, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, instance := range instances {
+				id := instanceID(instance)
+				arn := buildEC2InstanceARN(region, accountID, id)
+				t, ok := lastBackup[arn]
+				detail := "No recovery point found"
+				if ok {
+					detail = fmt.Sprintf("Last backup: %s", t.Format(time.RFC3339))
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-meets-restore-time-target", "This rule checks EC2 meets restore time target.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			_, lastBackup, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			target := 24 * time.Hour
+			var res []ConfigResource
+			for _, instance := range instances {
+				id := instanceID(instance)
+				arn := buildEC2InstanceARN(region, accountID, id)
+				t, ok := lastBackup[arn]
+				passing := ok && time.Since(t) <= target
+				detail := "No recent backup found"
+				if ok {
+					detail = fmt.Sprintf("Backup age: %s", time.Since(t).Round(time.Minute))
+				}
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ec2-resources-in-logically-air-gapped-vault", "This rule checks EC2 resources in logically air gapped vault.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			instances, err := allInstances(d)
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			_, _, inProtectedVault, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, instance := range instances {
+				id := instanceID(instance)
+				arn := buildEC2InstanceARN(region, accountID, id)
+				res = append(res, ConfigResource{ID: id, Passing: inProtectedVault[arn], Detail: fmt.Sprintf("In locked/air-gapped vault: %v", inProtectedVault[arn])})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ebs-in-backup-plan", "This rule checks ebs in backup plan.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			volumes, err := d.EC2Volumes.Get()
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			isProtected, _, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, volume := range volumes {
+				if volume.VolumeId == nil {
+					continue
+				}
+				id := *volume.VolumeId
+				arn := buildEBSVolumeARN(region, accountID, id)
+				res = append(res, ConfigResource{ID: id, Passing: isProtected[arn], Detail: fmt.Sprintf("Protected by backup plan: %v", isProtected[arn])})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ebs-resources-protected-by-backup-plan", "This rule checks ebs resources protected by backup plan.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			volumes, err := d.EC2Volumes.Get()
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			isProtected, _, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, volume := range volumes {
+				if volume.VolumeId == nil {
+					continue
+				}
+				id := *volume.VolumeId
+				arn := buildEBSVolumeARN(region, accountID, id)
+				res = append(res, ConfigResource{ID: id, Passing: isProtected[arn], Detail: fmt.Sprintf("Protected by backup plan: %v", isProtected[arn])})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ebs-last-backup-recovery-point-created", "This rule checks ebs last backup recovery point created.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			volumes, err := d.EC2Volumes.Get()
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			_, lastBackup, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, volume := range volumes {
+				if volume.VolumeId == nil {
+					continue
+				}
+				id := *volume.VolumeId
+				arn := buildEBSVolumeARN(region, accountID, id)
+				t, ok := lastBackup[arn]
+				detail := "No recovery point found"
+				if ok {
+					detail = fmt.Sprintf("Last backup: %s", t.Format(time.RFC3339))
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ebs-meets-restore-time-target", "This rule checks ebs meets restore time target.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			volumes, err := d.EC2Volumes.Get()
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			_, lastBackup, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			target := 24 * time.Hour
+			var res []ConfigResource
+			for _, volume := range volumes {
+				if volume.VolumeId == nil {
+					continue
+				}
+				id := *volume.VolumeId
+				arn := buildEBSVolumeARN(region, accountID, id)
+				t, ok := lastBackup[arn]
+				passing := ok && time.Since(t) <= target
+				detail := "No recent backup found"
+				if ok {
+					detail = fmt.Sprintf("Backup age: %s", time.Since(t).Round(time.Minute))
+				}
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("ebs-resources-in-logically-air-gapped-vault", "This rule checks ebs resources in logically air gapped vault.", "ec2", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			volumes, err := d.EC2Volumes.Get()
+			if err != nil {
+				return nil, err
+			}
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			region := d.Clients.EC2.Options().Region
+			_, _, inProtectedVault, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, volume := range volumes {
+				if volume.VolumeId == nil {
+					continue
+				}
+				id := *volume.VolumeId
+				arn := buildEBSVolumeARN(region, accountID, id)
+				res = append(res, ConfigResource{ID: id, Passing: inProtectedVault[arn], Detail: fmt.Sprintf("In locked/air-gapped vault: %v", inProtectedVault[arn])})
+			}
+			return res, nil
+		}))
 
 	// ECR checks
 	checker.Register(TaggedCheck("ecr-repository-tagged", "Check ECR repo tagged", "ecr", d,

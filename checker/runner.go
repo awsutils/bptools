@@ -1,23 +1,36 @@
 package checker
 
 import (
-	"log/slog"
 	"sync"
-	"time"
 )
+
+// RunHooks provides optional callbacks for check execution progress.
+type RunHooks struct {
+	OnStart    func(total int)
+	OnComplete func(id string, count int, errCount int)
+	OnDone     func(total int, findings int, errors int)
+}
 
 // RunAll executes checks concurrently with bounded parallelism.
 func RunAll(checks []Check, concurrency int) []Result {
+	return RunAllWithHooks(checks, concurrency, RunHooks{})
+}
+
+// RunAllWithHooks executes checks concurrently with bounded parallelism and callbacks.
+func RunAllWithHooks(checks []Check, concurrency int, hooks RunHooks) []Result {
 	if concurrency < 1 {
 		concurrency = 20
 	}
-	slog.Info("RunAll start", "checks", len(checks), "concurrency", concurrency)
-	start := time.Now()
+	if hooks.OnStart != nil {
+		hooks.OnStart(len(checks))
+	}
+
 	var (
-		mu      sync.Mutex
-		results []Result
-		wg      sync.WaitGroup
-		sem     = make(chan struct{}, concurrency)
+		mu       sync.Mutex
+		results  []Result
+		wg       sync.WaitGroup
+		sem      = make(chan struct{}, concurrency)
+		totalErr int
 	)
 	for _, c := range checks {
 		wg.Add(1)
@@ -25,17 +38,28 @@ func RunAll(checks []Check, concurrency int) []Result {
 		go func(c Check) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			slog.Debug("check start", "id", c.ID(), "service", c.Service())
-			cstart := time.Now()
 			r := c.Run()
-			slog.Info("check done", "id", c.ID(), "service", c.Service(), "results", len(r), "duration", time.Since(cstart))
+			errCount := 0
+			for _, rr := range r {
+				if rr.Status == StatusError {
+					errCount++
+				}
+			}
 			mu.Lock()
 			results = append(results, r...)
+			totalErr += errCount
 			mu.Unlock()
+
+			if hooks.OnComplete != nil {
+				hooks.OnComplete(c.ID(), len(r), errCount)
+			}
 		}(c)
 	}
 	wg.Wait()
-	slog.Info("RunAll done", "results", len(results), "duration", time.Since(start))
+
+	if hooks.OnDone != nil {
+		hooks.OnDone(len(checks), len(results), totalErr)
+	}
 	return results
 }
 

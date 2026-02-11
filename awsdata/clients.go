@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/smithy-go/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/accessanalyzer"
 	"github.com/aws/aws-sdk-go-v2/service/account"
 	"github.com/aws/aws-sdk-go-v2/service/acm"
@@ -232,7 +233,9 @@ type Clients struct {
 
 // NewClients constructs all AWS SDK clients from the default config.
 func NewClients(ctx context.Context) (*Clients, error) {
-	cfg, err := config.LoadDefaultConfig(ctx)
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithAPIOptions([]func(*middleware.Stack) error{
+		addOpLogger,
+	}))
 	if err != nil {
 		return nil, err
 	}

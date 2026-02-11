@@ -2,38 +2,25 @@ package main
 
 import (
 	"context"
-	"encoding/csv"
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io"
-	"log/slog"
 	"os"
 	"runtime"
 	"strings"
-	"time"
 
 	"bptools/awsdata"
 	"bptools/checker"
 	"bptools/checks"
-	"bptools/output"
+	"bptools/progress"
 )
 
 func main() {
 	var (
-		format      = flag.String("format", "text", "Output format: text|json|csv")
-		concurrency = flag.Int("concurrency", 4, "Number of concurrent checks")
+		concurrency = flag.Int("concurrency", 20, "Number of concurrent checks")
 		ids         = flag.String("ids", "", "Comma-separated list of check IDs to run")
 		services    = flag.String("services", "", "Comma-separated list of services to run")
-		safe        = flag.Bool("safe", true, "Cap concurrency when running all checks")
-		stream      = flag.Bool("stream", true, "Stream results instead of buffering all in memory")
-		logLevel    = flag.String("log-level", "warn", "Log level: debug|info|warn|error")
+		prefetch    = flag.Bool("prefetch", true, "Prefetch all AWS data caches before running checks")
 	)
 	flag.Parse()
-
-	var level slog.Level
-	level.UnmarshalText([]byte(*logLevel))
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
 
 	ctx := context.Background()
 	clients, err := awsdata.NewClients(ctx)
@@ -41,6 +28,7 @@ func main() {
 		fatal(err)
 	}
 	data := awsdata.New(ctx, clients)
+	tracker := progress.New(os.Stderr)
 
 	registerAllChecks(data)
 
@@ -50,12 +38,6 @@ func main() {
 	filtered := checker.Filter(all, idSet, svcSet)
 
 	conc := *concurrency
-	if *safe && len(idSet) == 0 && len(svcSet) == 0 {
-		if conc > 4 {
-			conc = 4
-		}
-		fmt.Fprintln(os.Stderr, "running all checks; concurrency capped to", conc, "(use -services/-ids or -safe=false to override)")
-	}
 	if conc < 1 {
 		conc = 1
 	}
@@ -63,19 +45,20 @@ func main() {
 		conc = runtime.NumCPU() * 2
 	}
 
-	slog.Info("startup", "format", *format, "concurrency", conc, "checks", len(filtered), "ids", *ids, "services", *services)
-
-	if *stream {
-		if err := runAndStream(filtered, output.ParseFormat(*format), os.Stdout); err != nil {
-			fatal(err)
-		}
-		return
+	if *prefetch && len(idSet) == 0 && len(svcSet) == 0 {
+		data.PrefetchAllWithHooks(conc, tracker.PrefetchHooks())
+	} else if *prefetch && len(svcSet) > 0 {
+		data.PrefetchFilteredWithHooks(svcSet, conc, tracker.PrefetchHooks())
 	}
 
-	results := checker.RunAll(filtered, conc)
-	if err := output.Write(os.Stdout, results, output.ParseFormat(*format)); err != nil {
-		fatal(err)
+	ruleDescriptions := make(map[string]string, len(filtered))
+	for _, check := range filtered {
+		ruleDescriptions[check.ID()] = check.Description()
 	}
+
+	results := checker.RunAllWithHooks(filtered, conc, tracker.RunHooks())
+	tracker.ShowResults(results, ruleDescriptions)
+	tracker.Wait()
 }
 
 func registerAllChecks(d *awsdata.Data) {
@@ -183,86 +166,6 @@ func parseSet(s string) map[string]bool {
 }
 
 func fatal(err error) {
-	fmt.Fprintln(os.Stderr, err)
+	_ = err
 	os.Exit(1)
-}
-
-func runAndStream(checks []checker.Check, format output.Format, w io.Writer) error {
-	switch format {
-	case output.CSV:
-		return streamCSV(checks, w)
-	case output.JSON:
-		return streamJSON(checks, w)
-	default:
-		return streamText(checks, w)
-	}
-}
-
-func streamText(checks []checker.Check, w io.Writer) error {
-	for _, c := range checks {
-		start := time.Now()
-		slog.Debug("stream check start", "id", c.ID())
-		results := c.Run()
-		slog.Info("stream check done", "id", c.ID(), "results", len(results), "duration", time.Since(start))
-		for _, r := range results {
-			if _, err := fmt.Fprintf(w, "[%s] %s: %s - %s\n", r.Status, r.CheckID, r.ResourceID, r.Message); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func streamCSV(checks []checker.Check, w io.Writer) error {
-	cw := csv.NewWriter(w)
-	if err := cw.Write([]string{"check_id", "resource_id", "status", "message"}); err != nil {
-		return err
-	}
-	for _, c := range checks {
-		start := time.Now()
-		slog.Debug("stream check start", "id", c.ID())
-		results := c.Run()
-		slog.Info("stream check done", "id", c.ID(), "results", len(results), "duration", time.Since(start))
-		for _, r := range results {
-			if err := cw.Write([]string{r.CheckID, r.ResourceID, string(r.Status), r.Message}); err != nil {
-				return err
-			}
-		}
-	}
-	cw.Flush()
-	return cw.Error()
-}
-
-func streamJSON(checks []checker.Check, w io.Writer) error {
-	enc := json.NewEncoder(w)
-	if _, err := io.WriteString(w, "["); err != nil {
-		return err
-	}
-	first := true
-	for _, c := range checks {
-		start := time.Now()
-		slog.Debug("stream check start", "id", c.ID())
-		results := c.Run()
-		slog.Info("stream check done", "id", c.ID(), "results", len(results), "duration", time.Since(start))
-		for _, r := range results {
-			if !first {
-				if _, err := io.WriteString(w, ","); err != nil {
-					return err
-				}
-			}
-			first = false
-			b, err := json.Marshal(r)
-			if err != nil {
-				return err
-			}
-			if _, err := w.Write(b); err != nil {
-				return err
-			}
-		}
-	}
-	if _, err := io.WriteString(w, "]"); err != nil {
-		return err
-	}
-	_ = enc
-	return nil
 }

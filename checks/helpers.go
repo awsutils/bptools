@@ -1,9 +1,6 @@
 package checks
 
 import (
-	"log/slog"
-	"time"
-
 	"bptools/awsdata"
 	"bptools/checker"
 )
@@ -20,12 +17,10 @@ func (b *BaseCheck) ID() string          { return b.CheckID }
 func (b *BaseCheck) Description() string { return b.Desc }
 func (b *BaseCheck) Service() string     { return b.Svc }
 func (b *BaseCheck) Run() []checker.Result {
-	start := time.Now()
 	r := b.RunFunc()
 	if r == nil {
 		r = []checker.Result{}
 	}
-	slog.Debug("check completed", "id", b.CheckID, "service", b.Svc, "results", len(r), "duration", time.Since(start))
 	return r
 }
 

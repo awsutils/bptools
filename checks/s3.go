@@ -1,7 +1,10 @@
 package checks
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
+	"time"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -99,7 +102,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketPolicyStatus(d.Ctx, &s3.GetBucketPolicyStatusInput{Bucket: b.Name})
-					public := err == nil && out.PolicyStatus != nil && out.PolicyStatus.IsPublic != nil && *out.PolicyStatus.IsPublic
+				public := err == nil && out.PolicyStatus != nil && out.PolicyStatus.IsPublic != nil && *out.PolicyStatus.IsPublic
 				res = append(res, ConfigResource{ID: bucketName(b), Passing: !public, Detail: fmt.Sprintf("Public: %v", public)})
 			}
 			return res, nil
@@ -312,18 +315,335 @@ func RegisterS3Checks(d *awsdata.Data) {
 		_ = cid
 	}
 
-	// Stub checks
-	for _, id := range []string{
-		"s3-access-point-in-vpc-only", "s3-access-point-public-access-blocks",
-		"s3-bucket-blacklisted-actions-prohibited", "s3-bucket-policy-grantee-check",
-		"s3-bucket-policy-not-more-permissive", "s3express-dir-bucket-lifecycle-rules-check",
-		"s3-last-backup-recovery-point-created", "s3-meets-restore-time-target",
-		"s3-resources-in-logically-air-gapped-vault", "s3-resources-protected-by-backup-plan",
-	} {
-		cid := id
-		checker.Register(&BaseCheck{CheckID: cid, Desc: "S3 check", Svc: "s3",
-			RunFunc: func() []checker.Result {
-				return []checker.Result{{CheckID: cid, Status: checker.StatusSkip, Message: "Requires additional configuration"}}
-			}})
+	checker.Register(ConfigCheck("s3-access-point-in-vpc-only", "This rule checks S3 access point in VPC only.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			out, err := d.Clients.S3Control.ListAccessPoints(d.Ctx, &s3control.ListAccessPointsInput{AccountId: &accountID})
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, ap := range out.AccessPointList {
+				name := ""
+				if ap.Name != nil {
+					name = *ap.Name
+				}
+				inVPC := ap.NetworkOrigin == "VPC" || ap.VpcConfiguration != nil
+				res = append(res, ConfigResource{ID: name, Passing: inVPC, Detail: fmt.Sprintf("NetworkOrigin: %s", ap.NetworkOrigin)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3-access-point-public-access-blocks", "This rule checks S3 access point public access blocks.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			accountID, err := d.AccountID.Get()
+			if err != nil {
+				return nil, err
+			}
+			out, err := d.Clients.S3Control.ListAccessPoints(d.Ctx, &s3control.ListAccessPointsInput{AccountId: &accountID})
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, ap := range out.AccessPointList {
+				if ap.Name == nil {
+					continue
+				}
+				detail, err := d.Clients.S3Control.GetAccessPoint(d.Ctx, &s3control.GetAccessPointInput{AccountId: &accountID, Name: ap.Name})
+				if err != nil {
+					res = append(res, ConfigResource{ID: *ap.Name, Passing: false, Detail: "Unable to read access point configuration"})
+					continue
+				}
+				cfg := detail.PublicAccessBlockConfiguration
+				blocked := cfg != nil &&
+					cfg.BlockPublicAcls != nil && *cfg.BlockPublicAcls &&
+					cfg.IgnorePublicAcls != nil && *cfg.IgnorePublicAcls &&
+					cfg.BlockPublicPolicy != nil && *cfg.BlockPublicPolicy &&
+					cfg.RestrictPublicBuckets != nil && *cfg.RestrictPublicBuckets
+				res = append(res, ConfigResource{ID: *ap.Name, Passing: blocked, Detail: fmt.Sprintf("All public access blocks enabled: %v", blocked)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3-bucket-policy-not-more-permissive", "This rule checks S3 bucket policy not more permissive.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, b := range buckets {
+				out, err := d.Clients.S3.GetBucketPolicyStatus(d.Ctx, &s3.GetBucketPolicyStatusInput{Bucket: b.Name})
+				public := err == nil && out.PolicyStatus != nil && out.PolicyStatus.IsPublic != nil && *out.PolicyStatus.IsPublic
+				res = append(res, ConfigResource{ID: bucketName(b), Passing: !public, Detail: fmt.Sprintf("Policy public: %v", public)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3-bucket-policy-grantee-check", "This rule checks configuration for S3 bucket policy grantee.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			type statement struct {
+				Effect    string      `json:"Effect"`
+				Principal interface{} `json:"Principal"`
+			}
+			type policyDoc struct {
+				Statement []statement `json:"Statement"`
+			}
+			hasPublicPrincipal := func(principal interface{}) bool {
+				switch p := principal.(type) {
+				case string:
+					return p == "*"
+				case map[string]interface{}:
+					for _, v := range p {
+						if s, ok := v.(string); ok && s == "*" {
+							return true
+						}
+					}
+				}
+				return false
+			}
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, b := range buckets {
+				out, err := d.Clients.S3.GetBucketPolicy(d.Ctx, &s3.GetBucketPolicyInput{Bucket: b.Name})
+				if err != nil || out.Policy == nil {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: true, Detail: "No bucket policy"})
+					continue
+				}
+				var doc policyDoc
+				if err := json.Unmarshal([]byte(*out.Policy), &doc); err != nil {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: false, Detail: "Invalid bucket policy document"})
+					continue
+				}
+				public := false
+				for _, st := range doc.Statement {
+					if strings.EqualFold(st.Effect, "Allow") && hasPublicPrincipal(st.Principal) {
+						public = true
+						break
+					}
+				}
+				res = append(res, ConfigResource{ID: bucketName(b), Passing: !public, Detail: fmt.Sprintf("Public policy grantee found: %v", public)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3-bucket-blacklisted-actions-prohibited", "This rule checks S3 bucket blacklisted actions prohibited.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			type statement struct {
+				Effect string      `json:"Effect"`
+				Action interface{} `json:"Action"`
+			}
+			type policyDoc struct {
+				Statement []statement `json:"Statement"`
+			}
+			toActions := func(action interface{}) []string {
+				switch a := action.(type) {
+				case string:
+					return []string{a}
+				case []interface{}:
+					var out []string
+					for _, v := range a {
+						if s, ok := v.(string); ok {
+							out = append(out, s)
+						}
+					}
+					return out
+				default:
+					return nil
+				}
+			}
+			blacklist := map[string]bool{"s3:putbucketacl": true, "s3:putbucketpolicy": true, "s3:putobjectacl": true}
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, b := range buckets {
+				out, err := d.Clients.S3.GetBucketPolicy(d.Ctx, &s3.GetBucketPolicyInput{Bucket: b.Name})
+				if err != nil || out.Policy == nil {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: true, Detail: "No bucket policy"})
+					continue
+				}
+				var doc policyDoc
+				if err := json.Unmarshal([]byte(*out.Policy), &doc); err != nil {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: false, Detail: "Invalid bucket policy document"})
+					continue
+				}
+				found := ""
+				for _, st := range doc.Statement {
+					if !strings.EqualFold(st.Effect, "Allow") {
+						continue
+					}
+					for _, a := range toActions(st.Action) {
+						la := strings.ToLower(a)
+						if blacklist[la] || la == "s3:*" || la == "*" {
+							found = a
+							break
+						}
+					}
+					if found != "" {
+						break
+					}
+				}
+				res = append(res, ConfigResource{ID: bucketName(b), Passing: found == "", Detail: fmt.Sprintf("Blacklisted allowed action: %s", found)})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3express-dir-bucket-lifecycle-rules-check", "This rule checks configuration for s3express dir bucket lifecycle rules.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, b := range buckets {
+				if b.Name == nil {
+					continue
+				}
+				name := *b.Name
+				if !strings.Contains(name, "--x-s3") {
+					continue
+				}
+				out, err := d.Clients.S3.GetBucketLifecycleConfiguration(d.Ctx, &s3.GetBucketLifecycleConfigurationInput{Bucket: b.Name})
+				ok := err == nil && len(out.Rules) > 0
+				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Lifecycle rules: %d", len(out.Rules))})
+			}
+			return res, nil
+		}))
+
+	loadBackupState := func() (map[string]bool, map[string]time.Time, map[string]bool, error) {
+		protected, err := d.BackupProtectedResources.Get()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		vaults, err := d.BackupVaultLockConfigs.Get()
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		isProtected := make(map[string]bool)
+		lastBackup := make(map[string]time.Time)
+		inProtectedVault := make(map[string]bool)
+		for arn, resource := range protected {
+			if !strings.HasPrefix(arn, "arn:aws:s3:::") {
+				continue
+			}
+			isProtected[arn] = true
+			if resource.LastBackupTime != nil {
+				lastBackup[arn] = *resource.LastBackupTime
+			}
+			vaultProtected := false
+			if resource.LastBackupVaultArn != nil {
+				parts := strings.Split(*resource.LastBackupVaultArn, ":")
+				if len(parts) > 0 {
+					name := parts[len(parts)-1]
+					name = strings.TrimPrefix(name, "backup-vault/")
+					if vault, ok := vaults[name]; ok {
+						if vault.Locked != nil && *vault.Locked {
+							vaultProtected = true
+						}
+						if strings.Contains(strings.ToUpper(string(vault.VaultType)), "LOGICALLY_AIR_GAPPED") {
+							vaultProtected = true
+						}
+					}
+				}
+			}
+			inProtectedVault[arn] = vaultProtected
+		}
+		return isProtected, lastBackup, inProtectedVault, nil
 	}
+
+	checker.Register(ConfigCheck("s3-resources-protected-by-backup-plan", "This rule checks S3 resources protected by backup plan.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			isProtected, _, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, b := range buckets {
+				id := bucketName(b)
+				arn := "arn:aws:s3:::" + id
+				res = append(res, ConfigResource{ID: id, Passing: isProtected[arn], Detail: fmt.Sprintf("Protected by backup plan: %v", isProtected[arn])})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3-last-backup-recovery-point-created", "This rule checks S3 last backup recovery point created.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			_, lastBackup, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, b := range buckets {
+				id := bucketName(b)
+				arn := "arn:aws:s3:::" + id
+				t, ok := lastBackup[arn]
+				detail := "No recovery point found"
+				if ok {
+					detail = fmt.Sprintf("Last backup: %s", t.Format(time.RFC3339))
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3-meets-restore-time-target", "This rule checks S3 meets restore time target.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			_, lastBackup, _, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			target := 24 * time.Hour
+			var res []ConfigResource
+			for _, b := range buckets {
+				id := bucketName(b)
+				arn := "arn:aws:s3:::" + id
+				t, ok := lastBackup[arn]
+				passing := ok && time.Since(t) <= target
+				detail := "No recent backup found"
+				if ok {
+					detail = fmt.Sprintf("Backup age: %s", time.Since(t).Round(time.Minute))
+				}
+				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
+			}
+			return res, nil
+		}))
+
+	checker.Register(ConfigCheck("s3-resources-in-logically-air-gapped-vault", "This rule checks S3 resources in logically air gapped vault.", "s3", d,
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			buckets, err := d.S3Buckets.Get()
+			if err != nil {
+				return nil, err
+			}
+			_, _, inProtectedVault, err := loadBackupState()
+			if err != nil {
+				return nil, err
+			}
+			var res []ConfigResource
+			for _, b := range buckets {
+				id := bucketName(b)
+				arn := "arn:aws:s3:::" + id
+				res = append(res, ConfigResource{ID: id, Passing: inProtectedVault[arn], Detail: fmt.Sprintf("In locked/air-gapped vault: %v", inProtectedVault[arn])})
+			}
+			return res, nil
+		}))
 }

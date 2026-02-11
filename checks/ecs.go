@@ -78,8 +78,12 @@ func RegisterECSChecks(d *awsdata.Data) {
 				if cp.CapacityProviderArn != nil {
 					id = *cp.CapacityProviderArn
 				}
-				ok := cp.AutoScalingGroupProvider != nil && cp.AutoScalingGroupProvider.ManagedTerminationProtection == ecstypes.ManagedTerminationProtectionEnabled
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("ManagedTerminationProtection: %s", cp.AutoScalingGroupProvider.ManagedTerminationProtection)})
+				prot := ""
+				if cp.AutoScalingGroupProvider != nil {
+					prot = string(cp.AutoScalingGroupProvider.ManagedTerminationProtection)
+				}
+				ok := prot == string(ecstypes.ManagedTerminationProtectionEnabled)
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("ManagedTerminationProtection: %s", prot)})
 			}
 			return res, nil
 		},
