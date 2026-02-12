@@ -1,6 +1,8 @@
 package checker
 
 import (
+	"os"
+	"strings"
 	"sync"
 )
 
@@ -38,7 +40,7 @@ func RunAllWithHooks(checks []Check, concurrency int, hooks RunHooks) []Result {
 		go func(c Check) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			r := c.Run()
+			r := filterIgnoredResults(c.Run())
 			errCount := 0
 			for _, rr := range r {
 				if rr.Status == StatusError {
@@ -61,6 +63,88 @@ func RunAllWithHooks(checks []Check, concurrency int, hooks RunHooks) []Result {
 		hooks.OnDone(len(checks), len(results), totalErr)
 	}
 	return results
+}
+
+func filterIgnoredResults(in []Result) []Result {
+	if len(in) == 0 {
+		return in
+	}
+	out := make([]Result, 0, len(in))
+	for _, r := range in {
+		if shouldIgnoreDeletedResult(r) {
+			continue
+		}
+		if shouldIgnoreDefaultTaggingResult(r) {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out
+}
+
+func shouldIgnoreDeletedResult(r Result) bool {
+	if !boolEnvDefaultTrue("BPTOOLS_IGNORE_DELETED_RESOURCES") {
+		return false
+	}
+	return isDeletedLikeResourceID(r.ResourceID)
+}
+
+func shouldIgnoreDefaultTaggingResult(r Result) bool {
+	if !boolEnvDefaultTrue("BPTOOLS_IGNORE_DEFAULT_RESOURCES_IN_TAG_CHECKS") {
+		return false
+	}
+	if !isTaggingCheckID(r.CheckID) {
+		return false
+	}
+	return isAWSDefaultLikeResourceID(r.ResourceID)
+}
+
+func isTaggingCheckID(checkID string) bool {
+	id := strings.ToLower(strings.TrimSpace(checkID))
+	return strings.Contains(id, "tag")
+}
+
+func isDeletedLikeResourceID(id string) bool {
+	v := strings.ToLower(strings.TrimSpace(id))
+	if v == "" {
+		return false
+	}
+	return strings.Contains(v, "deleted") ||
+		strings.Contains(v, "deleting") ||
+		strings.Contains(v, "terminated") ||
+		strings.Contains(v, "terminating")
+}
+
+func isAWSDefaultLikeResourceID(id string) bool {
+	v := strings.ToLower(strings.TrimSpace(id))
+	if v == "" {
+		return false
+	}
+	if strings.HasPrefix(v, "aws-") {
+		return true
+	}
+	if strings.Contains(v, ":default:") || strings.HasSuffix(v, ":default") {
+		return true
+	}
+	if strings.Contains(v, "/default/") || strings.HasSuffix(v, "/default") {
+		return true
+	}
+	if strings.Contains(v, "alias/aws/") {
+		return true
+	}
+	return false
+}
+
+func boolEnvDefaultTrue(name string) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(name)))
+	switch v {
+	case "", "1", "true", "t", "yes", "y", "on":
+		return true
+	case "0", "false", "f", "no", "n", "off":
+		return false
+	default:
+		return true
+	}
 }
 
 // Filter returns checks matching the given IDs or services.

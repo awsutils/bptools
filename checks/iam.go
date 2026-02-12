@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -166,11 +168,10 @@ func hasFullAccess(doc *policyDocument) bool {
 }
 
 func hasBlockedKMSActions(doc *policyDocument) bool {
-	blocked := map[string]bool{
-		"kms:decrypt":       true,
-		"kms:reencryptfrom": true,
-		"kms:reencrypt*":    true,
-		"kms:*":             true,
+	blockedPatterns := []string{
+		"kms:decrypt",
+		"kms:reencrypt*",
+		"kms:*",
 	}
 	for _, stmt := range doc.Statement {
 		if !strings.EqualFold(stmt.Effect, "Allow") {
@@ -188,12 +189,29 @@ func hasBlockedKMSActions(doc *policyDocument) bool {
 			continue
 		}
 		for _, a := range stmt.actions() {
-			if blocked[strings.ToLower(a)] {
+			action := strings.ToLower(strings.TrimSpace(a))
+			if action == "*" {
 				return true
+			}
+			for _, pattern := range blockedPatterns {
+				if iamActionMatchesPattern(action, pattern) {
+					return true
+				}
 			}
 		}
 	}
 	return false
+}
+
+func iamActionMatchesPattern(action, pattern string) bool {
+	if action == pattern {
+		return true
+	}
+	if !strings.Contains(pattern, "*") {
+		return false
+	}
+	ok, err := path.Match(pattern, action)
+	return err == nil && ok
 }
 
 func isKeyOlderThan90Days(dateStr string) bool {
@@ -222,6 +240,111 @@ func isCredentialUnused(dateStr string, days int) bool {
 		}
 	}
 	return time.Since(t) > time.Duration(days)*24*time.Hour
+}
+
+func iamParseCSV(value string) []string {
+	items := strings.Split(value, ",")
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func iamListAllAttachedUserPolicyARNs(d *awsdata.Data, userName *string) (map[string]bool, error) {
+	out := make(map[string]bool)
+	var marker *string
+	for {
+		resp, err := d.Clients.IAM.ListAttachedUserPolicies(d.Ctx, &iam.ListAttachedUserPoliciesInput{
+			UserName: userName,
+			Marker:   marker,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, policy := range resp.AttachedPolicies {
+			if policy.PolicyArn != nil {
+				out[*policy.PolicyArn] = true
+			}
+		}
+		if !resp.IsTruncated || resp.Marker == nil || *resp.Marker == "" {
+			break
+		}
+		marker = resp.Marker
+	}
+	return out, nil
+}
+
+func iamListAllAttachedRolePolicyARNs(d *awsdata.Data, roleName *string) (map[string]bool, error) {
+	out := make(map[string]bool)
+	var marker *string
+	for {
+		resp, err := d.Clients.IAM.ListAttachedRolePolicies(d.Ctx, &iam.ListAttachedRolePoliciesInput{
+			RoleName: roleName,
+			Marker:   marker,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, policy := range resp.AttachedPolicies {
+			if policy.PolicyArn != nil {
+				out[*policy.PolicyArn] = true
+			}
+		}
+		if !resp.IsTruncated || resp.Marker == nil || *resp.Marker == "" {
+			break
+		}
+		marker = resp.Marker
+	}
+	return out, nil
+}
+
+func iamListAllAttachedGroupPolicyARNs(d *awsdata.Data, groupName *string) (map[string]bool, error) {
+	out := make(map[string]bool)
+	var marker *string
+	for {
+		resp, err := d.Clients.IAM.ListAttachedGroupPolicies(d.Ctx, &iam.ListAttachedGroupPoliciesInput{
+			GroupName: groupName,
+			Marker:    marker,
+		})
+		if err != nil {
+			return nil, err
+		}
+		for _, policy := range resp.AttachedPolicies {
+			if policy.PolicyArn != nil {
+				out[*policy.PolicyArn] = true
+			}
+		}
+		if !resp.IsTruncated || resp.Marker == nil || *resp.Marker == "" {
+			break
+		}
+		marker = resp.Marker
+	}
+	return out, nil
+}
+
+func iamUserHasInlinePolicies(d *awsdata.Data, userName *string) (bool, error) {
+	var marker *string
+	for {
+		resp, err := d.Clients.IAM.ListUserPolicies(d.Ctx, &iam.ListUserPoliciesInput{
+			UserName: userName,
+			Marker:   marker,
+		})
+		if err != nil {
+			return false, err
+		}
+		if len(resp.PolicyNames) > 0 {
+			return true, nil
+		}
+		if !resp.IsTruncated || resp.Marker == nil || *resp.Marker == "" {
+			break
+		}
+		marker = resp.Marker
+	}
+	return false, nil
 }
 
 // RegisterIAMChecks registers all IAM-related best-practice checks.
@@ -627,6 +750,12 @@ func RegisterIAMChecks(d *awsdata.Data) {
 			if !pp.RequireSymbols {
 				issues = append(issues, "symbols not required")
 			}
+			if pp.PasswordReusePrevention == nil || *pp.PasswordReusePrevention < 24 {
+				issues = append(issues, "password reuse prevention < 24")
+			}
+			if pp.MaxPasswordAge == nil || *pp.MaxPasswordAge <= 0 || *pp.MaxPasswordAge > 90 {
+				issues = append(issues, "max password age not set to 1-90 days")
+			}
 			if len(issues) > 0 {
 				return false, "Password policy issues: " + strings.Join(issues, ", "), nil
 			}
@@ -656,13 +785,13 @@ func RegisterIAMChecks(d *awsdata.Data) {
 				if u.UserName != nil {
 					userName = *u.UserName
 				}
-				out, err := d.Clients.IAM.ListAttachedUserPolicies(d.Ctx, &iam.ListAttachedUserPoliciesInput{UserName: u.UserName})
+				attached, err := iamListAllAttachedUserPolicyARNs(d, u.UserName)
 				if err != nil {
 					continue
 				}
 				found := false
-				for _, ap := range out.AttachedPolicies {
-					if ap.PolicyArn != nil && blacklisted[*ap.PolicyArn] {
+				for policyARN := range attached {
+					if blacklisted[policyARN] {
 						found = true
 						break
 					}
@@ -681,13 +810,13 @@ func RegisterIAMChecks(d *awsdata.Data) {
 					if r.RoleName != nil {
 						roleName = *r.RoleName
 					}
-					out, err := d.Clients.IAM.ListAttachedRolePolicies(d.Ctx, &iam.ListAttachedRolePoliciesInput{RoleName: r.RoleName})
+					attached, err := iamListAllAttachedRolePolicyARNs(d, r.RoleName)
 					if err != nil {
 						continue
 					}
 					found := false
-					for _, ap := range out.AttachedPolicies {
-						if ap.PolicyArn != nil && blacklisted[*ap.PolicyArn] {
+					for policyARN := range attached {
+						if blacklisted[policyARN] {
 							found = true
 							break
 						}
@@ -707,13 +836,13 @@ func RegisterIAMChecks(d *awsdata.Data) {
 					if g.GroupName != nil {
 						groupName = *g.GroupName
 					}
-					out, err := d.Clients.IAM.ListAttachedGroupPolicies(d.Ctx, &iam.ListAttachedGroupPoliciesInput{GroupName: g.GroupName})
+					attached, err := iamListAllAttachedGroupPolicyARNs(d, g.GroupName)
 					if err != nil {
 						continue
 					}
 					found := false
-					for _, ap := range out.AttachedPolicies {
-						if ap.PolicyArn != nil && blacklisted[*ap.PolicyArn] {
+					for policyARN := range attached {
+						if blacklisted[policyARN] {
 							found = true
 							break
 						}
@@ -742,20 +871,39 @@ func RegisterIAMChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			var res []ConfigResource
+			requiredPolicyARNs := iamParseCSV(os.Getenv("BPTOOLS_REQUIRED_POLICY_ARNS"))
+			requiredPolicyNames := iamParseCSV(os.Getenv("BPTOOLS_REQUIRED_POLICY_NAMES"))
+			if len(requiredPolicyARNs) == 0 && len(requiredPolicyNames) == 0 {
+				return []ConfigResource{{ID: "account", Passing: true, Detail: "No required policies configured; default not-applicable behavior"}}, nil
+			}
+			byARN := make(map[string]iamtypes.Policy)
+			byName := make(map[string]iamtypes.Policy)
 			for _, p := range policies {
-				id := ""
+				if p.Arn != nil {
+					byARN[*p.Arn] = p
+				}
 				if p.PolicyName != nil {
-					id = *p.PolicyName
-				} else if p.Arn != nil {
-					id = *p.Arn
+					byName[*p.PolicyName] = p
+				}
+			}
+			var res []ConfigResource
+			for _, arn := range requiredPolicyARNs {
+				p, ok := byARN[arn]
+				if !ok {
+					res = append(res, ConfigResource{ID: arn, Passing: false, Detail: "Required policy not found"})
+					continue
 				}
 				attached := p.AttachmentCount != nil && *p.AttachmentCount > 0
-				if attached {
-					res = append(res, ConfigResource{ID: id, Passing: true, Detail: "Policy is attached to entities"})
-				} else {
-					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Policy is not attached to any entity"})
+				res = append(res, ConfigResource{ID: arn, Passing: attached, Detail: fmt.Sprintf("Required policy attached: %v", attached)})
+			}
+			for _, name := range requiredPolicyNames {
+				p, ok := byName[name]
+				if !ok {
+					res = append(res, ConfigResource{ID: name, Passing: false, Detail: "Required policy not found"})
+					continue
 				}
+				attached := p.AttachmentCount != nil && *p.AttachmentCount > 0
+				res = append(res, ConfigResource{ID: name, Passing: attached, Detail: fmt.Sprintf("Required policy attached: %v", attached)})
 			}
 			return res, nil
 		},
@@ -859,22 +1007,28 @@ func RegisterIAMChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			requiredPolicyARNs := iamParseCSV(os.Getenv("BPTOOLS_REQUIRED_ROLE_MANAGED_POLICY_ARNS"))
+			if len(requiredPolicyARNs) == 0 {
+				return []ConfigResource{{ID: "account", Passing: true, Detail: "No required role managed policies configured; default not-applicable behavior"}}, nil
+			}
 			var res []ConfigResource
 			for _, r := range roles {
 				roleName := ""
 				if r.RoleName != nil {
 					roleName = *r.RoleName
 				}
-				out, err := d.Clients.IAM.ListAttachedRolePolicies(d.Ctx, &iam.ListAttachedRolePoliciesInput{RoleName: r.RoleName})
+				attached, err := iamListAllAttachedRolePolicyARNs(d, r.RoleName)
 				if err != nil {
 					res = append(res, ConfigResource{ID: roleName, Passing: false, Detail: "Error listing attached policies"})
 					continue
 				}
-				if len(out.AttachedPolicies) > 0 {
-					res = append(res, ConfigResource{ID: roleName, Passing: true, Detail: "Role has managed policies attached"})
-				} else {
-					res = append(res, ConfigResource{ID: roleName, Passing: false, Detail: "Role has no managed policies attached"})
+				missing := []string{}
+				for _, required := range requiredPolicyARNs {
+					if !attached[required] {
+						missing = append(missing, required)
+					}
 				}
+				res = append(res, ConfigResource{ID: roleName, Passing: len(missing) == 0, Detail: fmt.Sprintf("Missing required policies: %v", missing)})
 			}
 			return res, nil
 		},
@@ -1057,9 +1211,6 @@ func RegisterIAMChecks(d *awsdata.Data) {
 				if row.User == "<root_account>" {
 					continue
 				}
-				if row.PasswordEnabled != "true" {
-					continue
-				}
 				if row.MFAActive == "true" {
 					res = append(res, ConfigResource{ID: row.User, Passing: true, Detail: "MFA is enabled"})
 				} else {
@@ -1088,13 +1239,17 @@ func RegisterIAMChecks(d *awsdata.Data) {
 				if u.UserName != nil {
 					userName = *u.UserName
 				}
-				// Check inline policies
-				inlineOut, err := d.Clients.IAM.ListUserPolicies(d.Ctx, &iam.ListUserPoliciesInput{UserName: u.UserName})
-				hasInline := err == nil && len(inlineOut.PolicyNames) > 0
-
-				// Check attached policies
-				attachedOut, err := d.Clients.IAM.ListAttachedUserPolicies(d.Ctx, &iam.ListAttachedUserPoliciesInput{UserName: u.UserName})
-				hasAttached := err == nil && len(attachedOut.AttachedPolicies) > 0
+				hasInline, err := iamUserHasInlinePolicies(d, u.UserName)
+				if err != nil {
+					res = append(res, ConfigResource{ID: userName, Passing: false, Detail: "Error listing inline policies"})
+					continue
+				}
+				attached, err := iamListAllAttachedUserPolicyARNs(d, u.UserName)
+				if err != nil {
+					res = append(res, ConfigResource{ID: userName, Passing: false, Detail: "Error listing attached policies"})
+					continue
+				}
+				hasAttached := len(attached) > 0
 
 				if hasInline || hasAttached {
 					res = append(res, ConfigResource{ID: userName, Passing: false, Detail: "User has directly attached policies"})

@@ -5,6 +5,8 @@ import (
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	apprunnertypes "github.com/aws/aws-sdk-go-v2/service/apprunner/types"
 )
 
 func RegisterAppRunnerChecks(d *awsdata.Data) {
@@ -21,8 +23,12 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for arn, svc := range services {
-				ok := svc.NetworkConfiguration != nil && svc.NetworkConfiguration.EgressConfiguration != nil && svc.NetworkConfiguration.EgressConfiguration.VpcConnectorArn != nil
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "VpcConnectorArn set"})
+				egressType := apprunnertypes.EgressTypeDefault
+				if svc.NetworkConfiguration != nil && svc.NetworkConfiguration.EgressConfiguration != nil {
+					egressType = svc.NetworkConfiguration.EgressConfiguration.EgressType
+				}
+				ok := egressType == apprunnertypes.EgressTypeVpc
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("EgressType: %s", egressType)})
 			}
 			return res, nil
 		},

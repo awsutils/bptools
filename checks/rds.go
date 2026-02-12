@@ -6,6 +6,10 @@ import (
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
+	"github.com/aws/aws-sdk-go-v2/service/rds"
+	rdstypes "github.com/aws/aws-sdk-go-v2/service/rds/types"
 )
 
 var rdsDefaultAdmins = map[string]bool{"admin": true, "root": true, "master": true, "rdsadmin": true, "postgres": true}
@@ -368,7 +372,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if inst.DBInstanceIdentifier != nil {
 					id = *inst.DBInstanceIdentifier
 				}
-				logging := len(inst.EnabledCloudwatchLogsExports) > 0
+				logging := rdsHasRequiredLogExports(inst.Engine, inst.EnabledCloudwatchLogsExports)
 				res = append(res, LoggingResource{ID: id, Logging: logging})
 			}
 			return res, nil
@@ -508,14 +512,11 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			subnetPublic := make(map[string]bool)
-			for _, s := range subnets {
-				if s.SubnetId == nil {
-					continue
-				}
-				public := s.MapPublicIpOnLaunch != nil && *s.MapPublicIpOnLaunch
-				subnetPublic[*s.SubnetId] = public
+			routeTables, err := d.EC2RouteTables.Get()
+			if err != nil {
+				return nil, err
 			}
+			subnetPublic := rdsSubnetHasInternetGatewayRoute(subnets, routeTables)
 			var res []ConfigResource
 			for _, inst := range instances {
 				id := "unknown"
@@ -575,7 +576,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if c.DBClusterIdentifier != nil {
 					id = *c.DBClusterIdentifier
 				}
-				enabled := len(c.AvailabilityZones) > 1
+				enabled := c.MultiAZ != nil && *c.MultiAZ
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -623,12 +624,17 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if s.DBSnapshotIdentifier != nil {
 					id = *s.DBSnapshotIdentifier
 				}
-				public := false
-				detail := "Publicly accessible attribute not available"
-				if s.SnapshotType != nil {
-					detail = fmt.Sprintf("SnapshotType: %s", *s.SnapshotType)
+				if s.DBSnapshotIdentifier == nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Missing DBSnapshotIdentifier"})
+					continue
 				}
-				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: detail})
+				out, err := d.Clients.RDS.DescribeDBSnapshotAttributes(d.Ctx, &rds.DescribeDBSnapshotAttributesInput{DBSnapshotIdentifier: s.DBSnapshotIdentifier})
+				if err != nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: fmt.Sprintf("DescribeDBSnapshotAttributes failed: %v", err)})
+					continue
+				}
+				public := rdsSnapshotAttributesIncludePublic(out.DBSnapshotAttributesResult.DBSnapshotAttributes)
+				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: fmt.Sprintf("Public restore access: %v", public)})
 			}
 			return res, nil
 		},
@@ -728,8 +734,8 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if inst.DBInstanceArn != nil {
 					arn = *inst.DBInstanceArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery point exists"})
+				ok, detail := backupRecencyResult(rps[arn], backupRecoveryPointRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -740,10 +746,6 @@ func RegisterRDSChecks(d *awsdata.Data) {
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			rps, err := d.BackupRecoveryPointsByResource.Get()
-			if err != nil {
-				return nil, err
-			}
 			instances, err := d.RDSDBInstances.Get()
 			if err != nil {
 				return nil, err
@@ -754,8 +756,11 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if inst.DBInstanceArn != nil {
 					arn = *inst.DBInstanceArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points available"})
+				ok, detail, err := restoreTimeTargetResult(d, arn, backupRestoreTimeTargetWindow)
+				if err != nil {
+					return nil, err
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -809,8 +814,8 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if c.DBClusterArn != nil {
 					arn = *c.DBClusterArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery point exists"})
+				ok, detail := backupRecencyResult(rps[arn], backupRecoveryPointRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -821,10 +826,6 @@ func RegisterRDSChecks(d *awsdata.Data) {
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			rps, err := d.BackupRecoveryPointsByResource.Get()
-			if err != nil {
-				return nil, err
-			}
 			clusters, err := d.RDSDBClusters.Get()
 			if err != nil {
 				return nil, err
@@ -835,8 +836,11 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if c.DBClusterArn != nil {
 					arn = *c.DBClusterArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points available"})
+				ok, detail, err := restoreTimeTargetResult(d, arn, backupRestoreTimeTargetWindow)
+				if err != nil {
+					return nil, err
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -861,14 +865,8 @@ func RegisterRDSChecks(d *awsdata.Data) {
 				if c.DBClusterArn != nil {
 					arn = *c.DBClusterArn
 				}
-				ok := false
-				for _, rp := range rps[arn] {
-					if string(rp.VaultType) == "LOGICALLY_AIR_GAPPED" {
-						ok = true
-						break
-					}
-				}
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Air gapped vault recovery point"})
+				ok, detail := airGappedRecencyResult(rps[arn], backupAirGappedRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -983,10 +981,10 @@ func RegisterRDSChecks(d *awsdata.Data) {
 					if pg.DBParameterGroupName == nil {
 						continue
 					}
-					val := params[*pg.DBParameterGroupName]["rds.force_ssl"]
+					val := params[*pg.DBParameterGroupName]["require_secure_transport"]
 					ok = ok || val == "1" || strings.EqualFold(val, "on") || strings.EqualFold(val, "true")
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "rds.force_ssl enabled"})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "require_secure_transport enabled"})
 			}
 			return res, nil
 		},
@@ -1129,4 +1127,103 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
+}
+
+func rdsHasRequiredLogExports(engine *string, exports []string) bool {
+	engineName := ""
+	if engine != nil {
+		engineName = strings.ToLower(strings.TrimSpace(*engine))
+	}
+
+	required := []string{}
+	switch {
+	case strings.Contains(engineName, "aurora-mysql"):
+		required = []string{"audit"}
+	case strings.Contains(engineName, "aurora-postgresql"), strings.Contains(engineName, "postgres"):
+		required = []string{"postgresql"}
+	case strings.Contains(engineName, "sqlserver"):
+		required = []string{"error"}
+	case strings.Contains(engineName, "mysql"), strings.Contains(engineName, "mariadb"):
+		required = []string{"error", "general", "slowquery"}
+	default:
+		return len(exports) > 0
+	}
+
+	exported := map[string]bool{}
+	for _, e := range exports {
+		exported[strings.ToLower(strings.TrimSpace(e))] = true
+	}
+	for _, req := range required {
+		if !exported[req] {
+			return false
+		}
+	}
+	return true
+}
+
+func rdsSnapshotAttributesIncludePublic(attrs []rdstypes.DBSnapshotAttribute) bool {
+	for _, attr := range attrs {
+		if attr.AttributeName == nil || !strings.EqualFold(*attr.AttributeName, "restore") {
+			continue
+		}
+		for _, v := range attr.AttributeValues {
+			if strings.EqualFold(v, "all") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func rdsSubnetHasInternetGatewayRoute(subnets []ec2types.Subnet, routeTables []ec2types.RouteTable) map[string]bool {
+	subnetToVPC := make(map[string]string)
+	for _, subnet := range subnets {
+		if subnet.SubnetId == nil || subnet.VpcId == nil {
+			continue
+		}
+		subnetToVPC[*subnet.SubnetId] = *subnet.VpcId
+	}
+
+	mainRoutePublicByVPC := make(map[string]bool)
+	explicitRoutePublicBySubnet := make(map[string]bool)
+	for _, routeTable := range routeTables {
+		routeTablePublic := routeTableHasInternetGatewayDefaultRoute(routeTable)
+		vpcID := ""
+		if routeTable.VpcId != nil {
+			vpcID = *routeTable.VpcId
+		}
+		for _, assoc := range routeTable.Associations {
+			if assoc.SubnetId != nil && *assoc.SubnetId != "" {
+				explicitRoutePublicBySubnet[*assoc.SubnetId] = routeTablePublic
+				continue
+			}
+			if assoc.Main != nil && *assoc.Main && vpcID != "" {
+				mainRoutePublicByVPC[vpcID] = routeTablePublic
+			}
+		}
+	}
+
+	subnetPublic := make(map[string]bool)
+	for subnetID, vpcID := range subnetToVPC {
+		if val, ok := explicitRoutePublicBySubnet[subnetID]; ok {
+			subnetPublic[subnetID] = val
+			continue
+		}
+		subnetPublic[subnetID] = mainRoutePublicByVPC[vpcID]
+	}
+	return subnetPublic
+}
+
+func routeTableHasInternetGatewayDefaultRoute(routeTable ec2types.RouteTable) bool {
+	for _, route := range routeTable.Routes {
+		hasDefaultDestination := (route.DestinationCidrBlock != nil && *route.DestinationCidrBlock == "0.0.0.0/0") ||
+			(route.DestinationIpv6CidrBlock != nil && *route.DestinationIpv6CidrBlock == "::/0")
+		if !hasDefaultDestination {
+			continue
+		}
+		if route.GatewayId != nil && strings.HasPrefix(strings.ToLower(*route.GatewayId), "igw-") {
+			return true
+		}
+	}
+	return false
 }

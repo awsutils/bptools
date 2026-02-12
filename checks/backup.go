@@ -1,14 +1,20 @@
 package checks
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	"github.com/aws/aws-sdk-go-v2/service/backup"
 )
 
 const backupMinRetentionDays int64 = 35
+const backupMaxFrequencyHours int64 = 24
 
 func RegisterBackupChecks(d *awsdata.Data) {
 	// backup-plan-min-frequency-and-min-retention-check
@@ -22,19 +28,39 @@ func RegisterBackupChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			maxFreqHours := backupMaxFrequencyHours
+			if v := strings.TrimSpace(os.Getenv("BPTOOLS_BACKUP_MAX_FREQUENCY_HOURS")); v != "" {
+				if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+					maxFreqHours = int64(parsed)
+				}
+			}
 			var res []ConfigResource
 			for id, plan := range plans {
-				ok := false
+				ok := true
+				evaluatedRules := 0
+				nonCompliantRules := 0
 				for _, rule := range plan.Rules {
-					if rule.ScheduleExpression == nil || *rule.ScheduleExpression == "" {
-						continue
+					evaluatedRules++
+					freqOK := false
+					if rule.ScheduleExpression != nil && strings.TrimSpace(*rule.ScheduleExpression) != "" {
+						freqOK = backupScheduleWithinHours(*rule.ScheduleExpression, maxFreqHours)
 					}
-					if rule.Lifecycle != nil && rule.Lifecycle.DeleteAfterDays != nil && *rule.Lifecycle.DeleteAfterDays >= backupMinRetentionDays {
-						ok = true
-						break
+					retentionOK := rule.Lifecycle != nil && rule.Lifecycle.DeleteAfterDays != nil && *rule.Lifecycle.DeleteAfterDays >= backupMinRetentionDays
+					if !(freqOK && retentionOK) {
+						nonCompliantRules++
 					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Min retention >= %d days", backupMinRetentionDays)})
+				if evaluatedRules == 0 {
+					ok = false
+				} else {
+					ok = nonCompliantRules == 0
+				}
+				res = append(res, ConfigResource{
+					ID:      id,
+					Passing: ok,
+					Detail: fmt.Sprintf("Rules compliant: %d/%d (retention >= %d days, schedule <= every %d hours)",
+						evaluatedRules-nonCompliantRules, evaluatedRules, backupMinRetentionDays, maxFreqHours),
+				})
 			}
 			return res, nil
 		},
@@ -102,14 +128,29 @@ func RegisterBackupChecks(d *awsdata.Data) {
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			locks, err := d.BackupVaultLockConfigs.Get()
+			vaults, err := d.BackupVaults.Get()
 			if err != nil {
 				return nil, err
 			}
 			var res []ConfigResource
-			for vault, lock := range locks {
-				ok := lock.MinRetentionDays != nil && *lock.MinRetentionDays > 0
-				res = append(res, ConfigResource{ID: vault, Passing: ok, Detail: fmt.Sprintf("MinRetentionDays: %v", lock.MinRetentionDays)})
+			for _, vault := range vaults {
+				id := "unknown"
+				if vault.BackupVaultName != nil {
+					id = *vault.BackupVaultName
+				}
+				if vault.BackupVaultName == nil || strings.TrimSpace(*vault.BackupVaultName) == "" {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Missing BackupVaultName"})
+					continue
+				}
+				out, err := d.Clients.Backup.GetBackupVaultAccessPolicy(d.Ctx, &backup.GetBackupVaultAccessPolicyInput{
+					BackupVaultName: vault.BackupVaultName,
+				})
+				if err != nil || out.Policy == nil || strings.TrimSpace(*out.Policy) == "" {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Backup vault access policy missing"})
+					continue
+				}
+				ok := backupVaultPolicyDeniesManualDelete(*out.Policy)
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Policy denies manual delete: %v", ok)})
 			}
 			return res, nil
 		},
@@ -155,8 +196,8 @@ func RegisterBackupChecks(d *awsdata.Data) {
 				if !resourceTypeMatch(r.ResourceType, "storagegateway") {
 					continue
 				}
-				ok := len(points[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("Recovery points: %d", len(points[arn]))})
+				ok, detail := backupRecencyResult(points[arn], backupRecoveryPointRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -176,25 +217,13 @@ func RegisterBackupChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			locks, err := d.BackupVaultLockConfigs.Get()
-			if err != nil {
-				return nil, err
-			}
 			var res []ConfigResource
 			for arn, r := range resources {
 				if !resourceTypeMatch(r.ResourceType, "storagegateway") {
 					continue
 				}
-				ok := false
-				for _, rp := range points[arn] {
-					if rp.BackupVaultName != nil {
-						if _, has := locks[*rp.BackupVaultName]; has {
-							ok = true
-							break
-						}
-					}
-				}
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points in locked vault"})
+				ok, detail := airGappedRecencyResult(points[arn], backupAirGappedRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -240,8 +269,8 @@ func RegisterBackupChecks(d *awsdata.Data) {
 				if !resourceTypeMatch(r.ResourceType, "virtualmachine") && !resourceTypeMatch(r.ResourceType, "vmware") {
 					continue
 				}
-				ok := len(points[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("Recovery points: %d", len(points[arn]))})
+				ok, detail := backupRecencyResult(points[arn], backupRecoveryPointRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -261,29 +290,153 @@ func RegisterBackupChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			locks, err := d.BackupVaultLockConfigs.Get()
-			if err != nil {
-				return nil, err
-			}
 			var res []ConfigResource
 			for arn, r := range resources {
 				if !resourceTypeMatch(r.ResourceType, "virtualmachine") && !resourceTypeMatch(r.ResourceType, "vmware") {
 					continue
 				}
-				ok := false
-				for _, rp := range points[arn] {
-					if rp.BackupVaultName != nil {
-						if _, has := locks[*rp.BackupVaultName]; has {
-							ok = true
-							break
-						}
-					}
-				}
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points in locked vault"})
+				ok, detail := airGappedRecencyResult(points[arn], backupAirGappedRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
 	))
+}
+
+func backupScheduleWithinHours(expression string, maxHours int64) bool {
+	exp := strings.ToLower(strings.TrimSpace(expression))
+	if exp == "" || maxHours <= 0 {
+		return false
+	}
+	if strings.HasPrefix(exp, "rate(") && strings.HasSuffix(exp, ")") {
+		body := strings.TrimSuffix(strings.TrimPrefix(exp, "rate("), ")")
+		parts := strings.Fields(body)
+		if len(parts) != 2 {
+			return false
+		}
+		n, err := strconv.Atoi(parts[0])
+		if err != nil || n <= 0 {
+			return false
+		}
+		unit := parts[1]
+		switch unit {
+		case "minute", "minutes":
+			return int64(n) <= maxHours*60
+		case "hour", "hours":
+			return int64(n) <= maxHours
+		case "day", "days":
+			return int64(n)*24 <= maxHours
+		default:
+			return false
+		}
+	}
+	if strings.HasPrefix(exp, "cron(") && strings.HasSuffix(exp, ")") {
+		body := strings.TrimSuffix(strings.TrimPrefix(exp, "cron("), ")")
+		fields := strings.Fields(body)
+		if len(fields) < 2 {
+			return false
+		}
+		hourField := strings.TrimSpace(fields[1])
+		if hourField == "*" {
+			return true
+		}
+		if strings.Contains(hourField, "/") {
+			parts := strings.Split(hourField, "/")
+			if len(parts) == 2 {
+				step, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+				return err == nil && step > 0 && int64(step) <= maxHours
+			}
+			return false
+		}
+		if strings.Contains(hourField, ",") {
+			count := 0
+			for _, p := range strings.Split(hourField, ",") {
+				if strings.TrimSpace(p) != "" {
+					count++
+				}
+			}
+			if count > 0 {
+				return 24/int64(count) <= maxHours
+			}
+			return false
+		}
+		if _, err := strconv.Atoi(hourField); err == nil {
+			return maxHours >= 24
+		}
+	}
+	return false
+}
+
+type backupPolicyDocument struct {
+	Statement []backupPolicyStatement `json:"Statement"`
+}
+
+type backupPolicyStatement struct {
+	Effect    string      `json:"Effect"`
+	Action    interface{} `json:"Action"`
+	Principal interface{} `json:"Principal"`
+}
+
+func backupVaultPolicyDeniesManualDelete(policy string) bool {
+	var doc backupPolicyDocument
+	if err := json.Unmarshal([]byte(policy), &doc); err != nil {
+		return false
+	}
+	for _, stmt := range doc.Statement {
+		if !strings.EqualFold(strings.TrimSpace(stmt.Effect), "Deny") {
+			continue
+		}
+		if !policyPrincipalIsWildcard(stmt.Principal) {
+			continue
+		}
+		for _, action := range policyActions(stmt.Action) {
+			a := strings.ToLower(strings.TrimSpace(action))
+			if a == "backup:deleterecoverypoint" || a == "backup:*" || a == "*" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func policyPrincipalIsWildcard(principal interface{}) bool {
+	switch p := principal.(type) {
+	case string:
+		return strings.TrimSpace(p) == "*"
+	case map[string]interface{}:
+		for _, value := range p {
+			switch v := value.(type) {
+			case string:
+				if strings.TrimSpace(v) == "*" {
+					return true
+				}
+			case []interface{}:
+				for _, item := range v {
+					if s, ok := item.(string); ok && strings.TrimSpace(s) == "*" {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+func policyActions(action interface{}) []string {
+	switch v := action.(type) {
+	case string:
+		return []string{v}
+	case []interface{}:
+		out := make([]string, 0, len(v))
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
 }
 
 func resourceTypeMatch(t *string, needle string) bool {

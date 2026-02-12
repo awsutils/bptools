@@ -3,6 +3,7 @@ package checks
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -40,9 +41,57 @@ func allInstances(d *awsdata.Data) ([]ec2types.Instance, error) {
 	}
 	var out []ec2types.Instance
 	for _, r := range reservations {
-		out = append(out, r.Instances...)
+		for _, inst := range r.Instances {
+			if ec2InstanceIsDeletedOrDeleting(inst) {
+				continue
+			}
+			out = append(out, inst)
+		}
 	}
 	return out, nil
+}
+
+func ec2InstanceIsDeletedOrDeleting(i ec2types.Instance) bool {
+	if i.State == nil {
+		return false
+	}
+	return i.State.Name == ec2types.InstanceStateNameTerminated ||
+		i.State.Name == ec2types.InstanceStateNameShuttingDown
+}
+
+func launchTemplateVersionData(d *awsdata.Data, launchTemplateID *string, launchTemplateName *string, version string) (*ec2types.ResponseLaunchTemplateData, error) {
+	input := &ec2.DescribeLaunchTemplateVersionsInput{
+		Versions: []string{version},
+	}
+	if launchTemplateID != nil && *launchTemplateID != "" {
+		input.LaunchTemplateId = launchTemplateID
+	} else if launchTemplateName != nil && *launchTemplateName != "" {
+		input.LaunchTemplateName = launchTemplateName
+	} else {
+		return nil, nil
+	}
+	out, err := d.Clients.EC2.DescribeLaunchTemplateVersions(d.Ctx, input)
+	if err != nil || len(out.LaunchTemplateVersions) == 0 {
+		return nil, err
+	}
+	return out.LaunchTemplateVersions[0].LaunchTemplateData, nil
+}
+
+var ec2StateTransitionTimeRegex = regexp.MustCompile(`\((\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) GMT\)`)
+
+func ec2StoppedTransitionTime(reason *string) (time.Time, bool) {
+	if reason == nil || *reason == "" {
+		return time.Time{}, false
+	}
+	matches := ec2StateTransitionTimeRegex.FindStringSubmatch(*reason)
+	if len(matches) < 2 {
+		return time.Time{}, false
+	}
+	parsed, err := time.Parse("2006-01-02 15:04:05", matches[1])
+	if err != nil {
+		return time.Time{}, false
+	}
+	return parsed.UTC(), true
 }
 
 func RegisterEC2Checks(d *awsdata.Data) {
@@ -143,7 +192,22 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, i := range instances {
 				stopped := i.State != nil && i.State.Name == ec2types.InstanceStateNameStopped
-				res = append(res, ConfigResource{ID: instanceID(i), Passing: !stopped, Detail: fmt.Sprintf("Stopped: %v", stopped)})
+				if !stopped {
+					res = append(res, ConfigResource{ID: instanceID(i), Passing: true, Detail: "Instance is not stopped"})
+					continue
+				}
+				stoppedAt, hasStoppedAt := ec2StoppedTransitionTime(i.StateTransitionReason)
+				if !hasStoppedAt {
+					res = append(res, ConfigResource{ID: instanceID(i), Passing: true, Detail: "Stopped, but stop time unavailable"})
+					continue
+				}
+				age := time.Since(stoppedAt)
+				pass := age <= 30*24*time.Hour
+				res = append(res, ConfigResource{
+					ID:      instanceID(i),
+					Passing: pass,
+					Detail:  fmt.Sprintf("Stopped for %s", age.Truncate(time.Hour)),
+				})
 			}
 			return res, nil
 		}))
@@ -327,7 +391,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 					imageID = *i.ImageId
 				}
 				if len(allowed) == 0 {
-					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No approved AMI IDs configured (BPTOOLS_APPROVED_AMI_IDS)"})
+					res = append(res, ConfigResource{ID: id, Passing: true, Detail: "No approved AMI IDs configured; default allow-all behavior"})
 					continue
 				}
 				ok := allowed[imageID]
@@ -346,7 +410,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			if len(filters) == 0 {
 				var res []ConfigResource
 				for _, i := range instances {
-					res = append(res, ConfigResource{ID: instanceID(i), Passing: false, Detail: "No approved AMI tag filters configured (BPTOOLS_APPROVED_AMI_TAGS)"})
+					res = append(res, ConfigResource{ID: instanceID(i), Passing: true, Detail: "No approved AMI tag filters configured; default allow-all behavior"})
 				}
 				return res, nil
 			}
@@ -414,7 +478,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 					}
 				}
 				if len(allowedIDs) == 0 && len(filters) == 0 {
-					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No AMI allowlist configured (BPTOOLS_APPROVED_AMI_IDS or BPTOOLS_APPROVED_AMI_TAGS)"})
+					res = append(res, ConfigResource{ID: id, Passing: true, Detail: "No AMI allowlist configured; default allow-all behavior"})
 					continue
 				}
 				passing := byID || byTag
@@ -434,16 +498,17 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			for _, v := range parseCSV(os.Getenv("BPTOOLS_ALLOWED_INSTANCE_TENANCIES")) {
 				allowed[strings.ToLower(v)] = true
 			}
+			if len(allowed) == 0 {
+				allowed["default"] = true
+				allowed["dedicated"] = true
+				allowed["host"] = true
+			}
 			var res []ConfigResource
 			for _, i := range instances {
 				id := instanceID(i)
 				tenancy := strings.ToLower(string(i.Placement.Tenancy))
 				if tenancy == "" {
 					tenancy = "default"
-				}
-				if len(allowed) == 0 {
-					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No allowed tenancies configured (BPTOOLS_ALLOWED_INSTANCE_TENANCIES)"})
-					continue
 				}
 				ok := allowed[tenancy]
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Tenancy=%s allowed=%v", tenancy, ok)})
@@ -466,7 +531,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 				id := instanceID(i)
 				itype := strings.ToLower(string(i.InstanceType))
 				if len(allowed) == 0 {
-					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No allowed instance types configured (BPTOOLS_ALLOWED_INSTANCE_TYPES)"})
+					res = append(res, ConfigResource{ID: id, Passing: true, Detail: "No allowed instance types configured; default allow-all behavior"})
 					continue
 				}
 				ok := allowed[itype]
@@ -655,7 +720,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 				authorizeAll := false
 				if err == nil {
 					for _, r := range authOut.AuthorizationRules {
-						if r.DestinationCidr != nil && *r.DestinationCidr == "0.0.0.0/0" && (r.GroupId == nil || *r.GroupId == "") {
+						if r.AccessAll != nil && *r.AccessAll {
 							authorizeAll = true
 						}
 					}
@@ -679,10 +744,17 @@ func RegisterEC2Checks(d *awsdata.Data) {
 					id = *v.VpnConnectionId
 				}
 				logged := false
-				if v.VgwTelemetry != nil {
-					logged = len(v.VgwTelemetry) > 0
+				if v.Options != nil {
+					for _, tunnel := range v.Options.TunnelOptions {
+						if tunnel.LogOptions != nil && tunnel.LogOptions.CloudWatchLogOptions != nil &&
+							tunnel.LogOptions.CloudWatchLogOptions.LogEnabled != nil &&
+							*tunnel.LogOptions.CloudWatchLogOptions.LogEnabled {
+							logged = true
+							break
+						}
+					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: logged, Detail: "VPN logging check"})
+				res = append(res, ConfigResource{ID: id, Passing: logged, Detail: fmt.Sprintf("Tunnel logging enabled: %v", logged)})
 			}
 			return res, nil
 		}))
@@ -701,7 +773,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 					id = *lt.LaunchTemplateName
 				}
 				out, err := d.Clients.EC2.DescribeLaunchTemplateVersions(d.Ctx, &ec2.DescribeLaunchTemplateVersionsInput{
-					LaunchTemplateId: lt.LaunchTemplateId, Versions: []string{"$Latest"},
+					LaunchTemplateId: lt.LaunchTemplateId, Versions: []string{"$Default"},
 				})
 				if err != nil || len(out.LaunchTemplateVersions) == 0 {
 					results = append(results, checker.Result{CheckID: "ec2-launch-template-imdsv2-check", ResourceID: id, Status: checker.StatusError, Message: "Cannot get LT version"})
@@ -733,19 +805,14 @@ func RegisterEC2Checks(d *awsdata.Data) {
 				if lt.LaunchTemplateName != nil {
 					id = *lt.LaunchTemplateName
 				}
-				out, err := d.Clients.EC2.DescribeLaunchTemplateVersions(d.Ctx, &ec2.DescribeLaunchTemplateVersionsInput{
-					LaunchTemplateId: lt.LaunchTemplateId, Versions: []string{"$Latest"},
-				})
-				if err != nil || len(out.LaunchTemplateVersions) == 0 {
+				data, err := launchTemplateVersionData(d, lt.LaunchTemplateId, lt.LaunchTemplateName, "$Default")
+				if err != nil || data == nil {
 					continue
 				}
-				data := out.LaunchTemplateVersions[0].LaunchTemplateData
 				disabled := true
-				if data != nil {
-					for _, ni := range data.NetworkInterfaces {
-						if ni.AssociatePublicIpAddress != nil && *ni.AssociatePublicIpAddress {
-							disabled = false
-						}
+				for _, ni := range data.NetworkInterfaces {
+					if ni.AssociatePublicIpAddress != nil && *ni.AssociatePublicIpAddress {
+						disabled = false
 					}
 				}
 				res = append(res, ConfigResource{ID: id, Passing: disabled, Detail: fmt.Sprintf("Public IP disabled: %v", disabled)})
@@ -765,19 +832,14 @@ func RegisterEC2Checks(d *awsdata.Data) {
 				if lt.LaunchTemplateName != nil {
 					id = *lt.LaunchTemplateName
 				}
-				out, err := d.Clients.EC2.DescribeLaunchTemplateVersions(d.Ctx, &ec2.DescribeLaunchTemplateVersionsInput{
-					LaunchTemplateId: lt.LaunchTemplateId, Versions: []string{"$Latest"},
-				})
-				if err != nil || len(out.LaunchTemplateVersions) == 0 {
+				data, err := launchTemplateVersionData(d, lt.LaunchTemplateId, lt.LaunchTemplateName, "$Default")
+				if err != nil || data == nil {
 					continue
 				}
-				data := out.LaunchTemplateVersions[0].LaunchTemplateData
 				encrypted := true
-				if data != nil {
-					for _, bd := range data.BlockDeviceMappings {
-						if bd.Ebs != nil && (bd.Ebs.Encrypted == nil || !*bd.Ebs.Encrypted) {
-							encrypted = false
-						}
+				for _, bd := range data.BlockDeviceMappings {
+					if bd.Ebs != nil && (bd.Ebs.Encrypted == nil || !*bd.Ebs.Encrypted) {
+						encrypted = false
 					}
 				}
 				res = append(res, ConfigResource{ID: id, Passing: encrypted, Detail: fmt.Sprintf("EBS encrypted: %v", encrypted)})
@@ -976,6 +1038,9 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			}
 			var res []TaggedResource
 			for _, i := range items {
+				if ec2PrefixListIsAWSManagedOrDeleted(i) {
+					continue
+				}
 				id := ""
 				if i.PrefixListId != nil {
 					id = *i.PrefixListId
@@ -1336,6 +1401,14 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			allowedPlatformValues := parseCSV(os.Getenv("BPTOOLS_MANAGEDINSTANCE_ALLOWED_PLATFORMS"))
+			if len(allowedPlatformValues) == 0 {
+				allowedPlatformValues = []string{"linux", "windows", "macos"}
+			}
+			allowedPlatforms := make(map[string]bool)
+			for _, value := range allowedPlatformValues {
+				allowedPlatforms[strings.ToLower(strings.TrimSpace(value))] = true
+			}
 			var res []ConfigResource
 			for _, info := range infos {
 				id := ""
@@ -1343,7 +1416,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 					id = *info.InstanceId
 				}
 				pt := string(info.PlatformType)
-				ok := info.PlatformType == ssmtypes.PlatformTypeLinux || info.PlatformType == ssmtypes.PlatformTypeWindows || info.PlatformType == ssmtypes.PlatformTypeMacos
+				ok := allowedPlatforms[strings.ToLower(strings.TrimSpace(pt))]
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("PlatformType: %s", pt)})
 			}
 			return res, nil
@@ -1426,14 +1499,35 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			requiredApplications := parseCSV(os.Getenv("BPTOOLS_MANAGEDINSTANCE_REQUIRED_APPLICATIONS"))
+			requiredSet := make(map[string]bool)
+			for _, app := range requiredApplications {
+				requiredSet[strings.ToLower(strings.TrimSpace(app))] = true
+			}
 			var res []ConfigResource
 			for _, info := range infos {
 				if info.InstanceId == nil {
 					continue
 				}
 				id := *info.InstanceId
-				count := len(apps[id])
-				res = append(res, ConfigResource{ID: id, Passing: count > 0, Detail: fmt.Sprintf("Discovered applications: %d", count)})
+				installed := make(map[string]bool)
+				for _, app := range apps[id] {
+					name := strings.ToLower(strings.TrimSpace(app["Name"]))
+					pkg := strings.ToLower(strings.TrimSpace(app["PackageId"]))
+					if name != "" {
+						installed[name] = true
+					}
+					if pkg != "" {
+						installed[pkg] = true
+					}
+				}
+				missing := []string{}
+				for req := range requiredSet {
+					if !installed[req] {
+						missing = append(missing, req)
+					}
+				}
+				res = append(res, ConfigResource{ID: id, Passing: len(missing) == 0, Detail: fmt.Sprintf("Missing required applications: %v", missing)})
 			}
 			return res, nil
 		}))
@@ -1448,7 +1542,11 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			blacklisted := []string{"telnet", "rsh", "rlogin", "vsftpd", "wu-ftp"}
+			blacklistedValues := parseCSV(os.Getenv("BPTOOLS_MANAGEDINSTANCE_BLACKLISTED_APPLICATIONS"))
+			blacklisted := make(map[string]bool)
+			for _, value := range blacklistedValues {
+				blacklisted[strings.ToLower(strings.TrimSpace(value))] = true
+			}
 			var res []ConfigResource
 			for _, info := range infos {
 				if info.InstanceId == nil {
@@ -1459,11 +1557,10 @@ func RegisterEC2Checks(d *awsdata.Data) {
 				for _, app := range apps[id] {
 					name := strings.ToLower(app["Name"])
 					pkg := strings.ToLower(app["PackageId"])
-					for _, bad := range blacklisted {
-						if strings.Contains(name, bad) || strings.Contains(pkg, bad) {
-							found = bad
-							break
-						}
+					if blacklisted[name] {
+						found = name
+					} else if blacklisted[pkg] {
+						found = pkg
 					}
 					if found != "" {
 						break
@@ -1485,45 +1582,32 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			apps, err := loadInventoryByType("AWS:Application")
-			if err != nil {
-				return nil, err
+			blacklistedTypes := parseCSV(os.Getenv("BPTOOLS_MANAGEDINSTANCE_BLACKLISTED_INVENTORY_TYPES"))
+			inventoryByType := make(map[string]map[string][]map[string]string)
+			for _, typeName := range blacklistedTypes {
+				items, err := loadInventoryByType(typeName)
+				if err != nil {
+					return nil, err
+				}
+				inventoryByType[typeName] = items
 			}
-			comps, err := loadInventoryByType("AWS:AWSComponent")
-			if err != nil {
-				return nil, err
-			}
-			blacklisted := []string{"telnet", "rsh", "rlogin", "ftp"}
 			var res []ConfigResource
 			for _, info := range infos {
 				if info.InstanceId == nil {
 					continue
 				}
 				id := *info.InstanceId
-				found := ""
-				checkItems := append([]map[string]string{}, apps[id]...)
-				checkItems = append(checkItems, comps[id]...)
-				for _, item := range checkItems {
-					for _, value := range item {
-						lv := strings.ToLower(value)
-						for _, bad := range blacklisted {
-							if strings.Contains(lv, bad) {
-								found = bad
-								break
-							}
-						}
-						if found != "" {
-							break
-						}
-					}
-					if found != "" {
+				foundType := ""
+				for _, typeName := range blacklistedTypes {
+					if len(inventoryByType[typeName][id]) > 0 {
+						foundType = typeName
 						break
 					}
 				}
-				passing := found == ""
-				detail := "No blacklisted inventory items detected"
+				passing := foundType == ""
+				detail := "No blacklisted inventory types collected"
 				if !passing {
-					detail = fmt.Sprintf("Blacklisted inventory content detected: %s", found)
+					detail = fmt.Sprintf("Blacklisted inventory type collected: %s", foundType)
 				}
 				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
 			}
@@ -1639,22 +1723,15 @@ func RegisterEC2Checks(d *awsdata.Data) {
 				return nil, err
 			}
 			region := d.Clients.EC2.Options().Region
-			_, lastBackup, _, err := loadBackupState()
-			if err != nil {
-				return nil, err
-			}
-			target := 24 * time.Hour
 			var res []ConfigResource
 			for _, instance := range instances {
 				id := instanceID(instance)
 				arn := buildEC2InstanceARN(region, accountID, id)
-				t, ok := lastBackup[arn]
-				passing := ok && time.Since(t) <= target
-				detail := "No recent backup found"
-				if ok {
-					detail = fmt.Sprintf("Backup age: %s", time.Since(t).Round(time.Minute))
+				ok, detail, err := restoreTimeTargetResult(d, arn, backupRestoreTimeTargetWindow)
+				if err != nil {
+					return nil, err
 				}
-				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		}))
@@ -1927,4 +2004,18 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	_ = ec2types.InstanceTypeA1Large
+}
+
+func ec2PrefixListIsAWSManagedOrDeleted(prefixList ec2types.ManagedPrefixList) bool {
+	if prefixList.OwnerId != nil && strings.EqualFold(strings.TrimSpace(*prefixList.OwnerId), "AWS") {
+		return true
+	}
+	if prefixList.PrefixListName != nil {
+		name := strings.ToLower(strings.TrimSpace(*prefixList.PrefixListName))
+		if strings.HasPrefix(name, "com.amazonaws.") {
+			return true
+		}
+	}
+	state := strings.ToLower(strings.TrimSpace(string(prefixList.State)))
+	return strings.Contains(state, "delete")
 }

@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -172,6 +173,9 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if s.Id != nil {
 					id = *s.Id
 				}
+				if appconfigIsAWSManagedDeploymentStrategyID(id) {
+					continue
+				}
 				res = append(res, DescriptionResource{ID: id, Description: s.Description})
 			}
 			return res, nil
@@ -195,7 +199,10 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if s.Id != nil {
 					id = *s.Id
 				}
-				ok := s.FinalBakeTimeInMinutes > 0
+				if appconfigIsAWSManagedDeploymentStrategyID(id) {
+					continue
+				}
+				ok := s.FinalBakeTimeInMinutes >= 30
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("FinalBakeTimeInMinutes: %v", s.FinalBakeTimeInMinutes)})
 			}
 			return res, nil
@@ -218,6 +225,9 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				id := "unknown"
 				if s.Id != nil {
 					id = *s.Id
+				}
+				if appconfigIsAWSManagedDeploymentStrategyID(id) {
+					continue
 				}
 				ok := s.ReplicateTo == "SSM_DOCUMENT"
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("ReplicateTo: %s", s.ReplicateTo)})
@@ -242,6 +252,9 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				id := "unknown"
 				if s.Id != nil {
 					id = *s.Id
+				}
+				if appconfigIsAWSManagedDeploymentStrategyID(id) {
+					continue
 				}
 				res = append(res, TaggedResource{ID: id, Tags: nil})
 			}
@@ -290,8 +303,20 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 					if p.Id != nil {
 						id = appID + ":" + *p.Id
 					}
-					ok := (p.Type == nil || *p.Type != "Freeform") || (p.LocationUri != nil && *p.LocationUri != "")
-					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Type: %s, LocationUri: %v", p.Type, p.LocationUri)})
+					profileType := ""
+					if p.Type != nil {
+						profileType = *p.Type
+					}
+					location := ""
+					if p.LocationUri != nil {
+						location = strings.TrimSpace(*p.LocationUri)
+					}
+					isFreeform := strings.Contains(strings.ToLower(strings.TrimSpace(profileType)), "freeform")
+					locLower := strings.ToLower(location)
+					ok := !isFreeform ||
+						strings.HasPrefix(locLower, "secretsmanager") ||
+						strings.HasPrefix(locLower, "hosted")
+					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Type: %s, LocationUri: %v", profileType, p.LocationUri)})
 				}
 			}
 			return res, nil
@@ -322,4 +347,9 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
+}
+
+func appconfigIsAWSManagedDeploymentStrategyID(id string) bool {
+	value := strings.ToLower(strings.TrimSpace(id))
+	return strings.HasPrefix(value, "appconfig.")
 }

@@ -215,15 +215,19 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 						continue
 					}
 					cacheEnabled := st.CacheClusterEnabled
-					encrypted := false
+					allMethodsCacheEncrypted := len(st.MethodSettings) > 0
 					for _, ms := range st.MethodSettings {
-						if ms.CachingEnabled && ms.CacheDataEncrypted {
-							encrypted = true
+						if !(ms.CachingEnabled && ms.CacheDataEncrypted) {
+							allMethodsCacheEncrypted = false
 							break
 						}
 					}
-					ok := cacheEnabled && encrypted
-					res = append(res, ConfigResource{ID: apiID + ":" + *st.StageName, Passing: ok, Detail: fmt.Sprintf("Cache enabled: %v, encrypted: %v", cacheEnabled, encrypted)})
+					ok := cacheEnabled && allMethodsCacheEncrypted
+					res = append(res, ConfigResource{
+						ID:      apiID + ":" + *st.StageName,
+						Passing: ok,
+						Detail:  fmt.Sprintf("CacheClusterEnabled: %v, all methods cache+encrypt: %v", cacheEnabled, allMethodsCacheEncrypted),
+					})
 				}
 			}
 			return res, nil
@@ -276,10 +280,15 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 					if st.StageName == nil {
 						continue
 					}
-					logging := false
+					logging := len(st.MethodSettings) > 0
 					for _, ms := range st.MethodSettings {
-						if ms.LoggingLevel != nil && strings.ToUpper(*ms.LoggingLevel) != "OFF" {
-							logging = true
+						if ms.LoggingLevel == nil {
+							logging = false
+							break
+						}
+						level := strings.ToUpper(*ms.LoggingLevel)
+						if level != "ERROR" && level != "INFO" {
+							logging = false
 							break
 						}
 					}
@@ -323,18 +332,20 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			domains, err := d.APIGatewayDomainNames.Get()
+			stages, err := d.APIGatewayStages.Get()
 			if err != nil {
 				return nil, err
 			}
 			var res []ConfigResource
-			for _, dn := range domains {
-				id := "unknown"
-				if dn.DomainName != nil {
-					id = *dn.DomainName
+			for apiID, items := range stages {
+				for _, st := range items {
+					if st.StageName == nil {
+						continue
+					}
+					id := apiID + ":" + *st.StageName
+					ok := st.ClientCertificateId != nil && *st.ClientCertificateId != ""
+					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("ClientCertificateId configured: %v", ok)})
 				}
-				ok := dn.SecurityPolicy == apigwtypes.SecurityPolicyTls12
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("SecurityPolicy: %s", dn.SecurityPolicy)})
 			}
 			return res, nil
 		},

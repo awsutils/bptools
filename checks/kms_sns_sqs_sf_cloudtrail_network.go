@@ -2,10 +2,16 @@ package checks
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
 	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	cloudtrailtypes "github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
+	kmstypes "github.com/aws/aws-sdk-go-v2/service/kms/types"
+	sfntypes "github.com/aws/aws-sdk-go-v2/service/sfn/types"
 )
 
 // RegisterMiscSecurityChecks registers KMS/SNS/SQS/StepFunctions/CloudTrail/network checks.
@@ -20,8 +26,15 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			details, err := d.KMSKeyDetails.Get()
+			if err != nil {
+				return nil, err
+			}
 			var res []EnabledResource
 			for id, enabled := range rot {
+				if shouldSkipAWSManagedKMSKey(id, details) {
+					continue
+				}
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -55,9 +68,16 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			details, err := d.KMSKeyDetails.Get()
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for id, p := range pols {
-				ok := !policyAllowsStar(p)
+				if shouldSkipAWSManagedKMSKey(id, details) {
+					continue
+				}
+				ok := !policyHasPublicAllow(p)
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "No wildcard principal"})
 			}
 			return res, nil
@@ -73,8 +93,15 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			details, err := d.KMSKeyDetails.Get()
+			if err != nil {
+				return nil, err
+			}
 			var res []TaggedResource
 			for id, m := range tags {
+				if shouldSkipAWSManagedKMSKey(id, details) {
+					continue
+				}
 				res = append(res, TaggedResource{ID: id, Tags: m})
 			}
 			return res, nil
@@ -129,7 +156,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for arn, a := range attrs {
-				ok := !strings.Contains(a["Policy"], "\"Principal\":\"*\"")
+				ok := !policyHasPublicAllow(a["Policy"])
 				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Policy not public"})
 			}
 			return res, nil
@@ -166,7 +193,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for url, a := range attrs {
-				ok := !strings.Contains(a["Policy"], "\"Principal\":\"*\"")
+				ok := !policyHasPublicAllow(a["Policy"])
 				res = append(res, ConfigResource{ID: url, Passing: ok, Detail: "Policy not public"})
 			}
 			return res, nil
@@ -184,7 +211,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for url, a := range attrs {
-				ok := !strings.Contains(a["Policy"], "\"Action\":\"*\"")
+				ok := !policyAllowsPublicSQSFullAccess(a["Policy"])
 				res = append(res, ConfigResource{ID: url, Passing: ok, Detail: "No full access policy"})
 			}
 			return res, nil
@@ -240,7 +267,9 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 				logging := false
 				if m.StateMachineArn != nil {
 					if det, ok := details[*m.StateMachineArn]; ok {
-						logging = det.LoggingConfiguration != nil && len(det.LoggingConfiguration.Destinations) > 0
+						logging = det.LoggingConfiguration != nil &&
+							len(det.LoggingConfiguration.Destinations) > 0 &&
+							det.LoggingConfiguration.Level != sfntypes.LogLevelOff
 					}
 				}
 				res = append(res, LoggingResource{ID: id, Logging: logging})
@@ -259,12 +288,49 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			var res []EnabledResource
-			for id, t := range trails {
-				enabled := t.IsMultiRegionTrail != nil && *t.IsMultiRegionTrail
-				res = append(res, EnabledResource{ID: id, Enabled: enabled})
+			events, err := d.CloudTrailEventSelectors.Get()
+			if err != nil {
+				return nil, err
 			}
-			return res, nil
+			statuses, err := d.CloudTrailTrailStatus.Get()
+			if err != nil {
+				return nil, err
+			}
+			accountCompliant := false
+			for id, t := range trails {
+				if t.IsMultiRegionTrail == nil || !*t.IsMultiRegionTrail {
+					continue
+				}
+				trailIsLogging := false
+				for _, key := range []string{id, stringValue(t.TrailARN), stringValue(t.Name)} {
+					if key == "" {
+						continue
+					}
+					if st, ok := statuses[key]; ok && st.IsLogging != nil && *st.IsLogging {
+						trailIsLogging = true
+						break
+					}
+				}
+				if !trailIsLogging {
+					continue
+				}
+				for _, key := range []string{id, stringValue(t.TrailARN), stringValue(t.Name)} {
+					if key == "" {
+						continue
+					}
+					if selectorSet, ok := events[key]; ok && managementSelectorsCoverAll(selectorSet.EventSelectors, selectorSet.AdvancedEventSelectors) {
+						accountCompliant = true
+						break
+					}
+				}
+				if accountCompliant {
+					break
+				}
+			}
+			if len(trails) == 0 {
+				return []EnabledResource{{ID: "account", Enabled: false}}, nil
+			}
+			return []EnabledResource{{ID: "account", Enabled: accountCompliant}}, nil
 		},
 	))
 
@@ -302,13 +368,30 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 				return nil, err
 			}
 			var res []ConfigResource
+			allowedVPCs := allowedVPCSetFromEnv("BPTOOLS_AUTHORIZED_IGW_VPC_IDS")
 			for _, g := range igws {
 				id := "unknown"
 				if g.InternetGatewayId != nil {
 					id = *g.InternetGatewayId
 				}
-				ok := len(g.Attachments) > 0
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Attached to VPC"})
+				ok := true
+				for _, a := range g.Attachments {
+					if a.VpcId == nil || strings.TrimSpace(*a.VpcId) == "" {
+						ok = false
+						break
+					}
+					if len(allowedVPCs) > 0 && !allowedVPCs[*a.VpcId] {
+						ok = false
+						break
+					}
+				}
+				detail := fmt.Sprintf("Attachment count: %d", len(g.Attachments))
+				if len(allowedVPCs) > 0 {
+					detail = fmt.Sprintf("Attachment count: %d, authorized VPC policy enforced", len(g.Attachments))
+				} else {
+					detail = "No authorized VPC list configured; default allow-all behavior"
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -335,11 +418,12 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 					if e.Egress != nil && *e.Egress {
 						continue
 					}
-					if e.RuleAction != "allow" || e.CidrBlock == nil || *e.CidrBlock != "0.0.0.0/0" {
+					public := (e.CidrBlock != nil && *e.CidrBlock == "0.0.0.0/0") || (e.Ipv6CidrBlock != nil && *e.Ipv6CidrBlock == "::/0")
+					if e.RuleAction != "allow" || !public {
 						continue
 					}
 					if e.PortRange != nil {
-						if (e.PortRange.From != nil && *e.PortRange.From == 22) || (e.PortRange.From != nil && *e.PortRange.From == 3389) {
+						if portRangeIncludes(e.PortRange.From, e.PortRange.To, 22) || portRangeIncludes(e.PortRange.From, e.PortRange.To, 3389) {
 							ok = false
 							break
 						}
@@ -369,36 +453,148 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 				}
 				ok := true
 				for _, r := range rt.Routes {
-					if r.DestinationCidrBlock != nil && *r.DestinationCidrBlock == "0.0.0.0/0" && r.GatewayId != nil && strings.HasPrefix(*r.GatewayId, "igw-") {
+					defaultRoute := (r.DestinationCidrBlock != nil && *r.DestinationCidrBlock == "0.0.0.0/0") ||
+						(r.DestinationIpv6CidrBlock != nil && *r.DestinationIpv6CidrBlock == "::/0")
+					if defaultRoute && r.GatewayId != nil && strings.HasPrefix(*r.GatewayId, "igw-") {
 						ok = false
 						break
 					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "No 0.0.0.0/0 to IGW"})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "No default route to IGW"})
 			}
 			return res, nil
 		},
 	))
 }
 
-func policyAllowsStar(policy string) bool {
-	var obj map[string]any
-	if err := json.Unmarshal([]byte(policy), &obj); err != nil {
-		return false
+func stringValue(value *string) string {
+	if value == nil {
+		return ""
 	}
-	stmts, ok := obj["Statement"].([]any)
-	if !ok {
-		return false
+	return *value
+}
+
+func portRangeIncludes(from *int32, to *int32, port int32) bool {
+	if from == nil || to == nil {
+		return true
 	}
-	for _, s := range stmts {
-		m, ok := s.(map[string]any)
-		if !ok {
+	return port >= *from && port <= *to
+}
+
+func managementSelectorsCoverAll(selectors []cloudtrailtypes.EventSelector, advanced []cloudtrailtypes.AdvancedEventSelector) bool {
+	for _, selector := range selectors {
+		includeMgmt := selector.IncludeManagementEvents == nil || *selector.IncludeManagementEvents
+		if !includeMgmt {
 			continue
 		}
-		if eff, _ := m["Effect"].(string); strings.EqualFold(eff, "Allow") {
-			if p, ok := m["Principal"].(map[string]any); ok {
-				if aws, ok := p["AWS"]; ok {
-					if aws == "*" {
+		if len(selector.ExcludeManagementEventSources) > 0 {
+			continue
+		}
+		if selector.ReadWriteType == "" || selector.ReadWriteType == cloudtrailtypes.ReadWriteTypeAll {
+			return true
+		}
+	}
+	for _, selector := range advanced {
+		hasCategory := false
+		hasReadOnly := false
+		readOnlyTrue := false
+		readOnlyFalse := false
+		scoped := false
+		for _, field := range selector.FieldSelectors {
+			if field.Field == nil {
+				continue
+			}
+			name := strings.ToLower(strings.TrimSpace(*field.Field))
+			switch name {
+			case "eventcategory":
+				hasCategory = containsCI(field.Equals, "management")
+			case "readonly":
+				hasReadOnly = true
+				readOnlyTrue = containsCI(field.Equals, "true")
+				readOnlyFalse = containsCI(field.Equals, "false")
+			default:
+				if len(field.Equals) > 0 || len(field.NotEquals) > 0 || len(field.StartsWith) > 0 || len(field.NotStartsWith) > 0 || len(field.EndsWith) > 0 || len(field.NotEndsWith) > 0 {
+					scoped = true
+				}
+			}
+		}
+		if hasCategory && !scoped && (!hasReadOnly || (readOnlyTrue && readOnlyFalse)) {
+			return true
+		}
+	}
+	return false
+}
+
+func containsCI(values []string, want string) bool {
+	for _, v := range values {
+		if strings.EqualFold(strings.TrimSpace(v), want) {
+			return true
+		}
+	}
+	return false
+}
+
+type simplePolicyDocument struct {
+	Statement any `json:"Statement"`
+}
+
+type simpleStatement struct {
+	Effect    string      `json:"Effect"`
+	Principal interface{} `json:"Principal"`
+	Action    interface{} `json:"Action"`
+}
+
+func decodePolicyStatements(policy string) []simpleStatement {
+	if strings.TrimSpace(policy) == "" {
+		return nil
+	}
+	var doc simplePolicyDocument
+	if err := json.Unmarshal([]byte(policy), &doc); err != nil {
+		return nil
+	}
+	switch s := doc.Statement.(type) {
+	case []interface{}:
+		out := make([]simpleStatement, 0, len(s))
+		for _, item := range s {
+			raw, err := json.Marshal(item)
+			if err != nil {
+				continue
+			}
+			var stmt simpleStatement
+			if err := json.Unmarshal(raw, &stmt); err != nil {
+				continue
+			}
+			out = append(out, stmt)
+		}
+		return out
+	case map[string]interface{}:
+		raw, err := json.Marshal(s)
+		if err != nil {
+			return nil
+		}
+		var stmt simpleStatement
+		if err := json.Unmarshal(raw, &stmt); err != nil {
+			return nil
+		}
+		return []simpleStatement{stmt}
+	}
+	return nil
+}
+
+func principalIsPublic(principal interface{}) bool {
+	switch p := principal.(type) {
+	case string:
+		return strings.TrimSpace(p) == "*"
+	case map[string]interface{}:
+		for _, value := range p {
+			switch typed := value.(type) {
+			case string:
+				if strings.TrimSpace(typed) == "*" {
+					return true
+				}
+			case []interface{}:
+				for _, item := range typed {
+					if s, ok := item.(string); ok && strings.TrimSpace(s) == "*" {
 						return true
 					}
 				}
@@ -406,4 +602,88 @@ func policyAllowsStar(policy string) bool {
 		}
 	}
 	return false
+}
+
+func actionStrings(action interface{}) []string {
+	switch a := action.(type) {
+	case string:
+		return []string{a}
+	case []interface{}:
+		out := make([]string, 0, len(a))
+		for _, value := range a {
+			if s, ok := value.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	}
+	return nil
+}
+
+func policyHasPublicAllow(policy string) bool {
+	for _, stmt := range decodePolicyStatements(policy) {
+		if !strings.EqualFold(strings.TrimSpace(stmt.Effect), "Allow") {
+			continue
+		}
+		if principalIsPublic(stmt.Principal) {
+			return true
+		}
+	}
+	return false
+}
+
+func policyAllowsPublicSQSFullAccess(policy string) bool {
+	for _, stmt := range decodePolicyStatements(policy) {
+		if !strings.EqualFold(strings.TrimSpace(stmt.Effect), "Allow") {
+			continue
+		}
+		if !principalIsPublic(stmt.Principal) {
+			continue
+		}
+		for _, action := range actionStrings(stmt.Action) {
+			a := strings.ToLower(strings.TrimSpace(action))
+			if a == "*" || a == "sqs:*" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func allowedVPCSetFromEnv(name string) map[string]bool {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return nil
+	}
+	out := make(map[string]bool)
+	for _, part := range strings.Split(value, ",") {
+		item := strings.TrimSpace(part)
+		if item != "" {
+			out[item] = true
+		}
+	}
+	return out
+}
+
+func boolEnvDefaultTrueLocal(name string) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(name)))
+	switch v {
+	case "", "1", "true", "t", "yes", "y", "on":
+		return true
+	case "0", "false", "f", "no", "n", "off":
+		return false
+	default:
+		return true
+	}
+}
+
+func shouldSkipAWSManagedKMSKey(keyID string, details map[string]kmstypes.KeyMetadata) bool {
+	if !boolEnvDefaultTrueLocal("BPTOOLS_IGNORE_AWS_MANAGED_KMS_KEYS") {
+		return false
+	}
+	meta, ok := details[keyID]
+	if !ok {
+		return false
+	}
+	return strings.EqualFold(string(meta.KeyManager), "AWS")
 }

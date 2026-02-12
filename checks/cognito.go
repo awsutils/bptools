@@ -42,20 +42,11 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			roles, err := d.CognitoIdentityPoolRoles.Get()
-			if err != nil {
-				return nil, err
-			}
 			var res []ConfigResource
 			for _, p := range pools {
 				id := identityPoolID(p)
-				roleInfo := roles[id]
-				unauth := ""
-				if roleInfo.Roles != nil {
-					unauth = roleInfo.Roles["unauthenticated"]
-				}
-				ok := unauth == ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Unauthenticated role not set"})
+				ok := !p.AllowUnauthenticatedIdentities
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AllowUnauthenticatedIdentities: %v", p.AllowUnauthenticatedIdentities)})
 			}
 			return res, nil
 		},
@@ -75,11 +66,23 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 			for _, p := range pools {
 				id := userPoolID(p)
 				mode := cognitoidptypes.AdvancedSecurityModeTypeOff
+				customMode := cognitoidptypes.AdvancedSecurityEnabledModeTypeAudit
+				hasCustomMode := false
 				if p.UserPoolAddOns != nil {
 					mode = p.UserPoolAddOns.AdvancedSecurityMode
+					if p.UserPoolAddOns.AdvancedSecurityAdditionalFlows != nil {
+						customMode = p.UserPoolAddOns.AdvancedSecurityAdditionalFlows.CustomAuthMode
+						hasCustomMode = true
+					}
 				}
-				ok := mode == cognitoidptypes.AdvancedSecurityModeTypeEnforced
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AdvancedSecurityMode: %s", mode)})
+				ok := mode == cognitoidptypes.AdvancedSecurityModeTypeEnforced &&
+					hasCustomMode &&
+					customMode == cognitoidptypes.AdvancedSecurityEnabledModeTypeEnforced
+				res = append(res, ConfigResource{
+					ID:      id,
+					Passing: ok,
+					Detail:  fmt.Sprintf("AdvancedSecurityMode: %s, CustomAuthMode: %s", mode, customMode),
+				})
 			}
 			return res, nil
 		},
@@ -142,7 +145,8 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for _, p := range pools {
 				id := userPoolID(p)
-				enabled := p.MfaConfiguration != cognitoidptypes.UserPoolMfaTypeOff
+				passwordOnly := cognitoPasswordOnlySignInPool(p)
+				enabled := !passwordOnly || p.MfaConfiguration != cognitoidptypes.UserPoolMfaTypeOff
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -224,4 +228,15 @@ func userPoolID(p cognitoidptypes.UserPoolType) string {
 		return *p.Id
 	}
 	return "unknown"
+}
+
+func cognitoPasswordOnlySignInPool(p cognitoidptypes.UserPoolType) bool {
+	if p.Policies == nil || p.Policies.SignInPolicy == nil {
+		return true
+	}
+	factors := p.Policies.SignInPolicy.AllowedFirstAuthFactors
+	if len(factors) != 1 {
+		return false
+	}
+	return factors[0] == cognitoidptypes.AuthFactorTypePassword
 }

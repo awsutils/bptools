@@ -2,6 +2,8 @@ package checks
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"bptools/awsdata"
@@ -57,6 +59,9 @@ func RegisterECSChecks(d *awsdata.Data) {
 				if cp.CapacityProviderArn == nil {
 					continue
 				}
+				if ecsCapacityProviderIsAWSManagedOrDeleted(cp) {
+					continue
+				}
 				res = append(res, TaggedResource{ID: *cp.CapacityProviderArn, Tags: tags[*cp.CapacityProviderArn]})
 			}
 			return res, nil
@@ -74,6 +79,9 @@ func RegisterECSChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for _, cp := range cps {
+				if ecsCapacityProviderIsAWSManagedOrDeleted(cp) {
+					continue
+				}
 				id := "unknown"
 				if cp.CapacityProviderArn != nil {
 					id = *cp.CapacityProviderArn
@@ -211,15 +219,31 @@ func RegisterECSChecks(d *awsdata.Data) {
 				return nil, err
 			}
 			var res []ConfigResource
+			secretNames := ecsParseCSV(os.Getenv("BPTOOLS_ECS_ENV_SECRET_NAMES"))
+			if len(secretNames) == 0 {
+				secretNames = []string{"password", "passwd", "secret", "token", "apikey", "api_key", "access_key", "private_key"}
+			}
 			for arn, td := range tasks {
 				ok := true
 				for _, c := range td.ContainerDefinitions {
-					if len(c.Secrets) > 0 {
-						ok = false
+					for _, env := range c.Environment {
+						if env.Name == nil {
+							continue
+						}
+						name := strings.ToLower(strings.TrimSpace(*env.Name))
+						if name == "" {
+							continue
+						}
+						if ecsEnvNameLooksSecret(name, secretNames) {
+							ok = false
+							break
+						}
+					}
+					if !ok {
 						break
 					}
 				}
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Secrets empty"})
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Environment variables do not contain secret-like names"})
 			}
 			return res, nil
 		},
@@ -316,7 +340,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 			for arn, td := range tasks {
 				ok := true
 				for _, c := range td.ContainerDefinitions {
-					if c.User == nil || *c.User == "0" {
+					if !ecsContainerUserIsNonRoot(c.User) {
 						ok = false
 						break
 					}
@@ -341,7 +365,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 			for arn, td := range tasks {
 				ok := true
 				for _, c := range td.ContainerDefinitions {
-					if c.User == nil || *c.User == "0" {
+					if !ecsContainerUserIsNonRoot(c.User) {
 						ok = false
 						break
 					}
@@ -364,16 +388,14 @@ func RegisterECSChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for arn, td := range tasks {
-				isWindows := td.RuntimePlatform != nil &&
-					(td.RuntimePlatform.OperatingSystemFamily == ecstypes.OSFamilyWindowsServer2019Full ||
-						td.RuntimePlatform.OperatingSystemFamily == ecstypes.OSFamilyWindowsServer2022Full)
+				isWindows := td.RuntimePlatform != nil && strings.HasPrefix(string(td.RuntimePlatform.OperatingSystemFamily), "WINDOWS_")
 				if !isWindows {
 					res = append(res, ConfigResource{ID: arn, Passing: true, Detail: "Not Windows"})
 					continue
 				}
 				ok := true
 				for _, c := range td.ContainerDefinitions {
-					if c.User == nil || strings.EqualFold(*c.User, "Administrator") {
+					if c.User == nil || strings.TrimSpace(*c.User) == "" || ecsWindowsUserIsAdmin(*c.User) {
 						ok = false
 						break
 					}
@@ -402,7 +424,10 @@ func RegisterECSChecks(d *awsdata.Data) {
 				}
 				ok := true
 				for _, c := range td.ContainerDefinitions {
-					if c.User == nil || *c.User == "0" {
+					if c.Privileged != nil && *c.Privileged {
+						continue
+					}
+					if !ecsContainerUserIsNonRoot(c.User) {
 						ok = false
 						break
 					}
@@ -434,11 +459,137 @@ func RegisterECSChecks(d *awsdata.Data) {
 					if s.ServiceArn != nil {
 						id = *s.ServiceArn
 					}
-					ok := s.PlatformVersion == nil || *s.PlatformVersion == "" || *s.PlatformVersion == "LATEST"
-					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("PlatformVersion: %v", s.PlatformVersion)})
+					ok, detail := ecsFargatePlatformVersionCompliant(s)
+					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 				}
 			}
 			return res, nil
 		},
 	))
+}
+
+func ecsContainerUserIsNonRoot(user *string) bool {
+	if user == nil {
+		return false
+	}
+	value := strings.TrimSpace(*user)
+	if value == "" {
+		return false
+	}
+	lower := strings.ToLower(value)
+	if lower == "root" || lower == "0" || strings.HasPrefix(lower, "0:") {
+		return false
+	}
+	return true
+}
+
+func ecsWindowsUserIsAdmin(user string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(user))
+	return normalized == "administrator" || strings.HasSuffix(normalized, "\\administrator")
+}
+
+func ecsParseCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(strings.ToLower(part))
+		if item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func ecsEnvNameLooksSecret(name string, markers []string) bool {
+	for _, marker := range markers {
+		if marker != "" && strings.Contains(name, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func ecsFargatePlatformVersionCompliant(service ecstypes.Service) (bool, string) {
+	if service.PlatformVersion == nil || strings.TrimSpace(*service.PlatformVersion) == "" || strings.EqualFold(strings.TrimSpace(*service.PlatformVersion), "LATEST") {
+		return true, fmt.Sprintf("PlatformVersion: %v", service.PlatformVersion)
+	}
+	isWindows := service.PlatformFamily != nil && strings.Contains(strings.ToUpper(strings.TrimSpace(*service.PlatformFamily)), "WINDOWS")
+	targetEnv := "BPTOOLS_ECS_FARGATE_LATEST_LINUX_VERSION"
+	if isWindows {
+		targetEnv = "BPTOOLS_ECS_FARGATE_LATEST_WINDOWS_VERSION"
+	}
+	target := strings.TrimSpace(os.Getenv(targetEnv))
+	if target == "" {
+		return true, fmt.Sprintf("PlatformVersion: %s (no %s configured)", strings.TrimSpace(*service.PlatformVersion), targetEnv)
+	}
+	currentParts, okCurrent := ecsVersionTuple(*service.PlatformVersion)
+	targetParts, okTarget := ecsVersionTuple(target)
+	if !okCurrent || !okTarget {
+		return false, fmt.Sprintf("Unable to compare platform versions current=%s target=%s", strings.TrimSpace(*service.PlatformVersion), target)
+	}
+	for i := 0; i < len(currentParts) || i < len(targetParts); i++ {
+		current := 0
+		targetV := 0
+		if i < len(currentParts) {
+			current = currentParts[i]
+		}
+		if i < len(targetParts) {
+			targetV = targetParts[i]
+		}
+		if current > targetV {
+			return true, fmt.Sprintf("PlatformVersion: %s (>= %s)", strings.TrimSpace(*service.PlatformVersion), target)
+		}
+		if current < targetV {
+			return false, fmt.Sprintf("PlatformVersion: %s (< %s)", strings.TrimSpace(*service.PlatformVersion), target)
+		}
+	}
+	return true, fmt.Sprintf("PlatformVersion: %s (== %s)", strings.TrimSpace(*service.PlatformVersion), target)
+}
+
+func ecsVersionTuple(version string) ([]int, bool) {
+	v := strings.TrimSpace(strings.TrimPrefix(strings.ToLower(version), "v"))
+	if v == "" {
+		return nil, false
+	}
+	parts := strings.Split(v, ".")
+	out := make([]int, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			break
+		}
+		numeric := ""
+		for _, ch := range part {
+			if ch >= '0' && ch <= '9' {
+				numeric += string(ch)
+				continue
+			}
+			break
+		}
+		if numeric == "" {
+			return nil, false
+		}
+		n, err := strconv.Atoi(numeric)
+		if err != nil {
+			return nil, false
+		}
+		out = append(out, n)
+	}
+	return out, len(out) > 0
+}
+
+func ecsCapacityProviderIsAWSManagedOrDeleted(cp ecstypes.CapacityProvider) bool {
+	name := ""
+	if cp.Name != nil {
+		name = strings.ToUpper(strings.TrimSpace(*cp.Name))
+	}
+	if name == "FARGATE" || name == "FARGATE_SPOT" {
+		return true
+	}
+	status := strings.ToUpper(strings.TrimSpace(string(cp.Status)))
+	if status == "INACTIVE" {
+		return true
+	}
+	updateStatus := strings.ToUpper(strings.TrimSpace(string(cp.UpdateStatus)))
+	return strings.Contains(updateStatus, "DELETE")
 }

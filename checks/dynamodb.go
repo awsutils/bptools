@@ -1,11 +1,16 @@
 package checks
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
@@ -81,7 +86,8 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 			}
 			var res []EncryptionResource
 			for name, t := range tables {
-				encrypted := t.SSEDescription != nil && t.SSEDescription.Status == dynamodbtypes.SSEStatusEnabled
+				encrypted := t.SSEDescription != nil &&
+					(t.SSEDescription.Status == dynamodbtypes.SSEStatusEnabled || t.SSEDescription.Status == dynamodbtypes.SSEStatusEnabling)
 				res = append(res, EncryptionResource{ID: name, Encrypted: encrypted})
 			}
 			return res, nil
@@ -117,15 +123,82 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			var res []ConfigResource
-			for name, t := range tables {
-				ok := t.BillingModeSummary != nil && t.BillingModeSummary.BillingMode == dynamodbtypes.BillingModePayPerRequest
-				if !ok && t.ProvisionedThroughput != nil {
-					ok = t.ProvisionedThroughput.ReadCapacityUnits != nil && t.ProvisionedThroughput.WriteCapacityUnits != nil
+			readLimit := dynamodbInt64Env("BPTOOLS_DYNAMODB_READ_CAPACITY_LIMIT", 0)
+			writeLimit := dynamodbInt64Env("BPTOOLS_DYNAMODB_WRITE_CAPACITY_LIMIT", 0)
+			maxUsagePercent := dynamodbInt64Env("BPTOOLS_DYNAMODB_MAX_THROUGHPUT_USAGE_PERCENT", 80)
+			limitSource := "env"
+			if readLimit <= 0 || writeLimit <= 0 {
+				limitSource = "aws-describe-limits"
+				limitsOutput, limitsErr := d.Clients.DynamoDB.DescribeLimits(context.Background(), &dynamodb.DescribeLimitsInput{})
+				if limitsErr != nil {
+					limitSource = "static-default"
+					if readLimit <= 0 {
+						readLimit = 40000
+					}
+					if writeLimit <= 0 {
+						writeLimit = 40000
+					}
+				} else {
+					if readLimit <= 0 && limitsOutput.AccountMaxReadCapacityUnits != nil {
+						readLimit = *limitsOutput.AccountMaxReadCapacityUnits
+					}
+					if writeLimit <= 0 && limitsOutput.AccountMaxWriteCapacityUnits != nil {
+						writeLimit = *limitsOutput.AccountMaxWriteCapacityUnits
+					}
+					if readLimit <= 0 {
+						readLimit = 40000
+						limitSource = "mixed-default"
+					}
+					if writeLimit <= 0 {
+						writeLimit = 40000
+						limitSource = "mixed-default"
+					}
 				}
-				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("BillingMode: %v", t.BillingModeSummary)})
 			}
-			return res, nil
+			var totalRead int64
+			var totalWrite int64
+			var provisionedTableCount int64
+			for name, t := range tables {
+				billingMode := dynamodbtypes.BillingModeProvisioned
+				if t.BillingModeSummary != nil && t.BillingModeSummary.BillingMode != "" {
+					billingMode = t.BillingModeSummary.BillingMode
+				}
+				if billingMode == dynamodbtypes.BillingModePayPerRequest {
+					continue
+				}
+				provisionedTableCount++
+				if t.ProvisionedThroughput == nil || t.ProvisionedThroughput.ReadCapacityUnits == nil || t.ProvisionedThroughput.WriteCapacityUnits == nil {
+					return []ConfigResource{{
+						ID:      name,
+						Passing: false,
+						Detail:  "Provisioned table missing throughput values",
+					}}, nil
+				}
+				totalRead += *t.ProvisionedThroughput.ReadCapacityUnits
+				totalWrite += *t.ProvisionedThroughput.WriteCapacityUnits
+				for _, gsi := range t.GlobalSecondaryIndexes {
+					if gsi.ProvisionedThroughput == nil || gsi.ProvisionedThroughput.ReadCapacityUnits == nil || gsi.ProvisionedThroughput.WriteCapacityUnits == nil {
+						continue
+					}
+					totalRead += *gsi.ProvisionedThroughput.ReadCapacityUnits
+					totalWrite += *gsi.ProvisionedThroughput.WriteCapacityUnits
+				}
+			}
+			if provisionedTableCount == 0 {
+				return []ConfigResource{{ID: "account", Passing: true, Detail: "No provisioned throughput tables found"}}, nil
+			}
+			if readLimit <= 0 || writeLimit <= 0 || maxUsagePercent <= 0 {
+				return []ConfigResource{{ID: "account", Passing: false, Detail: "Invalid throughput limit/threshold configuration"}}, nil
+			}
+			readUsage := (totalRead * 100) / readLimit
+			writeUsage := (totalWrite * 100) / writeLimit
+			ok := readUsage <= maxUsagePercent && writeUsage <= maxUsagePercent
+			return []ConfigResource{{
+				ID:      "account",
+				Passing: ok,
+				Detail: fmt.Sprintf("Provisioned throughput usage read=%d%% (%d/%d), write=%d%% (%d/%d), threshold=%d%%, limitsSource=%s",
+					readUsage, totalRead, readLimit, writeUsage, totalWrite, writeLimit, maxUsagePercent, limitSource),
+			}}, nil
 		},
 	))
 
@@ -202,8 +275,8 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 				if t.TableArn != nil {
 					arn = *t.TableArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery point exists"})
+				ok, detail := backupRecencyResult(rps[arn], backupRecoveryPointRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -214,10 +287,6 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			rps, err := d.BackupRecoveryPointsByResource.Get()
-			if err != nil {
-				return nil, err
-			}
 			tables, err := d.DynamoDBTables.Get()
 			if err != nil {
 				return nil, err
@@ -228,10 +297,25 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 				if t.TableArn != nil {
 					arn = *t.TableArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points available"})
+				ok, detail, err := restoreTimeTargetResult(d, arn, backupRestoreTimeTargetWindow)
+				if err != nil {
+					return nil, err
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
 	))
+}
+
+func dynamodbInt64Env(envVar string, defaultValue int64) int64 {
+	value := strings.TrimSpace(os.Getenv(envVar))
+	if value == "" {
+		return defaultValue
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
+	return parsed
 }

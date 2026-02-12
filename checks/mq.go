@@ -215,8 +215,12 @@ func RegisterMQChecks(d *awsdata.Data) {
 				if b.EngineType != mqtypes.EngineTypeActivemq {
 					continue
 				}
-				ok := b.LdapServerMetadata != nil
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "LDAP configured"})
+				ok := b.AuthenticationStrategy == mqtypes.AuthenticationStrategyLdap
+				res = append(res, ConfigResource{
+					ID:      id,
+					Passing: ok,
+					Detail:  fmt.Sprintf("AuthenticationStrategy: %s", b.AuthenticationStrategy),
+				})
 			}
 			return res, nil
 		},

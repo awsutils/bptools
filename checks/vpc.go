@@ -2,6 +2,9 @@ package checks
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -31,17 +34,18 @@ func RegisterVPCChecks(d *awsdata.Data) {
 				if v.VpcId != nil {
 					vpcID = *v.VpcId
 				}
-				ok := true
+				ok := false
 				for _, sg := range sgs {
 					if sg.VpcId == nil || sg.GroupName == nil || *sg.GroupName != "default" || *sg.VpcId != vpcID {
 						continue
 					}
-					if hasPublicRule(sg.IpPermissions) || hasPublicRule(sg.IpPermissionsEgress) {
+					ok = len(sg.IpPermissions) == 0 && len(sg.IpPermissionsEgress) == 0
+					if !ok {
 						ok = false
-						break
 					}
+					break
 				}
-				res = append(res, ConfigResource{ID: vpcID, Passing: ok, Detail: "Default SG has no public rules"})
+				res = append(res, ConfigResource{ID: vpcID, Passing: ok, Detail: "Default SG has no ingress or egress rules"})
 			}
 			return res, nil
 		},
@@ -61,19 +65,18 @@ func RegisterVPCChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			count := make(map[string]int)
-			for _, ep := range endpoints {
-				if ep.VpcId != nil {
-					count[*ep.VpcId]++
-				}
+			requiredService, configured := vpcRequiredEndpointService()
+			if !configured {
+				return []EnabledResource{{ID: "account", Enabled: false}}, nil
 			}
+			hasEndpoint := vpcEndpointCoverage(endpoints, requiredService)
 			var res []EnabledResource
 			for _, v := range vpcs {
 				id := "unknown"
 				if v.VpcId != nil {
 					id = *v.VpcId
 				}
-				enabled := count[id] > 0
+				enabled := hasEndpoint[id]
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -175,6 +178,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			allowedPorts := parsePortListWithDefault("BPTOOLS_AUTHORIZED_PUBLIC_PORTS", []int32{80, 443})
 			var res []ConfigResource
 			for _, sg := range sgs {
 				id := sgID(sg)
@@ -183,12 +187,12 @@ func RegisterVPCChecks(d *awsdata.Data) {
 					if !permissionIsPublic(perm) {
 						continue
 					}
-					if !portIsAuthorized(perm) {
+					if !permissionOnlyAllowsPorts(perm, allowedPorts) {
 						ok = false
 						break
 					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Public ingress limited to 80/443"})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Public ingress limited to authorized ports: %v", allowedPorts)})
 			}
 			return res, nil
 		},
@@ -212,12 +216,12 @@ func RegisterVPCChecks(d *awsdata.Data) {
 					if !permissionIsPublic(perm) {
 						continue
 					}
-					if permissionIsUnrestricted(perm) {
+					if permissionOpensPort(perm, 22) || permissionOpensPort(perm, 3389) {
 						ok = false
 						break
 					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "No unrestricted public ingress"})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "No public ingress on port 22 or 3389"})
 			}
 			return res, nil
 		},
@@ -268,8 +272,13 @@ func RegisterVPCChecks(d *awsdata.Data) {
 				if s.SubnetId != nil {
 					id = *s.SubnetId
 				}
-				enabled := s.MapPublicIpOnLaunch != nil && *s.MapPublicIpOnLaunch
-				res = append(res, ConfigResource{ID: id, Passing: !enabled, Detail: fmt.Sprintf("MapPublicIpOnLaunch: %v", enabled)})
+				ipv4Enabled := s.MapPublicIpOnLaunch != nil && *s.MapPublicIpOnLaunch
+				ipv6Enabled := s.AssignIpv6AddressOnCreation != nil && *s.AssignIpv6AddressOnCreation
+				res = append(res, ConfigResource{
+					ID:      id,
+					Passing: !ipv4Enabled && !ipv6Enabled,
+					Detail:  fmt.Sprintf("IPv4 auto-assign: %v, IPv6 auto-assign: %v", ipv4Enabled, ipv6Enabled),
+				})
 			}
 			return res, nil
 		},
@@ -285,6 +294,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			restrictedPorts := parsePortListWithDefault("BPTOOLS_RESTRICTED_COMMON_PORTS", []int32{20, 21, 3306, 3389, 4333})
 			var res []ConfigResource
 			for _, sg := range sgs {
 				id := sgID(sg)
@@ -293,31 +303,47 @@ func RegisterVPCChecks(d *awsdata.Data) {
 					if !permissionIsPublic(perm) {
 						continue
 					}
-					if permissionHitsCommonPorts(perm) {
+					if permissionHitsPorts(perm, restrictedPorts) {
 						ok = false
 						break
 					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "No public access to common ports"})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("No public access to restricted common ports: %v", restrictedPorts)})
 			}
 			return res, nil
 		},
 	))
 
-	checker.Register(SingleCheck(
+	checker.Register(ConfigCheck(
 		"service-vpc-endpoint-enabled",
 		"This rule checks service vpc endpoint enabled.",
 		"vpc",
 		d,
-		func(d *awsdata.Data) (bool, string, error) {
+		func(d *awsdata.Data) ([]ConfigResource, error) {
+			vpcs, err := d.EC2VPCs.Get()
+			if err != nil {
+				return nil, err
+			}
 			endpoints, err := d.EC2VPCEndpoints.Get()
 			if err != nil {
-				return false, err.Error(), err
+				return nil, err
 			}
-			if len(endpoints) > 0 {
-				return true, "VPC endpoints configured", nil
+			requiredService, _ := vpcRequiredEndpointService()
+			hasEndpoint := vpcEndpointCoverage(endpoints, requiredService)
+			var res []ConfigResource
+			for _, v := range vpcs {
+				id := "unknown"
+				if v.VpcId != nil {
+					id = *v.VpcId
+				}
+				ok := hasEndpoint[id]
+				res = append(res, ConfigResource{
+					ID:      id,
+					Passing: ok,
+					Detail:  fmt.Sprintf("Required endpoint service '%s' configured: %v", requiredService, ok),
+				})
 			}
-			return false, "No VPC endpoints configured", nil
+			return res, nil
 		},
 	))
 }
@@ -367,15 +393,27 @@ func permissionIsUnrestricted(p ec2types.IpPermission) bool {
 	return false
 }
 
-func permissionHitsCommonPorts(p ec2types.IpPermission) bool {
-	if p.IpProtocol != nil && *p.IpProtocol != "tcp" && *p.IpProtocol != "-1" {
-		return false
+func permissionOpensPort(p ec2types.IpPermission, port int32) bool {
+	if p.IpProtocol != nil {
+		proto := *p.IpProtocol
+		if proto != "tcp" && proto != "udp" && proto != "-1" {
+			return false
+		}
 	}
-	common := []int32{20, 21, 22, 23, 25, 110, 143, 445, 3389, 3306, 5432, 1433, 1521, 27017}
 	if p.FromPort == nil || p.ToPort == nil {
 		return true
 	}
-	for _, port := range common {
+	return port >= *p.FromPort && port <= *p.ToPort
+}
+
+func permissionHitsPorts(p ec2types.IpPermission, ports []int32) bool {
+	if p.IpProtocol != nil && *p.IpProtocol != "tcp" && *p.IpProtocol != "-1" {
+		return false
+	}
+	if p.FromPort == nil || p.ToPort == nil {
+		return true
+	}
+	for _, port := range ports {
 		if port >= *p.FromPort && port <= *p.ToPort {
 			return true
 		}
@@ -383,9 +421,89 @@ func permissionHitsCommonPorts(p ec2types.IpPermission) bool {
 	return false
 }
 
-func portIsAuthorized(p ec2types.IpPermission) bool {
+func permissionOnlyAllowsPorts(p ec2types.IpPermission, allowed []int32) bool {
+	if p.IpProtocol != nil && *p.IpProtocol != "tcp" && *p.IpProtocol != "udp" {
+		return false
+	}
 	if p.FromPort == nil || p.ToPort == nil {
 		return false
 	}
-	return (*p.FromPort == 80 && *p.ToPort == 80) || (*p.FromPort == 443 && *p.ToPort == 443)
+	for port := *p.FromPort; port <= *p.ToPort; port++ {
+		if !containsPort(allowed, port) {
+			return false
+		}
+	}
+	return true
+}
+
+func containsPort(ports []int32, want int32) bool {
+	for _, p := range ports {
+		if p == want {
+			return true
+		}
+	}
+	return false
+}
+
+func parsePortListWithDefault(envVar string, defaults []int32) []int32 {
+	value := strings.TrimSpace(os.Getenv(envVar))
+	if value == "" {
+		return defaults
+	}
+	parts := strings.Split(value, ",")
+	var ports []int32
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		n, err := strconv.Atoi(part)
+		if err != nil || n < 1 || n > 65535 {
+			continue
+		}
+		ports = append(ports, int32(n))
+	}
+	if len(ports) == 0 {
+		return defaults
+	}
+	return ports
+}
+
+func vpcRequiredEndpointService() (string, bool) {
+	service := strings.TrimSpace(os.Getenv("BPTOOLS_REQUIRED_VPC_ENDPOINT_SERVICE"))
+	if service == "" {
+		return "s3", true
+	}
+	return strings.ToLower(service), true
+}
+
+func vpcEndpointCoverage(endpoints []ec2types.VpcEndpoint, requiredService string) map[string]bool {
+	coverage := make(map[string]bool)
+	for _, ep := range endpoints {
+		if ep.VpcId == nil || ep.ServiceName == nil {
+			continue
+		}
+		switch ep.State {
+		case ec2types.StateAvailable, ec2types.StatePendingAcceptance:
+		default:
+			continue
+		}
+		serviceName := strings.ToLower(strings.TrimSpace(*ep.ServiceName))
+		if !endpointServiceMatches(serviceName, requiredService) {
+			continue
+		}
+		coverage[*ep.VpcId] = true
+	}
+	return coverage
+}
+
+func endpointServiceMatches(serviceName, requiredService string) bool {
+	requiredService = strings.ToLower(strings.TrimSpace(requiredService))
+	if requiredService == "" {
+		return true
+	}
+	if serviceName == requiredService {
+		return true
+	}
+	return strings.HasSuffix(serviceName, "."+requiredService)
 }

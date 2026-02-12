@@ -3,6 +3,7 @@ package checks
 import (
 	"bptools/awsdata"
 	"bptools/checker"
+	"strings"
 )
 
 // RegisterCassandraChecks registers Cassandra (Keyspaces) checks.
@@ -27,10 +28,18 @@ func RegisterCassandraChecks(d *awsdata.Data) {
 				if ks.KeyspaceName != nil {
 					id = *ks.KeyspaceName
 				}
+				if cassandraIsSystemKeyspace(id) {
+					continue
+				}
 				// tags map keyed by ARN; if unknown, it will be empty.
 				res = append(res, TaggedResource{ID: id, Tags: tags[id]})
 			}
 			return res, nil
 		},
 	))
+}
+
+func cassandraIsSystemKeyspace(name string) bool {
+	v := strings.ToLower(strings.TrimSpace(name))
+	return strings.HasPrefix(v, "system")
 }

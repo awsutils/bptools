@@ -8,7 +8,6 @@ import (
 	"bptools/checker"
 
 	autotypes "github.com/aws/aws-sdk-go-v2/service/autoscaling/types"
-	ecztypes "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 )
 
 func RegisterAutoScalingChecks(d *awsdata.Data) {
@@ -57,8 +56,9 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 				if g.HealthCheckType != nil {
 					healthCheckType = *g.HealthCheckType
 				}
-				ok := strings.EqualFold(healthCheckType, "ELB") || len(g.TargetGroupARNs) > 0
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("HealthCheckType: %s", healthCheckType)})
+				attachedToLB := len(g.LoadBalancerNames) > 0 || len(g.TargetGroupARNs) > 0
+				ok := !attachedToLB || strings.EqualFold(healthCheckType, "ELB")
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("HealthCheckType: %s, attachedToLB: %v", healthCheckType, attachedToLB)})
 			}
 			return res, nil
 		},
@@ -99,19 +99,43 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			subnets, err := d.EC2Subnets.Get()
+			if err != nil {
+				return nil, err
+			}
+			subnetAZ := make(map[string]string)
+			for _, subnet := range subnets {
+				if subnet.SubnetId == nil || subnet.AvailabilityZone == nil {
+					continue
+				}
+				subnetAZ[strings.TrimSpace(*subnet.SubnetId)] = strings.TrimSpace(*subnet.AvailabilityZone)
+			}
 			var res []ConfigResource
 			for _, g := range groups {
 				id := "unknown"
 				if g.AutoScalingGroupName != nil {
 					id = *g.AutoScalingGroupName
 				}
-				azCount := len(g.AvailabilityZones)
-				subnetCount := 0
-				if g.VPCZoneIdentifier != nil && *g.VPCZoneIdentifier != "" {
-					subnetCount = len(strings.Split(*g.VPCZoneIdentifier, ","))
+				azSet := make(map[string]bool)
+				for _, az := range g.AvailabilityZones {
+					value := strings.TrimSpace(az)
+					if value != "" {
+						azSet[value] = true
+					}
 				}
-				ok := azCount > 1 || subnetCount > 1
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AZs: %d, Subnets: %d", azCount, subnetCount)})
+				if g.VPCZoneIdentifier != nil && *g.VPCZoneIdentifier != "" {
+					for _, subnetID := range strings.Split(*g.VPCZoneIdentifier, ",") {
+						key := strings.TrimSpace(subnetID)
+						if key == "" {
+							continue
+						}
+						if az := subnetAZ[key]; az != "" {
+							azSet[az] = true
+						}
+					}
+				}
+				ok := len(azSet) > 1
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Distinct AZ count: %d", len(azSet))})
 			}
 			return res, nil
 		},
@@ -134,12 +158,12 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 				if g.AutoScalingGroupName != nil {
 					id = *g.AutoScalingGroupName
 				}
-				count := 1
+				overrides := 0
 				if g.MixedInstancesPolicy != nil && g.MixedInstancesPolicy.LaunchTemplate != nil {
-					count = len(g.MixedInstancesPolicy.LaunchTemplate.Overrides)
+					overrides = len(g.MixedInstancesPolicy.LaunchTemplate.Overrides)
 				}
-				ok := count > 1
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Instance type overrides: %d", count)})
+				ok := overrides >= 1
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Instance type overrides: %d", overrides)})
 			}
 			return res, nil
 		},
@@ -152,40 +176,22 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			groups, err := d.AutoScalingGroups.Get()
-			if err != nil {
-				return nil, err
-			}
-			versions, err := d.EC2LaunchTemplateVersions.Get()
-			if err != nil {
-				return nil, err
-			}
-			lcMap := make(map[string]autotypes.LaunchConfiguration)
 			lcs, err := d.AutoScalingLaunchConfigs.Get()
-			if err == nil {
-				for _, lc := range lcs {
-					if lc.LaunchConfigurationName != nil {
-						lcMap[*lc.LaunchConfigurationName] = lc
-					}
-				}
+			if err != nil {
+				return nil, err
 			}
 			var res []ConfigResource
-			for _, g := range groups {
+			for _, lc := range lcs {
 				id := "unknown"
-				if g.AutoScalingGroupName != nil {
-					id = *g.AutoScalingGroupName
+				if lc.LaunchConfigurationName != nil {
+					id = *lc.LaunchConfigurationName
 				}
-				if g.LaunchTemplate != nil && g.LaunchTemplate.LaunchTemplateId != nil {
-					lt := versions[*g.LaunchTemplate.LaunchTemplateId]
-					tokens := lt.LaunchTemplateData.MetadataOptions.HttpTokens
-					ok := tokens == ecztypes.LaunchTemplateHttpTokensStateRequired
-					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("IMDSv2 tokens: %s", tokens)})
-					continue
+				tokens := autotypes.InstanceMetadataHttpTokensStateOptional
+				if lc.MetadataOptions != nil {
+					tokens = lc.MetadataOptions.HttpTokens
 				}
-				if g.LaunchConfigurationName != nil {
-					_ = lcMap[*g.LaunchConfigurationName]
-				}
-				res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Launch config used"})
+				ok := lc.MetadataOptions != nil && tokens == autotypes.InstanceMetadataHttpTokensStateRequired
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("IMDSv2 tokens: %s", tokens)})
 			}
 			return res, nil
 		},
@@ -197,31 +203,22 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			groups, err := d.AutoScalingGroups.Get()
-			if err != nil {
-				return nil, err
-			}
-			versions, err := d.EC2LaunchTemplateVersions.Get()
+			lcs, err := d.AutoScalingLaunchConfigs.Get()
 			if err != nil {
 				return nil, err
 			}
 			var res []ConfigResource
-			for _, g := range groups {
+			for _, lc := range lcs {
 				id := "unknown"
-				if g.AutoScalingGroupName != nil {
-					id = *g.AutoScalingGroupName
+				if lc.LaunchConfigurationName != nil {
+					id = *lc.LaunchConfigurationName
 				}
-				if g.LaunchTemplate != nil && g.LaunchTemplate.LaunchTemplateId != nil {
-					lt := versions[*g.LaunchTemplate.LaunchTemplateId]
-					hop := int32(0)
-					if lt.LaunchTemplateData.MetadataOptions != nil && lt.LaunchTemplateData.MetadataOptions.HttpPutResponseHopLimit != nil {
-						hop = *lt.LaunchTemplateData.MetadataOptions.HttpPutResponseHopLimit
-					}
-					ok := hop > 0 && hop <= 1
-					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("HopLimit: %d", hop)})
-					continue
+				hop := int32(0)
+				if lc.MetadataOptions != nil && lc.MetadataOptions.HttpPutResponseHopLimit != nil {
+					hop = *lc.MetadataOptions.HttpPutResponseHopLimit
 				}
-				res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Launch config used"})
+				ok := hop > 0 && hop <= 1
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("HopLimit: %d", hop)})
 			}
 			return res, nil
 		},
@@ -233,47 +230,15 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			groups, err := d.AutoScalingGroups.Get()
-			if err != nil {
-				return nil, err
-			}
-			versions, err := d.EC2LaunchTemplateVersions.Get()
-			if err != nil {
-				return nil, err
-			}
 			lcs, _ := d.AutoScalingLaunchConfigs.Get()
-			lcMap := make(map[string]autotypes.LaunchConfiguration)
-			for _, lc := range lcs {
-				if lc.LaunchConfigurationName != nil {
-					lcMap[*lc.LaunchConfigurationName] = lc
-				}
-			}
 			var res []ConfigResource
-			for _, g := range groups {
+			for _, lc := range lcs {
 				id := "unknown"
-				if g.AutoScalingGroupName != nil {
-					id = *g.AutoScalingGroupName
+				if lc.LaunchConfigurationName != nil {
+					id = *lc.LaunchConfigurationName
 				}
-				if g.LaunchTemplate != nil && g.LaunchTemplate.LaunchTemplateId != nil {
-					lt := versions[*g.LaunchTemplate.LaunchTemplateId]
-					ok := true
-					if lt.LaunchTemplateData.NetworkInterfaces != nil && len(lt.LaunchTemplateData.NetworkInterfaces) > 0 {
-						for _, ni := range lt.LaunchTemplateData.NetworkInterfaces {
-							if ni.AssociatePublicIpAddress != nil && *ni.AssociatePublicIpAddress {
-								ok = false
-							}
-						}
-					}
-					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Launch template public IP"})
-					continue
-				}
-				if g.LaunchConfigurationName != nil {
-					lc := lcMap[*g.LaunchConfigurationName]
-					ok := lc.AssociatePublicIpAddress != nil && !*lc.AssociatePublicIpAddress
-					res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AssociatePublicIpAddress: %v", lc.AssociatePublicIpAddress)})
-					continue
-				}
-				res = append(res, ConfigResource{ID: id, Passing: false, Detail: "No launch config"})
+				ok := lc.AssociatePublicIpAddress == nil || !*lc.AssociatePublicIpAddress
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AssociatePublicIpAddress: %v", lc.AssociatePublicIpAddress)})
 			}
 			return res, nil
 		},

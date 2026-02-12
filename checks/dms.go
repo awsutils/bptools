@@ -1,11 +1,14 @@
 package checks
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	dmstypes "github.com/aws/aws-sdk-go-v2/service/databasemigrationservice/types"
 )
 
 func RegisterDMSChecks(d *awsdata.Data) {
@@ -104,8 +107,12 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if e.EndpointArn != nil {
 					id = *e.EndpointArn
 				}
-				ok := e.Username != nil && *e.Username != ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "MongoDB username set"})
+				authType := dmstypes.AuthTypeValueNo
+				if e.MongoDbSettings != nil {
+					authType = e.MongoDbSettings.AuthType
+				}
+				ok := authType == dmstypes.AuthTypeValuePassword
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("MongoDb AuthType: %s", authType)})
 			}
 			return res, nil
 		},
@@ -158,9 +165,12 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if e.EndpointArn != nil {
 					id = *e.EndpointArn
 				}
-				ssl := strings.ToLower(string(e.SslMode))
-				ok := ssl != "none" && ssl != ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("SslMode: %s", e.SslMode)})
+				protocol := dmstypes.SslSecurityProtocolValuePlaintext
+				if e.RedisSettings != nil {
+					protocol = e.RedisSettings.SslSecurityProtocol
+				}
+				ok := protocol == dmstypes.SslSecurityProtocolValueSslEncryption
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Redis SslSecurityProtocol: %s", protocol)})
 			}
 			return res, nil
 		},
@@ -230,8 +240,8 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if t.ReplicationTaskArn != nil {
 					id = *t.ReplicationTaskArn
 				}
-				ok := t.ReplicationTaskSettings != nil && strings.Contains(*t.ReplicationTaskSettings, "LogComponents")
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "ReplicationTaskSettings contains LogComponents"})
+				ok, detail := dmsReplicationTaskLoggingCheck(t.ReplicationTaskSettings, true)
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -254,8 +264,8 @@ func RegisterDMSChecks(d *awsdata.Data) {
 				if t.ReplicationTaskArn != nil {
 					id = *t.ReplicationTaskArn
 				}
-				ok := t.ReplicationTaskSettings != nil && strings.Contains(*t.ReplicationTaskSettings, "LogComponents")
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "ReplicationTaskSettings contains LogComponents"})
+				ok, detail := dmsReplicationTaskLoggingCheck(t.ReplicationTaskSettings, false)
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -286,4 +296,71 @@ func RegisterDMSChecks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
+}
+
+func dmsReplicationTaskLoggingCheck(taskSettings *string, source bool) (bool, string) {
+	if taskSettings == nil || *taskSettings == "" {
+		return false, "Missing ReplicationTaskSettings"
+	}
+
+	var settings struct {
+		Logging struct {
+			EnableLogging bool `json:"EnableLogging"`
+			LogComponents []struct {
+				Id       string `json:"Id"`
+				Severity string `json:"Severity"`
+			} `json:"LogComponents"`
+		} `json:"Logging"`
+	}
+	if err := json.Unmarshal([]byte(*taskSettings), &settings); err != nil {
+		return false, fmt.Sprintf("Invalid ReplicationTaskSettings JSON: %v", err)
+	}
+	if !settings.Logging.EnableLogging {
+		return false, "EnableLogging=false"
+	}
+
+	componentIDs := map[string]bool{}
+	if source {
+		componentIDs["SOURCE_CAPTURE"] = false
+		componentIDs["SOURCE_UNLOAD"] = false
+		componentIDs["SOURCE_LOAD"] = false
+	} else {
+		componentIDs["TARGET_LOAD"] = false
+		componentIDs["TARGET_APPLY"] = false
+		componentIDs["TARGET_LOAD_ORDER"] = false
+	}
+	validSeverity := map[string]bool{
+		"LOGGER_SEVERITY_DEFAULT":        true,
+		"LOGGER_SEVERITY_DEBUG":          true,
+		"LOGGER_SEVERITY_INFO":           true,
+		"LOGGER_SEVERITY_WARNING":        true,
+		"LOGGER_SEVERITY_ERROR":          true,
+		"LOGGER_SEVERITY_DETAILED_DEBUG": true,
+	}
+
+	for _, component := range settings.Logging.LogComponents {
+		_, required := componentIDs[component.Id]
+		if !required {
+			continue
+		}
+		if validSeverity[component.Severity] {
+			componentIDs[component.Id] = true
+		}
+	}
+	missing := []string{}
+	for id, present := range componentIDs {
+		if !present {
+			missing = append(missing, id)
+		}
+	}
+	if len(missing) == 0 {
+		if source {
+			return true, "EnableLogging=true with required source log components and valid severity"
+		}
+		return true, "EnableLogging=true with required target log components and valid severity"
+	}
+	if source {
+		return false, fmt.Sprintf("EnableLogging=true but missing/invalid source components: %v", missing)
+	}
+	return false, fmt.Sprintf("EnableLogging=true but missing/invalid target components: %v", missing)
 }

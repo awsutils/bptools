@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 	"bptools/checker"
 )
 
-const acmExpirationThreshold = 90 * 24 * time.Hour
+const acmExpirationThreshold = 14 * 24 * time.Hour
 
 func certID(arn *string) string {
 	if arn != nil {
@@ -59,13 +60,28 @@ func RegisterACMChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for arn, c := range certs {
 				alg := string(c.KeyAlgorithm)
-				ok := strings.HasPrefix(alg, "RSA")
-				if alg == "" {
-					ok = false
+				ok := true
+				detail := fmt.Sprintf("Key algorithm: %s", alg)
+				if strings.HasPrefix(alg, "RSA_") {
+					bits, parseErr := rsaKeySizeBits(alg)
+					ok = parseErr == nil && bits >= 2048
+					if parseErr != nil {
+						detail = fmt.Sprintf("Unable to parse RSA key size from %s", alg)
+					} else {
+						detail = fmt.Sprintf("RSA key size: %d", bits)
+					}
 				}
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("Key algorithm: %s", alg)})
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
 	))
+}
+
+func rsaKeySizeBits(algorithm string) (int, error) {
+	parts := strings.SplitN(algorithm, "_", 2)
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("invalid RSA key algorithm format")
+	}
+	return strconv.Atoi(parts[1])
 }

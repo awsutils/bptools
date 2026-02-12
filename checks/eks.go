@@ -2,10 +2,119 @@ package checks
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	ekstypes "github.com/aws/aws-sdk-go-v2/service/eks/types"
 )
+
+var eksRequiredControlPlaneLogTypes = map[ekstypes.LogType]bool{
+	ekstypes.LogTypeApi:               true,
+	ekstypes.LogTypeAudit:             true,
+	ekstypes.LogTypeAuthenticator:     true,
+	ekstypes.LogTypeControllerManager: true,
+	ekstypes.LogTypeScheduler:         true,
+}
+
+func eksAllControlPlaneLogsEnabled(c ekstypes.Cluster) bool {
+	if c.Logging == nil {
+		return false
+	}
+	enabled := make(map[ekstypes.LogType]bool)
+	for _, setup := range c.Logging.ClusterLogging {
+		if setup.Enabled == nil || !*setup.Enabled {
+			continue
+		}
+		for _, t := range setup.Types {
+			enabled[t] = true
+		}
+	}
+	for t := range eksRequiredControlPlaneLogTypes {
+		if !enabled[t] {
+			return false
+		}
+	}
+	return true
+}
+
+func eksEncryptionConfigIncludesSecrets(c ekstypes.Cluster) bool {
+	for _, cfg := range c.EncryptionConfig {
+		for _, r := range cfg.Resources {
+			if strings.EqualFold(string(r), "secrets") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func eksVersionParts(version string) (int, int, bool) {
+	v := strings.TrimSpace(strings.TrimPrefix(version, "v"))
+	parts := strings.Split(v, ".")
+	if len(parts) < 2 {
+		return 0, 0, false
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, false
+	}
+	minorDigits := ""
+	for _, ch := range parts[1] {
+		if ch >= '0' && ch <= '9' {
+			minorDigits += string(ch)
+		} else {
+			break
+		}
+	}
+	if minorDigits == "" {
+		return 0, 0, false
+	}
+	minor, err := strconv.Atoi(minorDigits)
+	if err != nil {
+		return 0, 0, false
+	}
+	return major, minor, true
+}
+
+func eksVersionAtLeast(version, minVersion string) bool {
+	maj, min, ok := eksVersionParts(version)
+	if !ok {
+		return false
+	}
+	reqMaj, reqMin, ok := eksVersionParts(minVersion)
+	if !ok {
+		return false
+	}
+	if maj != reqMaj {
+		return maj > reqMaj
+	}
+	return min >= reqMin
+}
+
+func eksVersionInAllowedList(version string, allowed []string) bool {
+	for _, v := range allowed {
+		if strings.EqualFold(strings.TrimSpace(version), strings.TrimSpace(v)) {
+			return true
+		}
+	}
+	return false
+}
+
+func eksParseCSV(value string) []string {
+	items := strings.Split(value, ",")
+	out := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
+}
 
 func RegisterEKSChecks(d *awsdata.Data) {
 	// eks-cluster-logging-enabled and eks-cluster-log-enabled
@@ -21,15 +130,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 			}
 			var res []LoggingResource
 			for name, c := range clusters {
-				logging := false
-				if c.Logging != nil {
-					for _, l := range c.Logging.ClusterLogging {
-						if l.Enabled != nil && *l.Enabled {
-							logging = true
-							break
-						}
-					}
-				}
+				logging := eksAllControlPlaneLogsEnabled(c)
 				res = append(res, LoggingResource{ID: name, Logging: logging})
 			}
 			return res, nil
@@ -47,15 +148,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 			}
 			var res []LoggingResource
 			for name, c := range clusters {
-				logging := false
-				if c.Logging != nil {
-					for _, l := range c.Logging.ClusterLogging {
-						if l.Enabled != nil && *l.Enabled {
-							logging = true
-							break
-						}
-					}
-				}
+				logging := eksAllControlPlaneLogsEnabled(c)
 				res = append(res, LoggingResource{ID: name, Logging: logging})
 			}
 			return res, nil
@@ -95,7 +188,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 			}
 			var res []EncryptionResource
 			for name, c := range clusters {
-				encrypted := c.EncryptionConfig != nil && len(c.EncryptionConfig) > 0
+				encrypted := c.EncryptionConfig != nil && len(c.EncryptionConfig) > 0 && eksEncryptionConfigIncludesSecrets(c)
 				res = append(res, EncryptionResource{ID: name, Encrypted: encrypted})
 			}
 			return res, nil
@@ -113,7 +206,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 			}
 			var res []EncryptionResource
 			for name, c := range clusters {
-				encrypted := c.EncryptionConfig != nil && len(c.EncryptionConfig) > 0
+				encrypted := c.EncryptionConfig != nil && len(c.EncryptionConfig) > 0 && eksEncryptionConfigIncludesSecrets(c)
 				res = append(res, EncryptionResource{ID: name, Encrypted: encrypted})
 			}
 			return res, nil
@@ -181,10 +274,23 @@ func RegisterEKSChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			allowedVersions := eksParseCSV(os.Getenv("BPTOOLS_EKS_SUPPORTED_VERSIONS"))
+			minSupported := strings.TrimSpace(os.Getenv("BPTOOLS_EKS_MIN_SUPPORTED_VERSION"))
 			var res []ConfigResource
 			for name, c := range clusters {
-				ok := c.Version != nil && *c.Version != ""
-				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Version: %v", c.Version)})
+				if c.Version == nil || *c.Version == "" {
+					res = append(res, ConfigResource{ID: name, Passing: false, Detail: "Version missing"})
+					continue
+				}
+				ok := false
+				if len(allowedVersions) > 0 {
+					ok = eksVersionInAllowedList(*c.Version, allowedVersions)
+				} else if minSupported != "" {
+					ok = eksVersionAtLeast(*c.Version, minSupported)
+				} else {
+					ok = true
+				}
+				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Version: %s", *c.Version)})
 			}
 			return res, nil
 		},
@@ -199,10 +305,21 @@ func RegisterEKSChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			oldestSupported := strings.TrimSpace(os.Getenv("BPTOOLS_EKS_OLDEST_SUPPORTED_VERSION"))
+			if oldestSupported == "" {
+				oldestSupported = strings.TrimSpace(os.Getenv("BPTOOLS_EKS_MIN_SUPPORTED_VERSION"))
+			}
 			var res []ConfigResource
 			for name, c := range clusters {
-				ok := c.Version != nil && *c.Version != ""
-				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Version: %v", c.Version)})
+				if c.Version == nil || *c.Version == "" {
+					res = append(res, ConfigResource{ID: name, Passing: false, Detail: "Version missing"})
+					continue
+				}
+				ok := true
+				if oldestSupported != "" {
+					ok = eksVersionAtLeast(*c.Version, oldestSupported)
+				}
+				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Version: %s, oldest-supported: %s", *c.Version, oldestSupported)})
 			}
 			return res, nil
 		},

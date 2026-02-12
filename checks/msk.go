@@ -72,7 +72,13 @@ func RegisterMSKChecks(d *awsdata.Data) {
 			}
 			var res []LoggingResource
 			for arn, c := range connectors {
-				logging := c.LogDelivery != nil
+				logging := false
+				if c.LogDelivery != nil && c.LogDelivery.WorkerLogDelivery != nil {
+					w := c.LogDelivery.WorkerLogDelivery
+					logging = (w.CloudWatchLogs != nil && w.CloudWatchLogs.Enabled) ||
+						(w.Firehose != nil && w.Firehose.Enabled) ||
+						(w.S3 != nil && w.S3.Enabled)
+				}
 				res = append(res, LoggingResource{ID: arn, Logging: logging})
 			}
 			return res, nil
@@ -92,7 +98,8 @@ func RegisterMSKChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for _, c := range clusters {
 				id := mskID(c)
-				enabled := c.Provisioned != nil && c.Provisioned.EnhancedMonitoring != kafkatypes.EnhancedMonitoringDefault
+				enabled := c.Provisioned != nil && (c.Provisioned.EnhancedMonitoring == kafkatypes.EnhancedMonitoringPerTopicPerBroker ||
+					c.Provisioned.EnhancedMonitoring == kafkatypes.EnhancedMonitoringPerTopicPerPartition)
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -137,11 +144,10 @@ func RegisterMSKChecks(d *awsdata.Data) {
 			for _, c := range clusters {
 				id := mskID(c)
 				ok := true
-				if c.Provisioned != nil && c.Provisioned.BrokerNodeGroupInfo != nil && c.Provisioned.BrokerNodeGroupInfo.ConnectivityInfo != nil && c.Provisioned.BrokerNodeGroupInfo.ConnectivityInfo.PublicAccess != nil {
-					ok = c.Provisioned.BrokerNodeGroupInfo.ConnectivityInfo.PublicAccess.Type != nil &&
-						*c.Provisioned.BrokerNodeGroupInfo.ConnectivityInfo.PublicAccess.Type == "DISABLED"
+				if c.Provisioned != nil && c.Provisioned.ClientAuthentication != nil && c.Provisioned.ClientAuthentication.Unauthenticated != nil {
+					ok = c.Provisioned.ClientAuthentication.Unauthenticated.Enabled == nil || !*c.Provisioned.ClientAuthentication.Unauthenticated.Enabled
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Public access disabled"})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Unauthenticated client access disabled"})
 			}
 			return res, nil
 		},

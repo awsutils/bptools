@@ -1,6 +1,8 @@
 package checks
 
 import (
+	"strings"
+
 	"bptools/awsdata"
 	"bptools/checker"
 )
@@ -102,6 +104,9 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 			}
 			var res []TaggedResource
 			for _, l := range lists {
+				if route53ResolverFirewallDomainListIsAWSManaged(l.ManagedOwnerName) {
+					continue
+				}
 				id := "unknown"
 				if l.Arn != nil {
 					id = *l.Arn
@@ -189,4 +194,11 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
+}
+
+func route53ResolverFirewallDomainListIsAWSManaged(managedOwnerName *string) bool {
+	if managedOwnerName == nil {
+		return false
+	}
+	return strings.TrimSpace(*managedOwnerName) != ""
 }

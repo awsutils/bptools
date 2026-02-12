@@ -182,8 +182,14 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, dom := range domains {
 				id := *dom.DomainName
-				ok := dom.ClusterConfig != nil && dom.ClusterConfig.ZoneAwarenessEnabled != nil && *dom.ClusterConfig.ZoneAwarenessEnabled
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Zone awareness"})
+				ok := dom.ClusterConfig != nil &&
+					dom.ClusterConfig.ZoneAwarenessEnabled != nil && *dom.ClusterConfig.ZoneAwarenessEnabled &&
+					dom.ClusterConfig.InstanceCount != nil && *dom.ClusterConfig.InstanceCount >= 3
+				count := int32(0)
+				if dom.ClusterConfig != nil && dom.ClusterConfig.InstanceCount != nil {
+					count = *dom.ClusterConfig.InstanceCount
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Zone awareness enabled with instance count: %d", count)})
 			}
 			return res, nil
 		},

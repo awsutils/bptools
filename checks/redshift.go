@@ -6,9 +6,11 @@ import (
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	rsstypes "github.com/aws/aws-sdk-go-v2/service/redshiftserverless/types"
 )
 
-var redshiftDefaultAdmins = map[string]bool{"admin": true, "root": true, "master": true}
+var redshiftDefaultAdmins = map[string]bool{"admin": true, "root": true, "master": true, "awsuser": true}
 var redshiftDefaultDBs = map[string]bool{"dev": true, "default": true, "test": true, "postgres": true}
 
 func RegisterRedshiftChecks(d *awsdata.Data) {
@@ -23,11 +25,20 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			logging, err := d.RedshiftLoggingStatus.Get()
+			if err != nil {
+				return nil, err
+			}
 			var res []ConfigResource
 			for _, c := range clusters {
 				id := *c.ClusterIdentifier
-				ok := c.NodeType != nil && *c.NodeType != ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("NodeType: %v", c.NodeType)})
+				encrypted := c.Encrypted != nil && *c.Encrypted
+				logged := false
+				if ls, ok := logging[id]; ok {
+					logged = ls.LoggingEnabled != nil && *ls.LoggingEnabled
+				}
+				ok := encrypted && logged
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Encrypted: %v, AuditLogging: %v", encrypted, logged)})
 			}
 			return res, nil
 		},
@@ -131,8 +142,15 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 				if g.ClusterSubnetGroupName != nil {
 					id = *g.ClusterSubnetGroupName
 				}
-				ok := len(g.Subnets) > 1
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Subnet count: %d", len(g.Subnets))})
+				azs := map[string]struct{}{}
+				for _, subnet := range g.Subnets {
+					if subnet.SubnetAvailabilityZone == nil || subnet.SubnetAvailabilityZone.Name == nil || *subnet.SubnetAvailabilityZone.Name == "" {
+						continue
+					}
+					azs[*subnet.SubnetAvailabilityZone.Name] = struct{}{}
+				}
+				ok := len(azs) >= 2
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Distinct subnet AZ count: %d", len(azs))})
 			}
 			return res, nil
 		},
@@ -152,8 +170,8 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, c := range clusters {
 				id := *c.ClusterIdentifier
-				ok := c.PreferredMaintenanceWindow != nil && *c.PreferredMaintenanceWindow != ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("PreferredMaintenanceWindow: %v", c.PreferredMaintenanceWindow)})
+				ok := c.AllowVersionUpgrade != nil && *c.AllowVersionUpgrade
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AllowVersionUpgrade: %v", c.AllowVersionUpgrade)})
 			}
 			return res, nil
 		},
@@ -319,38 +337,51 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			m := make(map[string]bool)
-			for _, sg := range sgs {
-				if sg.GroupId == nil {
-					continue
-				}
-				unrestricted := false
-				for _, p := range sg.IpPermissions {
-					if p.FromPort != nil && p.ToPort != nil && *p.FromPort <= 5439 && *p.ToPort >= 5439 {
-						for _, r := range p.IpRanges {
-							if r.CidrIp != nil && *r.CidrIp == "0.0.0.0/0" {
-								unrestricted = true
-							}
-						}
-						for _, r := range p.Ipv6Ranges {
-							if r.CidrIpv6 != nil && *r.CidrIpv6 == "::/0" {
-								unrestricted = true
-							}
-						}
-					}
-				}
-				m[*sg.GroupId] = unrestricted
-			}
 			var res []ConfigResource
 			for _, c := range clusters {
 				id := *c.ClusterIdentifier
+				port := int32(5439)
+				if c.Endpoint != nil && c.Endpoint.Port != nil && *c.Endpoint.Port > 0 {
+					port = *c.Endpoint.Port
+				}
 				bad := false
 				for _, v := range c.VpcSecurityGroups {
-					if v.VpcSecurityGroupId != nil && m[*v.VpcSecurityGroupId] {
-						bad = true
+					if v.VpcSecurityGroupId == nil {
+						continue
+					}
+					for _, sg := range sgs {
+						if sg.GroupId == nil || *sg.GroupId != *v.VpcSecurityGroupId {
+							continue
+						}
+						for _, p := range sg.IpPermissions {
+							if p.FromPort == nil || p.ToPort == nil || *p.FromPort > port || *p.ToPort < port {
+								continue
+							}
+							for _, r := range p.IpRanges {
+								if r.CidrIp != nil && *r.CidrIp == "0.0.0.0/0" {
+									bad = true
+									break
+								}
+							}
+							for _, r := range p.Ipv6Ranges {
+								if r.CidrIpv6 != nil && *r.CidrIpv6 == "::/0" {
+									bad = true
+									break
+								}
+							}
+							if bad {
+								break
+							}
+						}
+						if bad {
+							break
+						}
+					}
+					if bad {
+						break
 					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: !bad, Detail: "Unrestricted SG"})
+				res = append(res, ConfigResource{ID: id, Passing: !bad, Detail: fmt.Sprintf("No unrestricted access on cluster port %d", port)})
 			}
 			return res, nil
 		},
@@ -433,7 +464,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 			var res []LoggingResource
 			for _, ns := range namespaces {
 				id := *ns.NamespaceName
-				logging := len(ns.LogExports) > 0
+				logging := redshiftServerlessHasRequiredLogExports(ns.LogExports)
 				res = append(res, LoggingResource{ID: id, Logging: logging})
 			}
 			return res, nil
@@ -454,8 +485,16 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, wg := range wgs {
 				id := *wg.WorkgroupName
-				ok := wg.PubliclyAccessible == nil || !*wg.PubliclyAccessible
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("PubliclyAccessible: %v", wg.PubliclyAccessible)})
+				requireSSL := false
+				for _, cp := range wg.ConfigParameters {
+					if cp.ParameterKey == nil || !strings.EqualFold(*cp.ParameterKey, "require_ssl") || cp.ParameterValue == nil {
+						continue
+					}
+					val := strings.TrimSpace(strings.ToLower(*cp.ParameterValue))
+					requireSSL = val == "true" || val == "1" || val == "on"
+					break
+				}
+				res = append(res, ConfigResource{ID: id, Passing: requireSSL, Detail: fmt.Sprintf("require_ssl: %v", requireSSL)})
 			}
 			return res, nil
 		},
@@ -492,10 +531,26 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, wg := range wgs {
 				id := *wg.WorkgroupName
-				ok := len(wg.SubnetIds) > 0
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Subnet count: %d", len(wg.SubnetIds))})
+				ok := wg.EnhancedVpcRouting != nil && *wg.EnhancedVpcRouting
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("EnhancedVpcRouting: %v", wg.EnhancedVpcRouting)})
 			}
 			return res, nil
 		},
 	))
+}
+
+func redshiftServerlessHasRequiredLogExports(exports []rsstypes.LogExport) bool {
+	required := map[string]bool{"connectionlog": false, "userlog": false}
+	for _, exp := range exports {
+		name := strings.ToLower(strings.TrimSpace(string(exp)))
+		if _, ok := required[name]; ok {
+			required[name] = true
+		}
+	}
+	for _, ok := range required {
+		if !ok {
+			return false
+		}
+	}
+	return true
 }

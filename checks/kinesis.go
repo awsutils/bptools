@@ -1,6 +1,8 @@
 package checks
 
 import (
+	"fmt"
+
 	"bptools/awsdata"
 	"bptools/checker"
 )
@@ -42,8 +44,8 @@ func RegisterKinesisChecks(d *awsdata.Data) {
 				if desc.StreamDescription != nil && desc.StreamDescription.RetentionPeriodHours != nil {
 					hours = *desc.StreamDescription.RetentionPeriodHours
 				}
-				ok := hours > 24
-				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: "Retention > 24h"})
+				ok := hours >= 168
+				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Retention hours: %d", hours)})
 			}
 			return res, nil
 		},

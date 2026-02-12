@@ -1,10 +1,14 @@
 package checks
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	"github.com/aws/aws-sdk-go-v2/service/efs"
 )
 
 func RegisterEFSChecks(d *awsdata.Data) {
@@ -47,7 +51,14 @@ func RegisterEFSChecks(d *awsdata.Data) {
 				if fs.FileSystemId != nil {
 					id = *fs.FileSystemId
 				}
-				res = append(res, EncryptionResource{ID: id, Encrypted: true})
+				encrypted := false
+				if fs.FileSystemId != nil {
+					out, err := d.Clients.EFS.DescribeFileSystemPolicy(d.Ctx, &efs.DescribeFileSystemPolicyInput{FileSystemId: fs.FileSystemId})
+					if err == nil && out.Policy != nil {
+						encrypted = efsPolicyEnforcesTLS(*out.Policy)
+					}
+				}
+				res = append(res, EncryptionResource{ID: id, Encrypted: encrypted})
 			}
 			return res, nil
 		},
@@ -124,7 +135,10 @@ func RegisterEFSChecks(d *awsdata.Data) {
 				if ap.AccessPointId != nil {
 					id = *ap.AccessPointId
 				}
-				ok := ap.RootDirectory != nil && ap.RootDirectory.Path != nil && *ap.RootDirectory.Path != ""
+				ok := ap.RootDirectory != nil &&
+					ap.RootDirectory.Path != nil &&
+					*ap.RootDirectory.Path != "" &&
+					*ap.RootDirectory.Path != "/"
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "RootDirectory configured"})
 			}
 			return res, nil
@@ -267,8 +281,8 @@ func RegisterEFSChecks(d *awsdata.Data) {
 				if fs.FileSystemArn != nil {
 					arn = *fs.FileSystemArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery point exists"})
+				ok, detail := backupRecencyResult(rps[arn], backupRecoveryPointRecencyWindow)
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -279,10 +293,6 @@ func RegisterEFSChecks(d *awsdata.Data) {
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			rps, err := d.BackupRecoveryPointsByResource.Get()
-			if err != nil {
-				return nil, err
-			}
 			fss, err := d.EFSFileSystems.Get()
 			if err != nil {
 				return nil, err
@@ -293,8 +303,11 @@ func RegisterEFSChecks(d *awsdata.Data) {
 				if fs.FileSystemArn != nil {
 					arn = *fs.FileSystemArn
 				}
-				ok := len(rps[arn]) > 0
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "Recovery points available"})
+				ok, detail, err := restoreTimeTargetResult(d, arn, backupRestoreTimeTargetWindow)
+				if err != nil {
+					return nil, err
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -331,4 +344,42 @@ func RegisterEFSChecks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
+}
+
+func efsPolicyEnforcesTLS(policy string) bool {
+	type statement struct {
+		Effect    string         `json:"Effect"`
+		Condition map[string]any `json:"Condition"`
+	}
+	type document struct {
+		Statement []statement `json:"Statement"`
+	}
+
+	var doc document
+	if err := json.Unmarshal([]byte(policy), &doc); err != nil {
+		return false
+	}
+	for _, st := range doc.Statement {
+		if !strings.EqualFold(st.Effect, "Deny") {
+			continue
+		}
+		for op, conditionValues := range st.Condition {
+			if !strings.EqualFold(op, "Bool") {
+				continue
+			}
+			m, ok := conditionValues.(map[string]any)
+			if !ok {
+				continue
+			}
+			for key, value := range m {
+				if strings.EqualFold(key, "aws:SecureTransport") {
+					s := fmt.Sprint(value)
+					if strings.EqualFold(s, "false") {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }

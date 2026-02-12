@@ -5,6 +5,9 @@ import (
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	"github.com/aws/aws-sdk-go-v2/service/waf"
+	"github.com/aws/aws-sdk-go-v2/service/wafregional"
 )
 
 // RegisterWAFChecks registers WAF checks (classic, regional, v2).
@@ -48,8 +51,17 @@ func RegisterWAFChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for id, rg := range rgs {
-				ok := rg.RuleGroupId != nil
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Rule group present"})
+				if rg.RuleGroupId == nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Missing RuleGroupId"})
+					continue
+				}
+				out, err := d.Clients.WAF.ListActivatedRulesInRuleGroup(d.Ctx, &waf.ListActivatedRulesInRuleGroupInput{RuleGroupId: rg.RuleGroupId})
+				if err != nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: fmt.Sprintf("GetActivatedRulesInRuleGroup failed: %v", err)})
+					continue
+				}
+				ruleCount := len(out.ActivatedRules)
+				res = append(res, ConfigResource{ID: id, Passing: ruleCount > 0, Detail: fmt.Sprintf("Activated rules: %d", ruleCount)})
 			}
 			return res, nil
 		},
@@ -105,8 +117,17 @@ func RegisterWAFChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for id, rg := range rgs {
-				ok := rg.RuleGroupId != nil
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Rule group present"})
+				if rg.RuleGroupId == nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Missing RuleGroupId"})
+					continue
+				}
+				out, err := d.Clients.WAFRegional.ListActivatedRulesInRuleGroup(d.Ctx, &wafregional.ListActivatedRulesInRuleGroupInput{RuleGroupId: rg.RuleGroupId})
+				if err != nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: fmt.Sprintf("GetActivatedRulesInRuleGroup failed: %v", err)})
+					continue
+				}
+				ruleCount := len(out.ActivatedRules)
+				res = append(res, ConfigResource{ID: id, Passing: ruleCount > 0, Detail: fmt.Sprintf("Activated rules: %d", ruleCount)})
 			}
 			return res, nil
 		},
@@ -177,28 +198,33 @@ func RegisterWAFChecks(d *awsdata.Data) {
 		},
 	))
 
-	checker.Register(LoggingCheck(
+	checker.Register(ConfigCheck(
 		"wafv2-rulegroup-logging-enabled",
 		"This rule checks logging is enabled for wafv2 rulegroup.",
 		"wafv2",
 		d,
-		func(d *awsdata.Data) ([]LoggingResource, error) {
+		func(d *awsdata.Data) ([]ConfigResource, error) {
 			rgs, err := d.WAFv2RuleGroups.Get()
 			if err != nil {
 				return nil, err
 			}
-			logs, err := d.WAFv2LoggingConfigs.Get()
+			details, err := d.WAFv2RuleGroupDetails.Get()
 			if err != nil {
 				return nil, err
 			}
-			var res []LoggingResource
+			var res []ConfigResource
 			for _, rg := range rgs {
 				id := "unknown"
 				if rg.ARN != nil {
 					id = *rg.ARN
 				}
-				_, ok := logs[id]
-				res = append(res, LoggingResource{ID: id, Logging: ok})
+				detail, ok := details[id]
+				if !ok {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Rule group details not found"})
+					continue
+				}
+				metricsEnabled := detail.VisibilityConfig != nil && detail.VisibilityConfig.CloudWatchMetricsEnabled
+				res = append(res, ConfigResource{ID: id, Passing: metricsEnabled, Detail: fmt.Sprintf("CloudWatchMetricsEnabled: %v", metricsEnabled)})
 			}
 			return res, nil
 		},

@@ -1,8 +1,12 @@
 package checks
 
 import (
+	"fmt"
+
 	"bptools/awsdata"
 	"bptools/checker"
+
+	"github.com/aws/aws-sdk-go-v2/service/athena"
 )
 
 func RegisterAthenaChecks(d *awsdata.Data) {
@@ -36,17 +40,38 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
-			stmts, err := d.AthenaPreparedStatements.Get()
+			workgroups, err := d.AthenaWorkgroups.Get()
 			if err != nil {
 				return nil, err
 			}
 			var res []DescriptionResource
-			for _, s := range stmts {
-				id := "unknown"
-				if s.StatementName != nil {
-					id = *s.StatementName
+			for _, wg := range workgroups {
+				if wg.Name == nil {
+					continue
 				}
-				res = append(res, DescriptionResource{ID: id, Description: nil})
+				listOut, err := d.Clients.Athena.ListPreparedStatements(d.Ctx, &athena.ListPreparedStatementsInput{WorkGroup: wg.Name})
+				if err != nil {
+					continue
+				}
+				for _, stmt := range listOut.PreparedStatements {
+					id := fmt.Sprintf("%s:unknown", *wg.Name)
+					if stmt.StatementName != nil {
+						id = fmt.Sprintf("%s:%s", *wg.Name, *stmt.StatementName)
+					}
+					if stmt.StatementName == nil {
+						res = append(res, DescriptionResource{ID: id, Description: nil})
+						continue
+					}
+					getOut, err := d.Clients.Athena.GetPreparedStatement(d.Ctx, &athena.GetPreparedStatementInput{
+						WorkGroup:     wg.Name,
+						StatementName: stmt.StatementName,
+					})
+					if err != nil || getOut.PreparedStatement == nil {
+						res = append(res, DescriptionResource{ID: id, Description: nil})
+						continue
+					}
+					res = append(res, DescriptionResource{ID: id, Description: getOut.PreparedStatement.Description})
+				}
 			}
 			return res, nil
 		},

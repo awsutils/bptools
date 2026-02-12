@@ -2,6 +2,9 @@ package checks
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -27,7 +30,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 				if e.ComputeEnvironmentArn != nil {
 					id = *e.ComputeEnvironmentArn
 				}
-				enabled := e.State == batchtypes.CEStateEnabled && e.Status == batchtypes.CEStatusValid
+				enabled := e.State == batchtypes.CEStateEnabled
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -151,8 +154,13 @@ func RegisterBatchChecks(d *awsdata.Data) {
 				if e.ComputeEnvironmentArn != nil {
 					id = *e.ComputeEnvironmentArn
 				}
-				ok := e.Type != batchtypes.CETypeManaged || (e.ComputeResources != nil && e.ComputeResources.LaunchTemplate != nil)
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "LaunchTemplate configured"})
+				ok := false
+				if e.ComputeResources != nil && e.ComputeResources.LaunchTemplate != nil {
+					lt := e.ComputeResources.LaunchTemplate
+					ok = (lt.LaunchTemplateId != nil && strings.TrimSpace(*lt.LaunchTemplateId) != "") ||
+						(lt.LaunchTemplateName != nil && strings.TrimSpace(*lt.LaunchTemplateName) != "")
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Type: %s, LaunchTemplate reference configured: %v", e.Type, ok)})
 			}
 			return res, nil
 		},
@@ -170,6 +178,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 				return nil, err
 			}
 			var res []ConfigResource
+			allowedStrategies := batchAllowedAllocationStrategies()
 			for _, e := range envs {
 				id := "unknown"
 				if e.ComputeEnvironmentArn != nil {
@@ -179,8 +188,8 @@ func RegisterBatchChecks(d *awsdata.Data) {
 					res = append(res, ConfigResource{ID: id, Passing: true, Detail: "Not managed"})
 					continue
 				}
-				alloc := e.ComputeResources.AllocationStrategy
-				ok := alloc != "BEST_FIT"
+				alloc := strings.ToUpper(strings.TrimSpace(string(e.ComputeResources.AllocationStrategy)))
+				ok := allowedStrategies[alloc]
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("AllocationStrategy: %s", alloc)})
 			}
 			return res, nil
@@ -226,6 +235,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 				return nil, err
 			}
 			var res []ConfigResource
+			maxBid := batchMaxBidPercentage()
 			for _, e := range envs {
 				id := "unknown"
 				if e.ComputeEnvironmentArn != nil {
@@ -239,8 +249,8 @@ func RegisterBatchChecks(d *awsdata.Data) {
 				if e.ComputeResources.BidPercentage != nil {
 					bid = *e.ComputeResources.BidPercentage
 				}
-				ok := bid > 0 && bid <= 100
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("BidPercentage: %d", bid)})
+				ok := bid > 0 && bid <= maxBid
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("BidPercentage: %d, max allowed: %d", bid, maxBid)})
 			}
 			return res, nil
 		},
@@ -271,4 +281,43 @@ func RegisterBatchChecks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
+}
+
+func batchAllowedAllocationStrategies() map[string]bool {
+	raw := strings.TrimSpace(os.Getenv("BPTOOLS_BATCH_ALLOWED_ALLOCATION_STRATEGIES"))
+	values := []string{
+		string(batchtypes.CRAllocationStrategyBestFitProgressive),
+		string(batchtypes.CRAllocationStrategySpotCapacityOptimized),
+		string(batchtypes.CRAllocationStrategySpotPriceCapacityOptimized),
+	}
+	if raw != "" {
+		parts := strings.Split(raw, ",")
+		values = make([]string, 0, len(parts))
+		for _, part := range parts {
+			item := strings.ToUpper(strings.TrimSpace(part))
+			if item != "" {
+				values = append(values, item)
+			}
+		}
+	}
+	out := make(map[string]bool, len(values))
+	for _, value := range values {
+		out[strings.ToUpper(strings.TrimSpace(value))] = true
+	}
+	return out
+}
+
+func batchMaxBidPercentage() int32 {
+	raw := strings.TrimSpace(os.Getenv("BPTOOLS_BATCH_MAX_BID_PERCENTAGE"))
+	if raw == "" {
+		return 100
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil || value <= 0 {
+		return 100
+	}
+	if value > 100 {
+		value = 100
+	}
+	return int32(value)
 }

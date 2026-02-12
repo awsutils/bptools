@@ -1,6 +1,8 @@
 package checks
 
 import (
+	"fmt"
+	"net/url"
 	"strings"
 
 	"bptools/awsdata"
@@ -22,7 +24,16 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 			var res []EncryptionResource
 			for _, p := range projects {
 				id := projectID(p.Name)
-				encrypted := p.Artifacts != nil && (p.Artifacts.EncryptionDisabled == nil || !*p.Artifacts.EncryptionDisabled)
+				encrypted := true
+				if p.Artifacts != nil && p.Artifacts.EncryptionDisabled != nil && *p.Artifacts.EncryptionDisabled {
+					encrypted = false
+				}
+				for _, art := range p.SecondaryArtifacts {
+					if art.EncryptionDisabled != nil && *art.EncryptionDisabled {
+						encrypted = false
+						break
+					}
+				}
 				res = append(res, EncryptionResource{ID: id, Encrypted: encrypted})
 			}
 			return res, nil
@@ -145,8 +156,35 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, p := range projects {
 				id := projectID(p.Name)
-				ok := p.Source != nil && p.Source.Location != nil && *p.Source.Location != ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Source location configured"})
+				locations := map[string]string{}
+				if p.Source != nil && p.Source.Location != nil {
+					locations["primary"] = strings.TrimSpace(*p.Source.Location)
+				}
+				for idx, source := range p.SecondarySources {
+					if source.Location == nil {
+						continue
+					}
+					key := fmt.Sprintf("secondary[%d]", idx)
+					locations[key] = strings.TrimSpace(*source.Location)
+				}
+				if len(locations) == 0 {
+					res = append(res, ConfigResource{ID: id, Passing: true, Detail: "No source location URL configured"})
+					continue
+				}
+				ok := true
+				detail := "No embedded URL credentials"
+				for sourceKey, location := range locations {
+					if location == "" {
+						continue
+					}
+					sourceOK, sourceDetail := codeBuildSourceURLHasNoEmbeddedCredentials(location)
+					if !sourceOK {
+						ok = false
+						detail = fmt.Sprintf("%s: %s", sourceKey, sourceDetail)
+						break
+					}
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -202,4 +240,23 @@ func projectID(name *string) string {
 		return *name
 	}
 	return "unknown"
+}
+
+func codeBuildSourceURLHasNoEmbeddedCredentials(location string) (bool, string) {
+	parsed, err := url.Parse(location)
+	if err != nil {
+		trimmed := strings.TrimSpace(location)
+		if strings.Contains(trimmed, "@") && strings.Contains(trimmed, "://") {
+			return false, "Source location appears to include embedded credentials"
+		}
+		return true, "Source location is not a URL"
+	}
+	if parsed.User != nil {
+		username := parsed.User.Username()
+		if username == "" {
+			username = "<empty>"
+		}
+		return false, fmt.Sprintf("Embedded URL credentials detected for user %s", username)
+	}
+	return true, "No embedded URL credentials"
 }

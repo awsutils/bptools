@@ -3,6 +3,10 @@ package checks
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path"
+	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -116,11 +120,28 @@ func RegisterS3Checks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for _, b := range buckets {
-				out, err := d.Clients.S3.GetPublicAccessBlock(d.Ctx, &s3.GetPublicAccessBlockInput{Bucket: b.Name})
-				blocked := err == nil && out.PublicAccessBlockConfiguration != nil &&
-					out.PublicAccessBlockConfiguration.BlockPublicAcls != nil && *out.PublicAccessBlockConfiguration.BlockPublicAcls &&
-					out.PublicAccessBlockConfiguration.BlockPublicPolicy != nil && *out.PublicAccessBlockConfiguration.BlockPublicPolicy
-				res = append(res, ConfigResource{ID: bucketName(b), Passing: blocked, Detail: fmt.Sprintf("Public access blocked: %v", blocked)})
+				fullyBlocked := false
+				blockOut, err := d.Clients.S3.GetPublicAccessBlock(d.Ctx, &s3.GetPublicAccessBlockInput{Bucket: b.Name})
+				if err == nil && blockOut.PublicAccessBlockConfiguration != nil {
+					cfg := blockOut.PublicAccessBlockConfiguration
+					fullyBlocked = cfg.BlockPublicAcls != nil && *cfg.BlockPublicAcls &&
+						cfg.IgnorePublicAcls != nil && *cfg.IgnorePublicAcls &&
+						cfg.BlockPublicPolicy != nil && *cfg.BlockPublicPolicy &&
+						cfg.RestrictPublicBuckets != nil && *cfg.RestrictPublicBuckets
+				}
+				if fullyBlocked {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: true, Detail: "All public access block settings enabled"})
+					continue
+				}
+				aclOut, aclErr := d.Clients.S3.GetBucketAcl(d.Ctx, &s3.GetBucketAclInput{Bucket: b.Name})
+				publicWriteACL := aclErr == nil && s3ACLAllowsPublicWrite(aclOut)
+				publicWritePolicy := false
+				polOut, polErr := d.Clients.S3.GetBucketPolicy(d.Ctx, &s3.GetBucketPolicyInput{Bucket: b.Name})
+				if polErr == nil && polOut.Policy != nil {
+					publicWritePolicy = s3PolicyAllowsPublicWrite(*polOut.Policy)
+				}
+				publicWrite := publicWriteACL || publicWritePolicy
+				res = append(res, ConfigResource{ID: bucketName(b), Passing: !publicWrite, Detail: fmt.Sprintf("Public write via ACL/policy: %v", publicWrite)})
 			}
 			return res, nil
 		}))
@@ -154,8 +175,12 @@ func RegisterS3Checks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketPolicy(d.Ctx, &s3.GetBucketPolicyInput{Bucket: b.Name})
-				hasSSL := err == nil && out.Policy != nil
-				res = append(res, ConfigResource{ID: bucketName(b), Passing: hasSSL, Detail: "SSL policy check"})
+				if err != nil || out.Policy == nil {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: false, Detail: "No bucket policy"})
+					continue
+				}
+				hasSSL := s3PolicyDeniesInsecureTransport(*out.Policy)
+				res = append(res, ConfigResource{ID: bucketName(b), Passing: hasSSL, Detail: fmt.Sprintf("Deny insecure transport statement found: %v", hasSSL)})
 			}
 			return res, nil
 		}))
@@ -173,6 +198,32 @@ func RegisterS3Checks(d *awsdata.Data) {
 				for _, b := range buckets {
 					out, err := d.Clients.S3.GetBucketReplication(d.Ctx, &s3.GetBucketReplicationInput{Bucket: b.Name})
 					enabled := err == nil && out.ReplicationConfiguration != nil && len(out.ReplicationConfiguration.Rules) > 0
+					if enabled && cid == "s3-bucket-cross-region-replication-enabled" {
+						sourceRegion, srcErr := s3BucketRegion(d, b.Name)
+						if srcErr != nil || sourceRegion == "" {
+							enabled = false
+						} else {
+							crossRegion := false
+							for _, rule := range out.ReplicationConfiguration.Rules {
+								if rule.Status != s3types.ReplicationRuleStatusEnabled || rule.Destination == nil || rule.Destination.Bucket == nil {
+									continue
+								}
+								destBucket := s3DestinationBucketName(*rule.Destination.Bucket)
+								if destBucket == "" {
+									continue
+								}
+								destRegion, destErr := s3BucketRegion(d, &destBucket)
+								if destErr != nil || destRegion == "" {
+									continue
+								}
+								if !strings.EqualFold(sourceRegion, destRegion) {
+									crossRegion = true
+									break
+								}
+							}
+							enabled = crossRegion
+						}
+					}
 					res = append(res, EnabledResource{ID: bucketName(b), Enabled: enabled})
 				}
 				return res, nil
@@ -221,15 +272,12 @@ func RegisterS3Checks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, b := range buckets {
 				out, err := d.Clients.S3.GetBucketAcl(d.Ctx, &s3.GetBucketAclInput{Bucket: b.Name})
-				private := true
-				if err == nil {
-					for _, g := range out.Grants {
-						if g.Grantee != nil && g.Grantee.URI != nil && (*g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AllUsers" || *g.Grantee.URI == "http://acs.amazonaws.com/groups/global/AuthenticatedUsers") {
-							private = false
-						}
-					}
+				if err != nil {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: false, Detail: "Unable to read bucket ACL"})
+					continue
 				}
-				res = append(res, ConfigResource{ID: bucketName(b), Passing: private, Detail: fmt.Sprintf("ACL private: %v", private)})
+				aclProhibited := s3OnlyOwnerHasACL(out)
+				res = append(res, ConfigResource{ID: bucketName(b), Passing: aclProhibited, Detail: fmt.Sprintf("Only owner ACL grants: %v", aclProhibited)})
 			}
 			return res, nil
 		}))
@@ -374,11 +422,22 @@ func RegisterS3Checks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			controlPolicy := strings.TrimSpace(os.Getenv("BPTOOLS_S3_CONTROL_POLICY_JSON"))
+			if controlPolicy == "" {
+				return []ConfigResource{{ID: "account", Passing: true, Detail: "Missing control policy env var; default not-applicable behavior"}}, nil
+			}
+			if _, err := s3PolicyStatements(controlPolicy); err != nil {
+				return []ConfigResource{{ID: "account", Passing: false, Detail: "Invalid control policy document in BPTOOLS_S3_CONTROL_POLICY_JSON"}}, nil
+			}
 			var res []ConfigResource
 			for _, b := range buckets {
-				out, err := d.Clients.S3.GetBucketPolicyStatus(d.Ctx, &s3.GetBucketPolicyStatusInput{Bucket: b.Name})
-				public := err == nil && out.PolicyStatus != nil && out.PolicyStatus.IsPublic != nil && *out.PolicyStatus.IsPublic
-				res = append(res, ConfigResource{ID: bucketName(b), Passing: !public, Detail: fmt.Sprintf("Policy public: %v", public)})
+				out, err := d.Clients.S3.GetBucketPolicy(d.Ctx, &s3.GetBucketPolicyInput{Bucket: b.Name})
+				if err != nil || out.Policy == nil {
+					res = append(res, ConfigResource{ID: bucketName(b), Passing: true, Detail: "No bucket policy"})
+					continue
+				}
+				ok, detail := s3PolicyNotMorePermissive(*out.Policy, controlPolicy)
+				res = append(res, ConfigResource{ID: bucketName(b), Passing: ok, Detail: detail})
 			}
 			return res, nil
 		}))
@@ -584,7 +643,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			_, lastBackup, _, err := loadBackupState()
+			rps, err := d.BackupRecoveryPointsByResource.Get()
 			if err != nil {
 				return nil, err
 			}
@@ -592,11 +651,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			for _, b := range buckets {
 				id := bucketName(b)
 				arn := "arn:aws:s3:::" + id
-				t, ok := lastBackup[arn]
-				detail := "No recovery point found"
-				if ok {
-					detail = fmt.Sprintf("Last backup: %s", t.Format(time.RFC3339))
-				}
+				ok, detail := backupRecencyResult(rps[arn], backupRecoveryPointRecencyWindow)
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
@@ -608,22 +663,15 @@ func RegisterS3Checks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
-			_, lastBackup, _, err := loadBackupState()
-			if err != nil {
-				return nil, err
-			}
-			target := 24 * time.Hour
 			var res []ConfigResource
 			for _, b := range buckets {
 				id := bucketName(b)
 				arn := "arn:aws:s3:::" + id
-				t, ok := lastBackup[arn]
-				passing := ok && time.Since(t) <= target
-				detail := "No recent backup found"
-				if ok {
-					detail = fmt.Sprintf("Backup age: %s", time.Since(t).Round(time.Minute))
+				ok, detail, err := restoreTimeTargetResult(d, arn, backupRestoreTimeTargetWindow)
+				if err != nil {
+					return nil, err
 				}
-				res = append(res, ConfigResource{ID: id, Passing: passing, Detail: detail})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		}))
@@ -646,4 +694,387 @@ func RegisterS3Checks(d *awsdata.Data) {
 			}
 			return res, nil
 		}))
+}
+
+func s3DestinationBucketName(destination string) string {
+	value := strings.TrimSpace(destination)
+	if value == "" {
+		return ""
+	}
+	const prefix = "arn:aws:s3:::"
+	if strings.HasPrefix(strings.ToLower(value), prefix) {
+		return strings.TrimPrefix(value, prefix)
+	}
+	return value
+}
+
+func s3BucketRegion(d *awsdata.Data, bucket *string) (string, error) {
+	if bucket == nil || strings.TrimSpace(*bucket) == "" {
+		return "", fmt.Errorf("missing bucket")
+	}
+	out, err := d.Clients.S3.GetBucketLocation(d.Ctx, &s3.GetBucketLocationInput{Bucket: bucket})
+	if err != nil {
+		return "", err
+	}
+	location := strings.TrimSpace(string(out.LocationConstraint))
+	if location == "" {
+		return "us-east-1", nil
+	}
+	if strings.EqualFold(location, "EU") {
+		return "eu-west-1", nil
+	}
+	return strings.ToLower(location), nil
+}
+
+type s3PolicyStatement struct {
+	Effect    string         `json:"Effect"`
+	Action    interface{}    `json:"Action"`
+	Resource  interface{}    `json:"Resource"`
+	Principal interface{}    `json:"Principal"`
+	Condition map[string]any `json:"Condition"`
+}
+
+func s3PolicyStatements(policy string) ([]s3PolicyStatement, error) {
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(policy), &raw); err != nil {
+		return nil, err
+	}
+	statementRaw, ok := raw["Statement"]
+	if !ok {
+		return nil, nil
+	}
+	var single s3PolicyStatement
+	if err := json.Unmarshal(statementRaw, &single); err == nil && (single.Effect != "" || single.Action != nil || single.Principal != nil || single.Condition != nil) {
+		return []s3PolicyStatement{single}, nil
+	}
+	var many []s3PolicyStatement
+	if err := json.Unmarshal(statementRaw, &many); err != nil {
+		return nil, err
+	}
+	return many, nil
+}
+
+func s3PolicyDeniesInsecureTransport(policy string) bool {
+	statements, err := s3PolicyStatements(policy)
+	if err != nil {
+		return false
+	}
+	for _, st := range statements {
+		if !strings.EqualFold(st.Effect, "Deny") || st.Condition == nil {
+			continue
+		}
+		for conditionType, conditionValues := range st.Condition {
+			if !strings.EqualFold(conditionType, "Bool") {
+				continue
+			}
+			m, ok := conditionValues.(map[string]any)
+			if !ok {
+				continue
+			}
+			for key, value := range m {
+				if strings.EqualFold(key, "aws:SecureTransport") && strings.EqualFold(fmt.Sprint(value), "false") {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func s3ActionStrings(action interface{}) []string {
+	switch a := action.(type) {
+	case string:
+		return []string{a}
+	case []interface{}:
+		var out []string
+		for _, v := range a {
+			if s, ok := v.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func s3ResourceStrings(resource interface{}) []string {
+	switch r := resource.(type) {
+	case string:
+		return []string{r}
+	case []interface{}:
+		var out []string
+		for _, value := range r {
+			if s, ok := value.(string); ok {
+				out = append(out, s)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+func s3PrincipalIsPublic(principal interface{}) bool {
+	switch p := principal.(type) {
+	case string:
+		return p == "*"
+	case map[string]interface{}:
+		for _, v := range p {
+			switch t := v.(type) {
+			case string:
+				if t == "*" {
+					return true
+				}
+			case []interface{}:
+				for _, item := range t {
+					if s, ok := item.(string); ok && s == "*" {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+func s3PrincipalValues(principal interface{}) []string {
+	var values []string
+	switch p := principal.(type) {
+	case nil:
+		return nil
+	case string:
+		values = append(values, p)
+	case []interface{}:
+		for _, value := range p {
+			if s, ok := value.(string); ok {
+				values = append(values, s)
+			}
+		}
+	case map[string]interface{}:
+		keys := make([]string, 0, len(p))
+		for key := range p {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			values = append(values, s3PrincipalValues(p[key])...)
+		}
+	}
+	out := make([]string, 0, len(values))
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		normalized := strings.TrimSpace(strings.ToLower(value))
+		if normalized == "" {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func s3PolicyNotMorePermissive(bucketPolicy, controlPolicy string) (bool, string) {
+	bucketStatements, err := s3PolicyStatements(bucketPolicy)
+	if err != nil {
+		return false, "Invalid bucket policy document"
+	}
+	controlStatements, err := s3PolicyStatements(controlPolicy)
+	if err != nil {
+		return false, "Invalid control policy document"
+	}
+
+	controlAllows := make([]s3PolicyStatement, 0, len(controlStatements))
+	for _, statement := range controlStatements {
+		if strings.EqualFold(statement.Effect, "Allow") {
+			controlAllows = append(controlAllows, statement)
+		}
+	}
+
+	for _, statement := range bucketStatements {
+		if !strings.EqualFold(statement.Effect, "Allow") {
+			continue
+		}
+		if s3AllowStatementCoveredByControl(statement, controlAllows) {
+			continue
+		}
+		return false, "Bucket policy allows actions/resources outside control policy"
+	}
+	return true, "Bucket allow statements are not more permissive than control policy"
+}
+
+func s3AllowStatementCoveredByControl(statement s3PolicyStatement, controlAllows []s3PolicyStatement) bool {
+	stmtPrincipals := s3PrincipalValues(statement.Principal)
+	stmtActions := normalizePolicyStrings(s3ActionStrings(statement.Action))
+	stmtResources := normalizePolicyStrings(s3ResourceStrings(statement.Resource))
+
+	for _, controlStatement := range controlAllows {
+		if !s3PrincipalSetCovered(stmtPrincipals, s3PrincipalValues(controlStatement.Principal)) {
+			continue
+		}
+		if !s3StringSetCovered(stmtActions, normalizePolicyStrings(s3ActionStrings(controlStatement.Action))) {
+			continue
+		}
+		if !s3StringSetCovered(stmtResources, normalizePolicyStrings(s3ResourceStrings(controlStatement.Resource))) {
+			continue
+		}
+		if !s3ConditionCompatible(statement.Condition, controlStatement.Condition) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func normalizePolicyStrings(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		normalized := strings.TrimSpace(strings.ToLower(value))
+		if normalized == "" {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		out = append(out, normalized)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func s3PrincipalSetCovered(values, allowed []string) bool {
+	if len(values) == 0 {
+		return len(allowed) == 0
+	}
+	if len(allowed) == 0 {
+		return false
+	}
+	for _, value := range values {
+		covered := false
+		for _, allow := range allowed {
+			if allow == "*" || allow == value {
+				covered = true
+				break
+			}
+		}
+		if !covered {
+			return false
+		}
+	}
+	return true
+}
+
+func s3StringSetCovered(values, allowedPatterns []string) bool {
+	if len(values) == 0 {
+		return len(allowedPatterns) == 0
+	}
+	if len(allowedPatterns) == 0 {
+		return false
+	}
+	for _, value := range values {
+		if !s3MatchesAnyPattern(value, allowedPatterns) {
+			return false
+		}
+	}
+	return true
+}
+
+func s3MatchesAnyPattern(value string, patterns []string) bool {
+	for _, patternValue := range patterns {
+		if patternValue == "*" || patternValue == value {
+			return true
+		}
+		matched, err := path.Match(patternValue, value)
+		if err == nil && matched {
+			return true
+		}
+	}
+	return false
+}
+
+func s3ConditionCompatible(statementCondition, controlCondition map[string]any) bool {
+	if len(controlCondition) == 0 {
+		return true
+	}
+	if len(statementCondition) == 0 {
+		return false
+	}
+	return reflect.DeepEqual(statementCondition, controlCondition)
+}
+
+func s3PolicyAllowsPublicWrite(policy string) bool {
+	statements, err := s3PolicyStatements(policy)
+	if err != nil {
+		return false
+	}
+	writeActionPatterns := []string{
+		"*",
+		"s3:*",
+		"s3:put*",
+		"s3:replicate*",
+		"s3:deleteobject*",
+		"s3:abortmultipartupload",
+		"s3:objectowneroverride*",
+	}
+	for _, st := range statements {
+		if !strings.EqualFold(st.Effect, "Allow") || !s3PrincipalIsPublic(st.Principal) {
+			continue
+		}
+		for _, a := range s3ActionStrings(st.Action) {
+			la := strings.ToLower(strings.TrimSpace(a))
+			if s3MatchesAnyPattern(la, writeActionPatterns) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func s3ACLAllowsPublicWrite(acl *s3.GetBucketAclOutput) bool {
+	if acl == nil {
+		return false
+	}
+	for _, grant := range acl.Grants {
+		if grant.Grantee == nil || grant.Grantee.URI == nil {
+			continue
+		}
+		uri := strings.TrimSuffix(strings.ToLower(strings.TrimSpace(*grant.Grantee.URI)), "/")
+		publicGroup := uri == "http://acs.amazonaws.com/groups/global/allusers" ||
+			uri == "https://acs.amazonaws.com/groups/global/allusers" ||
+			uri == "http://acs.amazonaws.com/groups/global/authenticatedusers" ||
+			uri == "https://acs.amazonaws.com/groups/global/authenticatedusers"
+		if !publicGroup {
+			continue
+		}
+		perm := strings.ToUpper(string(grant.Permission))
+		if perm == "WRITE" || perm == "FULL_CONTROL" {
+			return true
+		}
+	}
+	return false
+}
+
+func s3OnlyOwnerHasACL(acl *s3.GetBucketAclOutput) bool {
+	if acl == nil || acl.Owner == nil || acl.Owner.ID == nil {
+		return false
+	}
+	ownerID := *acl.Owner.ID
+	for _, grant := range acl.Grants {
+		if grant.Grantee == nil {
+			return false
+		}
+		if grant.Grantee.Type != s3types.TypeCanonicalUser {
+			return false
+		}
+		if grant.Grantee.ID == nil || *grant.Grantee.ID != ownerID {
+			return false
+		}
+	}
+	return true
 }

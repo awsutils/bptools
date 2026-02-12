@@ -2,10 +2,12 @@ package checks
 
 import (
 	"fmt"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
 
+	"github.com/aws/aws-sdk-go-v2/service/neptune"
 	neptunetypes "github.com/aws/aws-sdk-go-v2/service/neptune/types"
 )
 
@@ -28,7 +30,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 				if c.BackupRetentionPeriod != nil {
 					retention = *c.BackupRetentionPeriod
 				}
-				ok := retention > 0
+				ok := retention >= 7
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Retention days: %d", retention)})
 			}
 			return res, nil
@@ -48,7 +50,13 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for _, c := range clusters {
 				id := clusterID(c)
-				enabled := len(c.EnabledCloudwatchLogsExports) > 0
+				enabled := false
+				for _, logType := range c.EnabledCloudwatchLogsExports {
+					if strings.EqualFold(logType, "audit") {
+						enabled = true
+						break
+					}
+				}
 				res = append(res, EnabledResource{ID: id, Enabled: enabled})
 			}
 			return res, nil
@@ -188,14 +196,35 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, s := range snaps {
 				id := snapshotID(s)
-				// Neptune DBClusterSnapshot does not expose a Public field in the SDK.
-				// Defaulting to not public.
-				public := false
-				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: fmt.Sprintf("Public: %v", public)})
+				if s.DBClusterSnapshotIdentifier == nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Missing DBClusterSnapshotIdentifier"})
+					continue
+				}
+				out, err := d.Clients.Neptune.DescribeDBClusterSnapshotAttributes(d.Ctx, &neptune.DescribeDBClusterSnapshotAttributesInput{DBClusterSnapshotIdentifier: s.DBClusterSnapshotIdentifier})
+				if err != nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: fmt.Sprintf("DescribeDBClusterSnapshotAttributes failed: %v", err)})
+					continue
+				}
+				public := snapshotAttributesIncludePublic(out.DBClusterSnapshotAttributesResult.DBClusterSnapshotAttributes)
+				res = append(res, ConfigResource{ID: id, Passing: !public, Detail: fmt.Sprintf("Public restore access: %v", public)})
 			}
 			return res, nil
 		},
 	))
+}
+
+func snapshotAttributesIncludePublic(attrs []neptunetypes.DBClusterSnapshotAttribute) bool {
+	for _, attr := range attrs {
+		if attr.AttributeName == nil || !strings.EqualFold(*attr.AttributeName, "restore") {
+			continue
+		}
+		for _, v := range attr.AttributeValues {
+			if strings.EqualFold(v, "all") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func clusterID(c neptunetypes.DBCluster) string {

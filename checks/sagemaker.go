@@ -2,6 +2,8 @@ package checks
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -54,8 +56,17 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 				if dom.DomainArn != nil {
 					id = *dom.DomainArn
 				}
-				ok := false
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "VpcId not available in domain summary"})
+				if dom.DomainId == nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: "Missing DomainId"})
+					continue
+				}
+				out, err := d.Clients.SageMaker.DescribeDomain(d.Ctx, &sagemaker.DescribeDomainInput{DomainId: dom.DomainId})
+				if err != nil {
+					res = append(res, ConfigResource{ID: id, Passing: false, Detail: fmt.Sprintf("DescribeDomain failed: %v", err)})
+					continue
+				}
+				ok := out.VpcId != nil && *out.VpcId != ""
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("VpcId configured: %v", ok)})
 			}
 			return res, nil
 		},
@@ -124,14 +135,15 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 			var res []ConfigResource
 			for _, cfg := range configs {
 				id := sagemakerEndpointConfigID(cfg)
-				ok := false
+				ok := len(cfg.ProductionVariants) > 0
+				oneCountVariants := 0
 				for _, pv := range cfg.ProductionVariants {
-					if pv.InitialInstanceCount != nil && *pv.InitialInstanceCount > 0 {
-						ok = true
-						break
+					if pv.InitialInstanceCount != nil && *pv.InitialInstanceCount == 1 {
+						ok = false
+						oneCountVariants++
 					}
 				}
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: "Production instances configured"})
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Production variants with count==1: %d", oneCountVariants)})
 			}
 			return res, nil
 		},
@@ -315,6 +327,11 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			supportedPlatforms := sagemakerParseCSV(strings.TrimSpace(os.Getenv("BPTOOLS_SAGEMAKER_NOTEBOOK_SUPPORTED_PLATFORM_VERSIONS")))
+			supportedSet := make(map[string]bool, len(supportedPlatforms))
+			for _, platform := range supportedPlatforms {
+				supportedSet[strings.ToLower(strings.TrimSpace(platform))] = true
+			}
 			var res []ConfigResource
 			for _, nb := range nbs {
 				id := sagemakerNotebookID(nb)
@@ -322,8 +339,15 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 				if nb.PlatformIdentifier != nil {
 					platform = *nb.PlatformIdentifier
 				}
-				ok := platform != ""
-				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("Platform: %s", platform)})
+				ok := true
+				if len(supportedSet) > 0 {
+					ok = supportedSet[strings.ToLower(strings.TrimSpace(platform))]
+				}
+				detail := fmt.Sprintf("Platform: %s, supported: %v", platform, ok)
+				if len(supportedSet) == 0 {
+					detail = fmt.Sprintf("Platform: %s, no supported list configured (default allow-all)", platform)
+				}
+				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -405,4 +429,16 @@ func sagemakerNotebookID(nb sagemaker.DescribeNotebookInstanceOutput) string {
 		return *nb.NotebookInstanceName
 	}
 	return "unknown"
+}
+
+func sagemakerParseCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
 }

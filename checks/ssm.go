@@ -1,10 +1,15 @@
 package checks
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	"github.com/aws/aws-sdk-go-v2/service/ssm"
+	ssmtypes "github.com/aws/aws-sdk-go-v2/service/ssm/types"
 )
 
 // RegisterSSMChecks registers SSM checks.
@@ -15,19 +20,13 @@ func RegisterSSMChecks(d *awsdata.Data) {
 		"ssm",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			docs, err := d.SSMDocumentDetails.Get()
+			settingID := "/ssm/documents/console/public-sharing-permission"
+			out, err := d.Clients.SSM.GetServiceSetting(d.Ctx, &ssm.GetServiceSettingInput{SettingId: &settingID})
 			if err != nil {
-				return nil, err
+				return []ConfigResource{{ID: "account", Passing: false, Detail: fmt.Sprintf("GetServiceSetting failed: %v", err)}}, nil
 			}
-			var res []ConfigResource
-			for name, doc := range docs {
-				if doc.DocumentType != "Automation" {
-					continue
-				}
-				public := false
-				res = append(res, ConfigResource{ID: name, Passing: !public, Detail: "Not publicly shared"})
-			}
-			return res, nil
+			blocked := out.ServiceSetting != nil && out.ServiceSetting.SettingValue != nil && strings.EqualFold(*out.ServiceSetting.SettingValue, "true")
+			return []ConfigResource{{ID: "account", Passing: blocked, Detail: fmt.Sprintf("Public sharing blocked: %v", blocked)}}, nil
 		},
 	))
 
@@ -37,16 +36,32 @@ func RegisterSSMChecks(d *awsdata.Data) {
 		"ssm",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
-			contents, err := d.SSMDocumentContent.Get()
+			destinationSettingID := strings.TrimSpace(os.Getenv("BPTOOLS_SSM_AUTOMATION_LOGGING_DESTINATION_SETTING_ID"))
+			if destinationSettingID == "" {
+				destinationSettingID = "/ssm/automation/customer-script-log-destination"
+			}
+			destinationOut, err := d.Clients.SSM.GetServiceSetting(d.Ctx, &ssm.GetServiceSettingInput{SettingId: &destinationSettingID})
 			if err != nil {
-				return nil, err
+				return []LoggingResource{{ID: "account", Logging: false}}, nil
 			}
-			var res []LoggingResource
-			for name, body := range contents {
-				logging := strings.Contains(body, "cloudWatchOutputConfig") || strings.Contains(body, "CloudWatchOutputConfig")
-				res = append(res, LoggingResource{ID: name, Logging: logging})
+			destinationValue := ""
+			if destinationOut.ServiceSetting != nil && destinationOut.ServiceSetting.SettingValue != nil {
+				destinationValue = strings.TrimSpace(*destinationOut.ServiceSetting.SettingValue)
 			}
-			return res, nil
+			logGroupSettingID := strings.TrimSpace(os.Getenv("BPTOOLS_SSM_AUTOMATION_LOGGING_LOG_GROUP_SETTING_ID"))
+			if logGroupSettingID == "" {
+				logGroupSettingID = "/ssm/automation/customer-script-log-group-name"
+			}
+			logGroupOut, err := d.Clients.SSM.GetServiceSetting(d.Ctx, &ssm.GetServiceSettingInput{SettingId: &logGroupSettingID})
+			if err != nil {
+				return []LoggingResource{{ID: "account", Logging: false}}, nil
+			}
+			logGroupValue := ""
+			if logGroupOut.ServiceSetting != nil && logGroupOut.ServiceSetting.SettingValue != nil {
+				logGroupValue = strings.TrimSpace(*logGroupOut.ServiceSetting.SettingValue)
+			}
+			enabled := strings.EqualFold(destinationValue, "CloudWatchLogGroup") && logGroupValue != ""
+			return []LoggingResource{{ID: "account", Logging: enabled}}, nil
 		},
 	))
 
@@ -56,14 +71,36 @@ func RegisterSSMChecks(d *awsdata.Data) {
 		"ssm",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			docs, err := d.SSMDocumentDetails.Get()
+			docs, err := d.SSMDocuments.Get()
 			if err != nil {
 				return nil, err
 			}
 			var res []ConfigResource
-			for name, doc := range docs {
-				public := doc.Owner == nil || *doc.Owner == "public"
-				res = append(res, ConfigResource{ID: name, Passing: !public, Detail: "Owner not public"})
+			for _, doc := range docs {
+				name := "unknown"
+				if doc.Name != nil {
+					name = *doc.Name
+				}
+				if doc.Name == nil || strings.TrimSpace(*doc.Name) == "" {
+					res = append(res, ConfigResource{ID: name, Passing: false, Detail: "Missing document name"})
+					continue
+				}
+				out, err := d.Clients.SSM.DescribeDocumentPermission(d.Ctx, &ssm.DescribeDocumentPermissionInput{
+					Name:           doc.Name,
+					PermissionType: ssmtypes.DocumentPermissionTypeShare,
+				})
+				if err != nil {
+					res = append(res, ConfigResource{ID: name, Passing: false, Detail: fmt.Sprintf("DescribeDocumentPermission failed: %v", err)})
+					continue
+				}
+				public := false
+				for _, accountID := range out.AccountIds {
+					if strings.EqualFold(accountID, "all") || strings.EqualFold(accountID, "*") {
+						public = true
+						break
+					}
+				}
+				res = append(res, ConfigResource{ID: name, Passing: !public, Detail: fmt.Sprintf("Public share enabled: %v", public)})
 			}
 			return res, nil
 		},

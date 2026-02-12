@@ -42,8 +42,7 @@ func RegisterDAXChecks(d *awsdata.Data) {
 			var res []EncryptionResource
 			for _, c := range clusters {
 				id := daxID(c)
-				encrypted := c.ClusterDiscoveryEndpoint != nil && c.ClusterDiscoveryEndpoint.Address != nil && c.ClusterDiscoveryEndpoint.Port != 0
-				// Heuristic: DAX always provides TLS endpoint; treat presence of endpoint as TLS configured.
+				encrypted := c.ClusterEndpointEncryptionType == daxtypes.ClusterEndpointEncryptionTypeTls
 				res = append(res, EncryptionResource{ID: id, Encrypted: encrypted})
 			}
 			return res, nil

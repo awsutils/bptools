@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"bptools/awsdata"
@@ -107,17 +108,19 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for id, cfg := range configs {
 				enabled := false
+				usesTrustedSigners := cacheBehaviorUsesTrustedSigners(cfg.DefaultCacheBehavior)
 				if cfg.DefaultCacheBehavior.TrustedKeyGroups != nil && cfg.DefaultCacheBehavior.TrustedKeyGroups.Quantity != nil && *cfg.DefaultCacheBehavior.TrustedKeyGroups.Quantity > 0 {
 					enabled = true
 				}
-				if !enabled {
-					for _, cb := range cfg.CacheBehaviors.Items {
-						if cb.TrustedKeyGroups != nil && cb.TrustedKeyGroups.Quantity != nil && *cb.TrustedKeyGroups.Quantity > 0 {
-							enabled = true
-							break
-						}
+				for _, cb := range cfg.CacheBehaviors.Items {
+					if cb.TrustedKeyGroups != nil && cb.TrustedKeyGroups.Quantity != nil && *cb.TrustedKeyGroups.Quantity > 0 {
+						enabled = true
+					}
+					if cb.TrustedSigners != nil && cb.TrustedSigners.Enabled != nil && *cb.TrustedSigners.Enabled {
+						usesTrustedSigners = true
 					}
 				}
+				enabled = enabled && !usesTrustedSigners
 				res = append(res, EnabledResource{ID: cfID(id, cfg), Enabled: enabled})
 			}
 			return res, nil
@@ -131,20 +134,25 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			deprecated := map[cftypes.MinimumProtocolVersion]bool{
-				cftypes.MinimumProtocolVersionSSLv3:      true,
-				cftypes.MinimumProtocolVersionTLSv1:      true,
-				cftypes.MinimumProtocolVersionTLSv12016:  true,
-				cftypes.MinimumProtocolVersionTLSv112016: true,
-			}
 			var res []ConfigResource
 			for id, cfg := range configs {
-				ver := cftypes.MinimumProtocolVersionTLSv122019
-				if cfg.ViewerCertificate != nil {
-					ver = cfg.ViewerCertificate.MinimumProtocolVersion
+				ok := true
+				for _, origin := range cfg.Origins.Items {
+					if origin.CustomOriginConfig == nil || origin.CustomOriginConfig.OriginSslProtocols == nil {
+						continue
+					}
+					for _, protocol := range origin.CustomOriginConfig.OriginSslProtocols.Items {
+						p := strings.ToUpper(strings.TrimSpace(string(protocol)))
+						if p == "SSLV3" || p == "TLSV1" || p == "TLSV1.1" {
+							ok = false
+							break
+						}
+					}
+					if !ok {
+						break
+					}
 				}
-				ok := !deprecated[ver]
-				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: fmt.Sprintf("MinProtocol: %s", ver)})
+				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: "No deprecated origin SSL protocols"})
 			}
 			return res, nil
 		},
@@ -255,6 +263,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	))
 
 	// cloudfront-security-policy-check + cloudfront-ssl-policy-check + cloudfront-sni-enabled
+	allowedPolicies := cloudfrontAllowedViewerPolicies()
 	checker.Register(ConfigCheck(
 		"cloudfront-security-policy-check",
 		"This rule checks CloudFront security policy.",
@@ -267,7 +276,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 				if cfg.ViewerCertificate != nil {
 					ver = cfg.ViewerCertificate.MinimumProtocolVersion
 				}
-				ok := ver == cftypes.MinimumProtocolVersionTLSv122019 || ver == cftypes.MinimumProtocolVersionTLSv122021
+				ok := allowedPolicies[strings.ToUpper(strings.TrimSpace(string(ver)))]
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: fmt.Sprintf("MinProtocol: %s", ver)})
 			}
 			return res, nil
@@ -286,7 +295,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 				if cfg.ViewerCertificate != nil {
 					ver = cfg.ViewerCertificate.MinimumProtocolVersion
 				}
-				ok := ver == cftypes.MinimumProtocolVersionTLSv122019 || ver == cftypes.MinimumProtocolVersionTLSv122021
+				ok := allowedPolicies[strings.ToUpper(strings.TrimSpace(string(ver)))]
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: fmt.Sprintf("MinProtocol: %s", ver)})
 			}
 			return res, nil
@@ -301,11 +310,13 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			var res []ConfigResource
 			for id, cfg := range configs {
-				method := ""
-				if cfg.ViewerCertificate != nil {
+				method := "none"
+				customCert := cfg.ViewerCertificate != nil && ((cfg.ViewerCertificate.ACMCertificateArn != nil && *cfg.ViewerCertificate.ACMCertificateArn != "") ||
+					(cfg.ViewerCertificate.IAMCertificateId != nil && *cfg.ViewerCertificate.IAMCertificateId != ""))
+				if customCert {
 					method = string(cfg.ViewerCertificate.SSLSupportMethod)
 				}
-				ok := method == "sni-only"
+				ok := !customCert || method == "sni-only"
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: fmt.Sprintf("SSLSupportMethod: %s", method)})
 			}
 			return res, nil
@@ -324,7 +335,15 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 				ok := true
 				for _, o := range cfg.Origins.Items {
 					if o.CustomOriginConfig != nil {
-						ok = ok && o.CustomOriginConfig.OriginProtocolPolicy == cftypes.OriginProtocolPolicyHttpsOnly
+						policy := o.CustomOriginConfig.OriginProtocolPolicy
+						if policy == cftypes.OriginProtocolPolicyHttpsOnly {
+							continue
+						}
+						if policy == cftypes.OriginProtocolPolicyMatchViewer && !originHasAllowAllViewerPolicy(cfg, o.Id) {
+							continue
+						}
+						ok = false
+						break
 					}
 				}
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: "Origin protocol policy"})
@@ -344,9 +363,63 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 			for id, cfg := range configs {
 				vp := cfg.DefaultCacheBehavior.ViewerProtocolPolicy
 				ok := vp == cftypes.ViewerProtocolPolicyRedirectToHttps || vp == cftypes.ViewerProtocolPolicyHttpsOnly
+				if ok {
+					for _, cb := range cfg.CacheBehaviors.Items {
+						if cb.ViewerProtocolPolicy != cftypes.ViewerProtocolPolicyRedirectToHttps && cb.ViewerProtocolPolicy != cftypes.ViewerProtocolPolicyHttpsOnly {
+							ok = false
+							break
+						}
+					}
+				}
 				res = append(res, ConfigResource{ID: cfID(id, cfg), Passing: ok, Detail: fmt.Sprintf("ViewerProtocolPolicy: %s", vp)})
 			}
 			return res, nil
 		},
 	))
+}
+
+func cacheBehaviorUsesTrustedSigners(cb *cftypes.DefaultCacheBehavior) bool {
+	if cb == nil {
+		return false
+	}
+	return cb.TrustedSigners != nil && cb.TrustedSigners.Enabled != nil && *cb.TrustedSigners.Enabled
+}
+
+func originHasAllowAllViewerPolicy(cfg cftypes.DistributionConfig, originID *string) bool {
+	if originID == nil || *originID == "" {
+		return false
+	}
+	if cfg.DefaultCacheBehavior.TargetOriginId != nil &&
+		*cfg.DefaultCacheBehavior.TargetOriginId == *originID &&
+		cfg.DefaultCacheBehavior.ViewerProtocolPolicy == cftypes.ViewerProtocolPolicyAllowAll {
+		return true
+	}
+	for _, cb := range cfg.CacheBehaviors.Items {
+		if cb.TargetOriginId != nil &&
+			*cb.TargetOriginId == *originID &&
+			cb.ViewerProtocolPolicy == cftypes.ViewerProtocolPolicyAllowAll {
+			return true
+		}
+	}
+	return false
+}
+
+func cloudfrontAllowedViewerPolicies() map[string]bool {
+	override := strings.TrimSpace(os.Getenv("BPTOOLS_CLOUDFRONT_ALLOWED_SSL_POLICIES"))
+	values := []string{"TLSV1.2_2018", "TLSV1.2_2019", "TLSV1.2_2021"}
+	if override != "" {
+		parts := strings.Split(override, ",")
+		values = make([]string, 0, len(parts))
+		for _, part := range parts {
+			item := strings.ToUpper(strings.TrimSpace(part))
+			if item != "" {
+				values = append(values, item)
+			}
+		}
+	}
+	out := make(map[string]bool, len(values))
+	for _, value := range values {
+		out[strings.ToUpper(strings.TrimSpace(value))] = true
+	}
+	return out
 }

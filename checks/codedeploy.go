@@ -2,6 +2,9 @@ package checks
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/checker"
@@ -24,11 +27,18 @@ func RegisterCodeDeployChecks(d *awsdata.Data) {
 			var res []EnabledResource
 			for key, g := range groups {
 				enabled := false
-				if g.DeploymentGroupInfo != nil && g.DeploymentGroupInfo.AutoRollbackConfiguration != nil {
-					enabled = g.DeploymentGroupInfo.AutoRollbackConfiguration.Enabled
-					if enabled && len(g.DeploymentGroupInfo.AutoRollbackConfiguration.Events) == 0 {
-						enabled = false
+				if g.DeploymentGroupInfo != nil {
+					hasAutoRollback := false
+					if g.DeploymentGroupInfo.AutoRollbackConfiguration != nil {
+						hasAutoRollback = g.DeploymentGroupInfo.AutoRollbackConfiguration.Enabled &&
+							len(g.DeploymentGroupInfo.AutoRollbackConfiguration.Events) > 0
 					}
+					hasAlarmMonitor := false
+					if g.DeploymentGroupInfo.AlarmConfiguration != nil {
+						hasAlarmMonitor = g.DeploymentGroupInfo.AlarmConfiguration.Enabled &&
+							len(g.DeploymentGroupInfo.AlarmConfiguration.Alarms) > 0
+					}
+					enabled = hasAutoRollback && hasAlarmMonitor
 				}
 				res = append(res, EnabledResource{ID: key, Enabled: enabled})
 			}
@@ -93,6 +103,18 @@ func RegisterCodeDeployChecks(d *awsdata.Data) {
 				return nil, err
 			}
 			var res []ConfigResource
+			minHostCount := int32(1)
+			if v := strings.TrimSpace(os.Getenv("BPTOOLS_CODEDEPLOY_MIN_HEALTHY_HOST_COUNT")); v != "" {
+				if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+					minHostCount = int32(parsed)
+				}
+			}
+			minFleetPercent := int32(66)
+			if v := strings.TrimSpace(os.Getenv("BPTOOLS_CODEDEPLOY_MIN_HEALTHY_FLEET_PERCENT")); v != "" {
+				if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
+					minFleetPercent = int32(parsed)
+				}
+			}
 			for key, g := range groups {
 				if g.DeploymentGroupInfo == nil || g.DeploymentGroupInfo.ComputePlatform != codedeploytypes.ComputePlatformServer {
 					continue
@@ -102,10 +124,26 @@ func RegisterCodeDeployChecks(d *awsdata.Data) {
 					cfgName = *g.DeploymentGroupInfo.DeploymentConfigName
 				}
 				cfg := configs[cfgName]
-				ok := cfg.DeploymentConfigInfo != nil &&
-					cfg.DeploymentConfigInfo.MinimumHealthyHosts != nil &&
-					cfg.DeploymentConfigInfo.MinimumHealthyHosts.Value > 0
-				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: fmt.Sprintf("DeploymentConfig: %s", cfgName)})
+				ok := false
+				detail := fmt.Sprintf("DeploymentConfig: %s", cfgName)
+				if cfg.DeploymentConfigInfo == nil || cfg.DeploymentConfigInfo.MinimumHealthyHosts == nil {
+					detail += " (MinimumHealthyHosts missing)"
+					res = append(res, ConfigResource{ID: key, Passing: false, Detail: detail})
+					continue
+				}
+				minHealthy := cfg.DeploymentConfigInfo.MinimumHealthyHosts
+				switch minHealthy.Type {
+				case codedeploytypes.MinimumHealthyHostsTypeHostCount:
+					ok = minHealthy.Value >= minHostCount
+					detail = fmt.Sprintf("DeploymentConfig: %s, MinimumHealthyHosts HOST_COUNT=%d (required >= %d)", cfgName, minHealthy.Value, minHostCount)
+				case codedeploytypes.MinimumHealthyHostsTypeFleetPercent:
+					ok = minHealthy.Value >= minFleetPercent
+					detail = fmt.Sprintf("DeploymentConfig: %s, MinimumHealthyHosts FLEET_PERCENT=%d (required >= %d)", cfgName, minHealthy.Value, minFleetPercent)
+				default:
+					ok = minHealthy.Value > 0
+					detail = fmt.Sprintf("DeploymentConfig: %s, MinimumHealthyHosts %s=%d", cfgName, minHealthy.Type, minHealthy.Value)
+				}
+				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},

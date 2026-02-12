@@ -237,8 +237,11 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for key, vg := range vgs {
-				ok := vg.Spec.BackendDefaults != nil && vg.Spec.BackendDefaults.ClientPolicy != nil && vg.Spec.BackendDefaults.ClientPolicy.Tls != nil
-				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: "BackendDefaults TLS configured"})
+				enforced := false
+				if vg.Spec.BackendDefaults != nil && vg.Spec.BackendDefaults.ClientPolicy != nil && vg.Spec.BackendDefaults.ClientPolicy.Tls != nil {
+					enforced = vg.Spec.BackendDefaults.ClientPolicy.Tls.Enforce != nil && *vg.Spec.BackendDefaults.ClientPolicy.Tls.Enforce
+				}
+				res = append(res, ConfigResource{ID: key, Passing: enforced, Detail: fmt.Sprintf("BackendDefaults TLS enforce: %v", enforced)})
 			}
 			return res, nil
 		},
@@ -283,8 +286,11 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for key, vn := range vns {
-				ok := vn.Spec.BackendDefaults != nil && vn.Spec.BackendDefaults.ClientPolicy != nil && vn.Spec.BackendDefaults.ClientPolicy.Tls != nil
-				res = append(res, ConfigResource{ID: key, Passing: ok, Detail: "BackendDefaults TLS configured"})
+				enforced := false
+				if vn.Spec.BackendDefaults != nil && vn.Spec.BackendDefaults.ClientPolicy != nil && vn.Spec.BackendDefaults.ClientPolicy.Tls != nil {
+					enforced = vn.Spec.BackendDefaults.ClientPolicy.Tls.Enforce != nil && *vn.Spec.BackendDefaults.ClientPolicy.Tls.Enforce
+				}
+				res = append(res, ConfigResource{ID: key, Passing: enforced, Detail: fmt.Sprintf("BackendDefaults TLS enforce: %v", enforced)})
 			}
 			return res, nil
 		},

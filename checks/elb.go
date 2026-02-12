@@ -8,6 +8,7 @@ import (
 	"bptools/checker"
 
 	elbtypes "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancing/types"
+	elbv2types "github.com/aws/aws-sdk-go-v2/service/elasticloadbalancingv2/types"
 )
 
 // RegisterELBChecks registers classic ELB checks.
@@ -124,20 +125,26 @@ func RegisterELBChecks(d *awsdata.Data) {
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
-			attrs, err := d.ELBClassicAttributes.Get()
+			lbs, err := d.ELBv2LoadBalancers.Get()
+			if err != nil {
+				return nil, err
+			}
+			attrs, err := d.ELBv2LBAttributes.Get()
 			if err != nil {
 				return nil, err
 			}
 			var res []ConfigResource
-			for name, attr := range attrs {
-				enabled := false
-				for _, kv := range attr.AdditionalAttributes {
-					if kv.Key != nil && *kv.Key == "deletion_protection.enabled" && kv.Value != nil && *kv.Value == "true" {
-						enabled = true
-						break
-					}
+			for _, lb := range lbs {
+				if lb.LoadBalancerArn == nil {
+					continue
 				}
-				res = append(res, ConfigResource{ID: name, Passing: enabled, Detail: fmt.Sprintf("deletion_protection.enabled: %v", enabled)})
+				m := attrs[*lb.LoadBalancerArn]
+				enabled := m["deletion_protection.enabled"] == "true"
+				res = append(res, ConfigResource{
+					ID:      *lb.LoadBalancerArn,
+					Passing: enabled,
+					Detail:  fmt.Sprintf("Type: %s, deletion_protection.enabled: %v", lb.Type, enabled),
+				})
 			}
 			return res, nil
 		},
@@ -176,6 +183,22 @@ func RegisterELBChecks(d *awsdata.Data) {
 			for name, attr := range attrs {
 				logging := attr.AccessLog != nil && attr.AccessLog.Enabled
 				res = append(res, LoggingResource{ID: name, Logging: logging})
+			}
+			lbs, err := d.ELBv2LoadBalancers.Get()
+			if err != nil {
+				return nil, err
+			}
+			lbAttrs, err := d.ELBv2LBAttributes.Get()
+			if err != nil {
+				return nil, err
+			}
+			for _, lb := range lbs {
+				if lb.Type != elbv2types.LoadBalancerTypeEnumApplication || lb.LoadBalancerArn == nil {
+					continue
+				}
+				m := lbAttrs[*lb.LoadBalancerArn]
+				logging := m["access_logs.s3.enabled"] == "true"
+				res = append(res, LoggingResource{ID: *lb.LoadBalancerArn, Logging: logging})
 			}
 			return res, nil
 		},
@@ -310,7 +333,8 @@ func RegisterELBChecks(d *awsdata.Data) {
 						break
 					}
 				}
-				ok := mode == "" || mode == "defensive" || mode == "strictest"
+				mode = strings.ToLower(strings.TrimSpace(mode))
+				ok := mode == "monitor" || mode == "defensive" || mode == "strictest"
 				res = append(res, ConfigResource{ID: name, Passing: ok, Detail: fmt.Sprintf("Desync mode: %s", mode)})
 			}
 			return res, nil

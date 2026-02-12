@@ -3,6 +3,8 @@ package checks
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"bptools/awsdata"
@@ -11,29 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	lambdatypes "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
-
-// deprecatedRuntimes lists Lambda runtimes that are deprecated.
-var deprecatedRuntimes = map[lambdatypes.Runtime]bool{
-	lambdatypes.RuntimeNodejs:       true,
-	lambdatypes.RuntimeNodejs43:     true,
-	lambdatypes.RuntimeNodejs43edge: true,
-	lambdatypes.RuntimeNodejs610:    true,
-	lambdatypes.RuntimeNodejs810:    true,
-	lambdatypes.RuntimeNodejs10x:    true,
-	lambdatypes.RuntimeNodejs12x:    true,
-	lambdatypes.RuntimeNodejs14x:    true,
-	lambdatypes.RuntimeNodejs16x:    true,
-	lambdatypes.RuntimePython27:     true,
-	lambdatypes.RuntimePython36:     true,
-	lambdatypes.RuntimeJava8:        true,
-	lambdatypes.RuntimeDotnetcore10: true,
-	lambdatypes.RuntimeDotnetcore20: true,
-	lambdatypes.RuntimeDotnetcore21: true,
-	lambdatypes.RuntimeDotnetcore31: true,
-	lambdatypes.RuntimeDotnet6:      true,
-	lambdatypes.RuntimeRuby25:       true,
-	lambdatypes.RuntimeRuby27:       true,
-}
 
 func funcName(f lambdatypes.FunctionConfiguration) string {
 	if f.FunctionName != nil {
@@ -126,6 +105,17 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 			if err != nil {
 				return nil, err
 			}
+			subnets, err := d.EC2Subnets.Get()
+			if err != nil {
+				return nil, err
+			}
+			subnetAZ := make(map[string]string)
+			for _, subnet := range subnets {
+				if subnet.SubnetId == nil || subnet.AvailabilityZone == nil {
+					continue
+				}
+				subnetAZ[*subnet.SubnetId] = *subnet.AvailabilityZone
+			}
 			var out []ConfigResource
 			for _, f := range funcs {
 				if f.VpcConfig == nil || len(f.VpcConfig.SubnetIds) == 0 {
@@ -136,8 +126,14 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 					})
 					continue
 				}
-				multiAz := len(f.VpcConfig.SubnetIds) >= 2
-				detail := fmt.Sprintf("Function has %d subnet(s)", len(f.VpcConfig.SubnetIds))
+				azs := make(map[string]bool)
+				for _, subnetID := range f.VpcConfig.SubnetIds {
+					if az, ok := subnetAZ[subnetID]; ok {
+						azs[az] = true
+					}
+				}
+				multiAz := len(azs) >= 2
+				detail := fmt.Sprintf("Function spans %d AZ(s)", len(azs))
 				out = append(out, ConfigResource{
 					ID:      funcName(f),
 					Passing: multiAz,
@@ -178,23 +174,82 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-function-settings-check
 	checker.Register(ConfigCheck(
 		"lambda-function-settings-check",
-		"Lambda functions should not use deprecated runtimes",
+		"Lambda functions should comply with configured runtime/role/timeout/memory settings",
 		"lambda", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			funcs, err := d.LambdaFunctions.Get()
 			if err != nil {
 				return nil, err
 			}
+			allowedRuntimes := lambdaParseCSV(strings.TrimSpace(os.Getenv("BPTOOLS_LAMBDA_ALLOWED_RUNTIMES")))
+			allowedRoles := lambdaParseCSV(strings.TrimSpace(os.Getenv("BPTOOLS_LAMBDA_ALLOWED_ROLE_ARNS")))
+			maxTimeout := lambdaParseInt32Env("BPTOOLS_LAMBDA_MAX_TIMEOUT_SECONDS")
+			minMemory := lambdaParseInt32Env("BPTOOLS_LAMBDA_MIN_MEMORY_MB")
+			maxMemory := lambdaParseInt32Env("BPTOOLS_LAMBDA_MAX_MEMORY_MB")
+			if maxTimeout == nil {
+				defaultTimeout := int32(900)
+				maxTimeout = &defaultTimeout
+			}
+			if minMemory == nil {
+				defaultMinMemory := int32(128)
+				minMemory = &defaultMinMemory
+			}
+			if maxMemory == nil {
+				defaultMaxMemory := int32(10240)
+				maxMemory = &defaultMaxMemory
+			}
+			allowedRuntimeSet := make(map[string]bool, len(allowedRuntimes))
+			for _, runtime := range allowedRuntimes {
+				allowedRuntimeSet[strings.ToLower(runtime)] = true
+			}
+			allowedRoleSet := make(map[string]bool, len(allowedRoles))
+			for _, role := range allowedRoles {
+				allowedRoleSet[strings.ToLower(role)] = true
+			}
 			var out []ConfigResource
 			for _, f := range funcs {
-				deprecated := deprecatedRuntimes[f.Runtime]
-				detail := fmt.Sprintf("Runtime %s is supported", string(f.Runtime))
-				if deprecated {
-					detail = fmt.Sprintf("Runtime %s is deprecated", string(f.Runtime))
+				ok := true
+				var issues []string
+				runtime := strings.TrimSpace(strings.ToLower(string(f.Runtime)))
+				role := ""
+				if f.Role != nil {
+					role = strings.TrimSpace(strings.ToLower(*f.Role))
+				}
+				timeout := int32(0)
+				if f.Timeout != nil {
+					timeout = *f.Timeout
+				}
+				memory := int32(0)
+				if f.MemorySize != nil {
+					memory = *f.MemorySize
+				}
+				if len(allowedRuntimeSet) > 0 && !allowedRuntimeSet[runtime] {
+					ok = false
+					issues = append(issues, fmt.Sprintf("runtime '%s' not in allowed list", string(f.Runtime)))
+				}
+				if len(allowedRoleSet) > 0 && !allowedRoleSet[role] {
+					ok = false
+					issues = append(issues, fmt.Sprintf("role '%s' not in allowed list", role))
+				}
+				if maxTimeout != nil && timeout > *maxTimeout {
+					ok = false
+					issues = append(issues, fmt.Sprintf("timeout %d exceeds max %d", timeout, *maxTimeout))
+				}
+				if minMemory != nil && memory < *minMemory {
+					ok = false
+					issues = append(issues, fmt.Sprintf("memory %d below min %d", memory, *minMemory))
+				}
+				if maxMemory != nil && memory > *maxMemory {
+					ok = false
+					issues = append(issues, fmt.Sprintf("memory %d exceeds max %d", memory, *maxMemory))
+				}
+				detail := "Function settings comply with configured policy"
+				if len(issues) > 0 {
+					detail = strings.Join(issues, "; ")
 				}
 				out = append(out, ConfigResource{
 					ID:      funcName(f),
-					Passing: !deprecated,
+					Passing: ok,
 					Detail:  detail,
 				})
 			}
@@ -303,6 +358,31 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 			return results
 		},
 	})
+}
+
+func lambdaParseCSV(value string) []string {
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+func lambdaParseInt32Env(name string) *int32 {
+	value := strings.TrimSpace(os.Getenv(name))
+	if value == "" {
+		return nil
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		return nil
+	}
+	val := int32(parsed)
+	return &val
 }
 
 // isLambdaPolicyPublic checks whether a Lambda resource policy allows public invocation.

@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"strings"
 	"time"
 
 	"bptools/awsdata"
@@ -40,8 +41,22 @@ func RegisterSecretsManagerChecks(d *awsdata.Data) {
 			}
 			var res []ConfigResource
 			for arn, s := range secrets {
-				ok := s.LastRotatedDate != nil
-				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: "LastRotatedDate present"})
+				rotationEnabled := s.RotationEnabled != nil && *s.RotationEnabled
+				ok := true
+				detail := "Rotation not enabled"
+				if rotationEnabled {
+					if s.NextRotationDate == nil {
+						ok = false
+						detail = "Rotation enabled but NextRotationDate missing"
+					} else if s.NextRotationDate.Before(time.Now()) {
+						ok = false
+						detail = "Rotation enabled and next rotation is overdue"
+					} else {
+						ok = true
+						detail = "Rotation schedule is current"
+					}
+				}
+				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: detail})
 			}
 			return res, nil
 		},
@@ -100,7 +115,11 @@ func RegisterSecretsManagerChecks(d *awsdata.Data) {
 			}
 			var res []EncryptionResource
 			for arn, s := range secrets {
-				encrypted := s.KmsKeyId != nil && *s.KmsKeyId != ""
+				encrypted := false
+				if s.KmsKeyId != nil {
+					kms := strings.TrimSpace(strings.ToLower(*s.KmsKeyId))
+					encrypted = kms != "" && !strings.Contains(kms, "alias/aws/secretsmanager")
+				}
 				res = append(res, EncryptionResource{ID: arn, Encrypted: encrypted})
 			}
 			return res, nil
