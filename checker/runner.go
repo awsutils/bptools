@@ -4,6 +4,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"bptools/runstate"
 )
 
 // RunHooks provides optional callbacks for check execution progress.
@@ -40,6 +42,8 @@ func RunAllWithHooks(checks []Check, concurrency int, hooks RunHooks) []Result {
 		go func(c Check) {
 			defer wg.Done()
 			defer func() { <-sem }()
+			runstate.SetCurrentCheck(c.ID())
+			defer runstate.ClearCurrentCheck()
 			r := filterIgnoredResults(c.Run())
 			errCount := 0
 			for _, rr := range r {

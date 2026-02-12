@@ -85,15 +85,17 @@ type trackerModel struct {
 	resultRuleCount int
 	resultItemCount int
 	resultErrCount  int
+	actions         chan Action
 }
 
-func newTrackerModel() trackerModel {
+func newTrackerModel(actions chan Action) trackerModel {
 	bar := progress.New(progress.WithScaledGradient("#00AEEF", "#00D084"))
 	return trackerModel{
 		prefetchBar: bar,
 		rulesBar:    bar,
 		width:       80,
 		height:      24,
+		actions:     actions,
 	}
 }
 
@@ -138,6 +140,10 @@ func (m trackerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.resultOffset = 0
 			case "G":
 				m.resultOffset = maxOffset
+			case "r":
+				m.showResults = false
+				m.appendLog("recheck requested")
+				m.trySendAction(ActionRecheckFailedErrored)
 			}
 		}
 		return m, nil
@@ -169,6 +175,7 @@ func (m trackerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case checkStartMsg:
+		m.showResults = false
 		m.rulesTotal = v.total
 		m.rulesDone = 0
 		m.rulesFindings = 0
@@ -213,7 +220,6 @@ func (m trackerModel) View() string {
 
 	titleStyle := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("63")).Padding(0, 1)
 	labelStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
-	warnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("203")).Bold(true)
 	okStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("42")).Bold(true)
 	tsStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 	infoBadgeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Background(lipgloss.Color("238")).Bold(true).Padding(0, 1)
@@ -229,50 +235,21 @@ func (m trackerModel) View() string {
 	if bodyWidth < 40 {
 		bodyWidth = 40
 	}
+	statusContentWidth := bodyWidth - 4
+	if statusContentWidth < 20 {
+		statusContentWidth = 20
+	}
 
 	prefetchPct := ratio(m.prefetchDone, m.prefetchTotal)
 	rulesPct := ratio(m.rulesDone, m.rulesTotal)
 
 	prefetchLabel := labelStyle.Render("API prefetch")
 	prefetchCount := fmt.Sprintf("%d/%d", m.prefetchDone, m.prefetchTotal)
-	prefetchStatus := ""
-	if m.prefetchFail > 0 {
-		prefetchStatus = warnStyle.Render(fmt.Sprintf("failures=%d", m.prefetchFail))
-	} else if m.prefetchDone > 0 && m.prefetchDone == m.prefetchTotal {
-		prefetchStatus = okStyle.Render("ok")
-	}
+	prefetchLine := fitProgressLine(prefetchLabel, prefetchCount, &m.prefetchBar, prefetchPct, statusContentWidth, 8)
 
-	prefetchExtraWidth := lipgloss.Width(prefetchLabel) + 1 + lipgloss.Width(prefetchCount)
-	if prefetchStatus != "" {
-		prefetchExtraWidth += 1 + lipgloss.Width(prefetchStatus)
-	}
-	prefetchBarWidth := bodyWidth - prefetchExtraWidth - 1
-	if prefetchBarWidth < 8 {
-		prefetchBarWidth = 8
-	}
-	m.prefetchBar.Width = prefetchBarWidth
-
-	prefetchLine := fmt.Sprintf("%s %s %s", prefetchLabel, m.prefetchBar.ViewAs(prefetchPct), prefetchCount)
-	if prefetchStatus != "" {
-		prefetchLine += " " + prefetchStatus
-	}
-
-	rulesBarWidth := bodyWidth - 28
-	if rulesBarWidth < 20 {
-		rulesBarWidth = 20
-	}
-	m.rulesBar.Width = rulesBarWidth
-
-	ruleLine := fmt.Sprintf(
-		"%s   %s %d/%d",
-		labelStyle.Render("Rule checks"),
-		m.rulesBar.ViewAs(rulesPct),
-		m.rulesDone,
-		m.rulesTotal,
-	)
-	if m.rulesDone > 0 {
-		ruleLine += " " + labelStyle.Render(fmt.Sprintf("findings=%d errors=%d", m.rulesFindings, m.rulesErrors))
-	}
+	rulesLabel := labelStyle.Render("Rule checks")
+	rulesCount := fmt.Sprintf("%d/%d", m.rulesDone, m.rulesTotal)
+	ruleLine := fitProgressLine(rulesLabel, rulesCount, &m.rulesBar, rulesPct, statusContentWidth, 8)
 
 	statusPanel := panelStyle.Width(bodyWidth).Render(lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -322,8 +299,6 @@ func (m trackerModel) View() string {
 	footer := labelStyle.Render("Press q to quit")
 	if m.prefetchDone == m.prefetchTotal && m.rulesDone == m.rulesTotal && m.rulesTotal > 0 {
 		footer = okStyle.Render("Completed") + " " + labelStyle.Render("Press q to quit")
-	} else if m.prefetchFail > 0 || m.rulesErrors > 0 {
-		footer = warnStyle.Render("Warnings detected") + " " + labelStyle.Render("Press q to quit")
 	}
 
 	return lipgloss.NewStyle().Padding(1, 1).Render(
@@ -420,12 +395,12 @@ func (m trackerModel) viewResults() string {
 		),
 	)
 
-	scrollHint := labelStyle.Render("j/k or ↑/↓ scroll • g/G top/bottom • q quit")
+	scrollHint := labelStyle.Render("j/k or ↑/↓ scroll • g/G top/bottom • r rerun failed/errored • q quit")
 	if len(m.resultRows) <= viewportRows {
-		scrollHint = labelStyle.Render("q quit")
+		scrollHint = labelStyle.Render("r rerun failed/errored • q quit")
 	} else {
 		scrollHint = labelStyle.Render(fmt.Sprintf(
-			"j/k or ↑/↓ scroll • g/G top/bottom • q quit (%d-%d/%d)",
+			"j/k or ↑/↓ scroll • g/G top/bottom • r rerun failed/errored • q quit (%d-%d/%d)",
 			m.resultOffset+1,
 			minInt(m.resultOffset+viewportRows, len(m.resultRows)),
 			len(m.resultRows),
@@ -528,6 +503,7 @@ func buildResultRows(results []checker.Result, descriptions map[string]string) (
 			if msg == "" {
 				msg = "-"
 			}
+			msg = strings.Join(strings.Fields(msg), " ")
 			rows = append(rows, resultRow{
 				kind:    "detail",
 				status:  item.Status,
@@ -575,6 +551,7 @@ func (m *trackerModel) appendLogLevel(level string, line string) {
 	if line == "" {
 		return
 	}
+	line = strings.Join(strings.Fields(line), " ")
 	if level == "" {
 		level = "info"
 	}
@@ -665,10 +642,33 @@ func minInt(a int, b int) int {
 	return b
 }
 
+func fitProgressLine(label string, trailing string, bar *progress.Model, pct float64, bodyWidth int, minBarWidth int) string {
+	if bar == nil {
+		line := fmt.Sprintf("%s %s", label, trailing)
+		return truncateDisplayWidth(line, bodyWidth)
+	}
+	baseWidth := lipgloss.Width(label) + 1 + 1 + lipgloss.Width(trailing)
+	targetBarWidth := bodyWidth - baseWidth
+	if targetBarWidth < minBarWidth {
+		targetBarWidth = minBarWidth
+	}
+	bar.Width = targetBarWidth
+	line := fmt.Sprintf("%s %s %s", label, bar.ViewAs(pct), trailing)
+	for lipgloss.Width(line) > bodyWidth && bar.Width > minBarWidth {
+		bar.Width--
+		line = fmt.Sprintf("%s %s %s", label, bar.ViewAs(pct), trailing)
+	}
+	if lipgloss.Width(line) > bodyWidth {
+		return truncateDisplayWidth(line, bodyWidth)
+	}
+	return line
+}
+
 // Tracker coordinates progress updates between prefetch and rule runs.
 type Tracker struct {
 	prog   *tea.Program
 	doneCh chan struct{}
+	actCh  chan Action
 	once   sync.Once
 }
 
@@ -676,15 +676,18 @@ func New(out io.Writer) *Tracker {
 	if out == nil {
 		out = os.Stderr
 	}
-	model := newTrackerModel()
+	actCh := make(chan Action, 8)
+	model := newTrackerModel(actCh)
 	program := tea.NewProgram(model, tea.WithOutput(out), tea.WithAltScreen())
 	t := &Tracker{
 		prog:   program,
 		doneCh: make(chan struct{}),
+		actCh:  actCh,
 	}
 
 	go func() {
 		_, _ = program.Run()
+		close(actCh)
 		close(t.doneCh)
 	}()
 
@@ -696,6 +699,13 @@ func (t *Tracker) Wait() {
 		return
 	}
 	<-t.doneCh
+}
+
+func (t *Tracker) Actions() <-chan Action {
+	if t == nil {
+		return nil
+	}
+	return t.actCh
 }
 
 func (t *Tracker) Close() {
@@ -724,6 +734,22 @@ func (t *Tracker) eventf(level string, format string, args ...any) {
 
 func (t *Tracker) ShowResults(results []checker.Result, descriptions map[string]string) {
 	t.send(resultsReadyMsg{results: results, descriptions: descriptions})
+}
+
+type Action string
+
+const (
+	ActionRecheckFailedErrored Action = "recheck_failed_errored"
+)
+
+func (m trackerModel) trySendAction(action Action) {
+	if m.actions == nil {
+		return
+	}
+	select {
+	case m.actions <- action:
+	default:
+	}
 }
 
 func (t *Tracker) PrefetchHooks() awsdata.PrefetchHooks {

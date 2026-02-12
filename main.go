@@ -11,6 +11,7 @@ import (
 	"bptools/checker"
 	"bptools/checks"
 	"bptools/progress"
+	"bptools/runstate"
 )
 
 func main() {
@@ -58,6 +59,33 @@ func main() {
 
 	results := checker.RunAllWithHooks(filtered, conc, tracker.RunHooks())
 	tracker.ShowResults(results, ruleDescriptions)
+	for action := range tracker.Actions() {
+		if action != progress.ActionRecheckFailedErrored {
+			continue
+		}
+		recheck := failedErroredChecks(filtered, results)
+		if len(recheck) == 0 {
+			continue
+		}
+		failedIDs := failedErroredCheckIDs(results)
+		recheckMemoNames := runstate.MemoNamesForChecks(failedIDs)
+		if len(recheckMemoNames) > 0 {
+			data.ClearMemoNames(recheckMemoNames)
+			data.PrefetchMemoNamesWithHooks(recheckMemoNames, conc, tracker.PrefetchHooks())
+		} else {
+			recheckServices := serviceSetForChecks(recheck)
+			if len(recheckServices) > 0 {
+				data.ClearFilteredCaches(recheckServices)
+				data.PrefetchFilteredWithHooks(recheckServices, conc, tracker.PrefetchHooks())
+			}
+		}
+		recheckDescriptions := make(map[string]string, len(recheck))
+		for _, check := range recheck {
+			recheckDescriptions[check.ID()] = check.Description()
+		}
+		results = checker.RunAllWithHooks(recheck, conc, tracker.RunHooks())
+		tracker.ShowResults(results, recheckDescriptions)
+	}
 	tracker.Wait()
 }
 
@@ -161,6 +189,43 @@ func parseSet(s string) map[string]bool {
 			continue
 		}
 		out[v] = true
+	}
+	return out
+}
+
+func failedErroredChecks(checks []checker.Check, results []checker.Result) []checker.Check {
+	ids := failedErroredCheckIDs(results)
+	if len(ids) == 0 {
+		return nil
+	}
+	var out []checker.Check
+	for _, check := range checks {
+		if ids[check.ID()] {
+			out = append(out, check)
+		}
+	}
+	return out
+}
+
+func failedErroredCheckIDs(results []checker.Result) map[string]bool {
+	out := make(map[string]bool)
+	for _, result := range results {
+		if result.Status != checker.StatusFail && result.Status != checker.StatusError {
+			continue
+		}
+		out[result.CheckID] = true
+	}
+	return out
+}
+
+func serviceSetForChecks(checks []checker.Check) map[string]bool {
+	out := make(map[string]bool)
+	for _, check := range checks {
+		service := strings.TrimSpace(check.Service())
+		if service == "" {
+			continue
+		}
+		out[service] = true
 	}
 	return out
 }
