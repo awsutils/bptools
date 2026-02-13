@@ -127,6 +127,13 @@ jobs:
         env:
           VERSION: ${{ needs.version.outputs.tag }}
         run: |
+          # Move artifacts outside the workspace BEFORE switching branches.
+          # If _binaries/ is left in place, git checkout gh-pages will restore
+          # the OLD tracked copy over the freshly-downloaded files, causing
+          # stale binaries (and stale checksums) to be published.
+          cp -r _binaries /tmp/bptools-staging
+          rm -rf _binaries
+
           # Switch to gh-pages branch (create as orphan if it doesn't exist)
           if git ls-remote --exit-code origin gh-pages >/dev/null 2>&1; then
             git checkout gh-pages
@@ -135,13 +142,16 @@ jobs:
             git rm -rf . --quiet
           fi
 
+          # Remove _binaries/ if it was accidentally tracked in a previous commit
+          git rm -rf _binaries --ignore-unmatch
+
           # Checksums
-          (cd _binaries && sha256sum bptools-* > checksums.txt)
+          (cd /tmp/bptools-staging && sha256sum bptools-* > checksums.txt)
 
           # Copy binaries and checksums to root (latest) and to a versioned dir
-          cp _binaries/* .
+          cp /tmp/bptools-staging/* .
           mkdir -p "$VERSION"
-          cp _binaries/* "$VERSION/"
+          cp /tmp/bptools-staging/* "$VERSION/"
 
           # Copy install.sh from main
           git show origin/main:install.sh > install.sh
