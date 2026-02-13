@@ -146,66 +146,8 @@ jobs:
           # Copy install.sh from main
           git show origin/main:install.sh > install.sh
 
-          # Generate download index page
-          cat > index.html <<EOF
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>bptools downloads</title>
-            <style>
-              body { font-family: monospace; max-width: 700px; margin: 3rem auto; padding: 0 1rem; }
-              h1 { font-size: 1.4rem; }
-              a { color: #0969da; }
-              table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
-              th, td { text-align: left; padding: .4rem .8rem; border-bottom: 1px solid #ddd; }
-              th { background: #f6f8fa; }
-              pre { background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow-x: auto; }
-            </style>
-          </head>
-          <body>
-            <h1>bptools</h1>
-            <p>AWS best-practice check runner &mdash; latest: <strong>${VERSION}</strong></p>
-            <p>
-              <a href="https://github.com/awsutils/bptools">GitHub</a> &middot;
-              <a href="https://github.com/awsutils/bptools/releases">All releases</a>
-            </p>
-
-            <h2>Quick install</h2>
-            <pre>curl -fsSL https://awsutils.github.io/bptools/install.sh | sh</pre>
-
-            <h2>Downloads &mdash; ${VERSION}</h2>
-            <table>
-              <tr><th>Platform</th><th>Arch</th><th>Binary</th></tr>
-              <tr><td>Linux</td><td>amd64</td><td><a href="bptools-linux-amd64">bptools-linux-amd64</a></td></tr>
-              <tr><td>Linux</td><td>arm64</td><td><a href="bptools-linux-arm64">bptools-linux-arm64</a></td></tr>
-              <tr><td>macOS</td><td>amd64 (Intel)</td><td><a href="bptools-darwin-amd64">bptools-darwin-amd64</a></td></tr>
-              <tr><td>macOS</td><td>arm64 (Apple Silicon)</td><td><a href="bptools-darwin-arm64">bptools-darwin-arm64</a></td></tr>
-              <tr><td>Windows</td><td>amd64</td><td><a href="bptools-windows-amd64.exe">bptools-windows-amd64.exe</a></td></tr>
-            </table>
-            <p><a href="checksums.txt">checksums.txt (SHA-256)</a></p>
-
-            <h2>Docker</h2>
-            <p>Multi-platform images (<code>linux/amd64</code>, <code>linux/arm64</code>) are published to the GitHub Container Registry.</p>
-            <pre>docker pull ghcr.io/awsutils/bptools:latest</pre>
-            <p>Run with environment-variable credentials:</p>
-            <pre>docker run --rm \
-  -e AWS_ACCESS_KEY_ID \
-  -e AWS_SECRET_ACCESS_KEY \
-  -e AWS_SESSION_TOKEN \
-  -e AWS_REGION \
-  ghcr.io/awsutils/bptools:latest</pre>
-            <p>Run with a mounted credentials file:</p>
-            <pre>docker run --rm \
-  -v ~/.aws:/root/.aws:ro \
-  -e AWS_PROFILE=myprofile \
-  -e AWS_REGION=us-east-1 \
-  ghcr.io/awsutils/bptools:latest</pre>
-            <p>Pin to this release: <code>ghcr.io/awsutils/bptools:${VERSION}</code></p>
-          </body>
-          </html>
-          EOF
+          # Generate download index page (source lives in docs/index.html on main)
+          git show origin/main:docs/index.html | sed "s/__VERSION__/${VERSION}/g" > index.html
 
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
