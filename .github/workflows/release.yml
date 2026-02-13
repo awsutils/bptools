@@ -185,6 +185,24 @@ jobs:
               <tr><td>Windows</td><td>amd64</td><td><a href="bptools-windows-amd64.exe">bptools-windows-amd64.exe</a></td></tr>
             </table>
             <p><a href="checksums.txt">checksums.txt (SHA-256)</a></p>
+
+            <h2>Docker</h2>
+            <p>Multi-platform images (<code>linux/amd64</code>, <code>linux/arm64</code>) are published to the GitHub Container Registry.</p>
+            <pre>docker pull ghcr.io/awsutils/bptools:latest</pre>
+            <p>Run with environment-variable credentials:</p>
+            <pre>docker run --rm \
+  -e AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN \
+  -e AWS_REGION \
+  ghcr.io/awsutils/bptools:latest</pre>
+            <p>Run with a mounted credentials file:</p>
+            <pre>docker run --rm \
+  -v ~/.aws:/root/.aws:ro \
+  -e AWS_PROFILE=myprofile \
+  -e AWS_REGION=us-east-1 \
+  ghcr.io/awsutils/bptools:latest</pre>
+            <p>Pin to this release: <code>ghcr.io/awsutils/bptools:${VERSION}</code></p>
           </body>
           </html>
           EOF
