@@ -13,7 +13,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-access-control-enabled
 	checker.Register(ConfigCheck(
 		"opensearch-access-control-enabled",
-		"This rule checks OpenSearch access control enabled.",
+		"Checks if Amazon OpenSearch Service domains have fine-grained access control enabled. The rule is NON_COMPLIANT if AdvancedSecurityOptions is not enabled for the OpenSearch Service domain.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -34,7 +34,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-audit-logging-enabled + opensearch-logs-to-cloudwatch
 	checker.Register(LoggingCheck(
 		"opensearch-audit-logging-enabled",
-		"This rule checks OpenSearch audit logging enabled.",
+		"Checks if Amazon OpenSearch Service domains have audit logging enabled. The rule is NON_COMPLIANT if an OpenSearch Service domain does not have audit logging enabled.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -58,7 +58,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	))
 	checker.Register(LoggingCheck(
 		"opensearch-logs-to-cloudwatch",
-		"This rule checks OpenSearch logs to CloudWatch.",
+		"Checks if Amazon OpenSearch Service domains are configured to send logs to Amazon CloudWatch Logs. The rule is NON_COMPLIANT if logging is not configured.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -87,7 +87,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-encrypted-at-rest
 	checker.Register(EncryptionCheck(
 		"opensearch-encrypted-at-rest",
-		"This rule checks OpenSearch encrypted at rest.",
+		"Checks if Amazon OpenSearch Service domains have encryption at rest configuration enabled. The rule is NON_COMPLIANT if the EncryptionAtRestOptions field is not enabled.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -108,7 +108,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-node-to-node-encryption-check
 	checker.Register(EncryptionCheck(
 		"opensearch-node-to-node-encryption-check",
-		"This rule checks OpenSearch node-to-node encryption.",
+		"Check if Amazon OpenSearch Service nodes are encrypted end to end. The rule is NON_COMPLIANT if the node-to-node encryption is not enabled on the domain",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -129,7 +129,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-https-required
 	checker.Register(ConfigCheck(
 		"opensearch-https-required",
-		"This rule checks OpenSearch HTTPS required.",
+		"Checks whether connections to OpenSearch domains are using HTTPS. The rule is NON_COMPLIANT if the Amazon OpenSearch domain 'EnforceHTTPS' is not 'true' or is 'true' and 'TLSSecurityPolicy' is not in 'tlsPolicies'.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -150,7 +150,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-in-vpc-only
 	checker.Register(ConfigCheck(
 		"opensearch-in-vpc-only",
-		"This rule checks OpenSearch in VPC only.",
+		"Checks if Amazon OpenSearch Service domains are in an Amazon Virtual Private Cloud (VPC). The rule is NON_COMPLIANT if an OpenSearch Service domain endpoint is public.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -171,7 +171,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-data-node-fault-tolerance + opensearch-primary-node-fault-tolerance
 	checker.Register(ConfigCheck(
 		"opensearch-data-node-fault-tolerance",
-		"This rule checks OpenSearch data node fault tolerance.",
+		"Checks if Amazon OpenSearch Service domains are configured with at least three data nodes and zoneAwarenessEnabled is true. The rule is NON_COMPLIANT for an OpenSearch domain if 'instanceCount' is less than 3 or 'zoneAwarenessEnabled' is set to 'false'.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -196,7 +196,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"opensearch-primary-node-fault-tolerance",
-		"This rule checks OpenSearch primary node fault tolerance.",
+		"Checks if Amazon OpenSearch Service domains are configured with at least three dedicated primary nodes. The rule is NON_COMPLIANT for an OpenSearch Service domain if 'DedicatedMasterEnabled' is set to 'false', or 'DedicatedMasterCount' is less than 3.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -217,7 +217,7 @@ func RegisterOpenSearchChecks(d *awsdata.Data) {
 	// opensearch-update-check
 	checker.Register(ConfigCheck(
 		"opensearch-update-check",
-		"This rule checks OpenSearch update status.",
+		"Checks if Amazon OpenSearch Service version updates are available but not installed. The rule is NON_COMPLIANT for an OpenSearch domain if the latest software updates are not installed.",
 		"opensearch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

@@ -9,7 +9,7 @@ import (
 func RegisterRUMChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"rum-app-monitor-cloudwatch-logs-enabled",
-		"This rule checks rum app monitor cloudwatch logs enabled.",
+		"Checks if Amazon CloudWatch RUM app monitors have CloudWatch logs enabled. The rule is NON_COMPLIANT if configuration.CwLogEnabled is false.",
 		"rum",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -31,7 +31,7 @@ func RegisterRUMChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"rum-app-monitor-tagged",
-		"This rule checks rum app monitor tagged.",
+		"Checks if Amazon CloudWatch RUM app monitors have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"rum",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

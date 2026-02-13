@@ -9,7 +9,7 @@ import (
 func RegisterIoTSiteWiseChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"iotsitewise-asset-model-tagged",
-		"This rule checks tagging for iotsitewise asset model exist.",
+		"Checks if AWS IoT SiteWise asset models have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iotsitewise",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -35,7 +35,7 @@ func RegisterIoTSiteWiseChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iotsitewise-dashboard-tagged",
-		"This rule checks tagging for iotsitewise dashboard exist.",
+		"Checks if AWS IoT SiteWise dashboards have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iotsitewise",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -61,7 +61,7 @@ func RegisterIoTSiteWiseChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iotsitewise-gateway-tagged",
-		"This rule checks tagging for iotsitewise gateway exist.",
+		"Checks if AWS IoT SiteWise gateways have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iotsitewise",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -87,7 +87,7 @@ func RegisterIoTSiteWiseChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iotsitewise-portal-tagged",
-		"This rule checks tagging for iotsitewise portal exist.",
+		"Checks if AWS IoT SiteWise portals have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iotsitewise",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -113,7 +113,7 @@ func RegisterIoTSiteWiseChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iotsitewise-project-tagged",
-		"This rule checks tagging for iotsitewise project exist.",
+		"Checks if AWS IoT SiteWise projects have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iotsitewise",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

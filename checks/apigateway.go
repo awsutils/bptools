@@ -21,7 +21,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// apigateway-stage-access-logs-enabled
 	checker.Register(LoggingCheck(
 		"apigateway-stage-access-logs-enabled",
-		"This rule checks access logging is enabled for API Gateway stage.",
+		"Checks if Amazon API Gateway stages have access logging enabled. The rule is NON_COMPLIANT if 'accessLogSettings' is not present in Stage configuration.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -46,7 +46,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// apigateway-stage-description
 	checker.Register(DescriptionCheck(
 		"apigateway-stage-description",
-		"This rule checks descriptions for API Gateway stage exist.",
+		"Checks if Amazon API Gateway stages have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -70,7 +70,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// apigatewayv2-stage-description
 	checker.Register(DescriptionCheck(
 		"apigatewayv2-stage-description",
-		"This rule checks descriptions for API Gateway v2 stage exist.",
+		"Checks if Amazon API Gateway V2 stages have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"apigatewayv2",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -94,7 +94,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gwv2-access-logs-enabled
 	checker.Register(LoggingCheck(
 		"api-gwv2-access-logs-enabled",
-		"This rule checks access logging is enabled for API gwv2.",
+		"Checks if Amazon API Gateway V2 stages have access logging enabled. The rule is NON_COMPLIANT if 'accessLogSettings' is not present in Stage configuration.",
 		"apigatewayv2",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -119,7 +119,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gwv2-authorization-type-configured
 	checker.Register(ConfigCheck(
 		"api-gwv2-authorization-type-configured",
-		"This rule checks API gwv2 authorization type configured.",
+		"Checks if Amazon API Gatewayv2 API routes have an authorization type set. This rule is NON_COMPLIANT if the authorization type is NONE.",
 		"apigatewayv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -146,7 +146,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gwv2-stage-default-route-detailed-metrics-enabled
 	checker.Register(EnabledCheck(
 		"api-gwv2-stage-default-route-detailed-metrics-enabled",
-		"This rule checks enabled state for API gwv2 stage default route detailed metrics.",
+		"Checks if the default route settings for Amazon API Gateway V2 stages have detailed metrics enabled. The rule is NON_COMPLIANT if configuration.defaultRouteSettings.detailedMetricsEnabled is false.",
 		"apigatewayv2",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -171,7 +171,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-associated-with-waf
 	checker.Register(EnabledCheck(
 		"api-gw-associated-with-waf",
-		"This rule checks API Gateway associated with WAF.",
+		"Checks if an Amazon API Gateway API stage is using an AWS WAF web access control list (web ACL). The rule is NON_COMPLIANT if an AWS WAF Web ACL is not used or if a used AWS Web ACL does not match what is listed in the rule parameter.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -200,7 +200,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-cache-enabled-and-encrypted
 	checker.Register(ConfigCheck(
 		"api-gw-cache-enabled-and-encrypted",
-		"This rule checks API Gateway cache enabled and encrypted.",
+		"Checks if all methods in Amazon API Gateway stages have cache enabled and cache encrypted. The rule is NON_COMPLIANT if any method in an Amazon API Gateway stage is not configured to cache or the cache is not encrypted.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -237,7 +237,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-endpoint-type-check
 	checker.Register(ConfigCheck(
 		"api-gw-endpoint-type-check",
-		"This rule checks configuration for API Gateway endpoint type.",
+		"Checks if Amazon API Gateway APIs are of the type specified in the rule parameter endpointConfigurationType. The rule returns NON_COMPLIANT if the REST API does not match the endpoint type configured in the rule parameter.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -266,7 +266,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-execution-logging-enabled
 	checker.Register(LoggingCheck(
 		"api-gw-execution-logging-enabled",
-		"This rule checks logging is enabled for API Gateway execution.",
+		"Checks if all methods in Amazon API Gateway stages have logging enabled. The rule is NON_COMPLIANT if logging is not enabled, or if loggingLevel is neither ERROR nor INFO.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -302,7 +302,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-rest-api-tagged
 	checker.Register(TaggedCheck(
 		"api-gw-rest-api-tagged",
-		"This rule checks tagging for API Gateway rest API exist.",
+		"Checks if AWS ApiGateway REST API resources resources have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -328,7 +328,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-ssl-enabled
 	checker.Register(ConfigCheck(
 		"api-gw-ssl-enabled",
-		"This rule checks enabled state for API Gateway SSL.",
+		"Checks if a REST API stage uses an SSL certificate. The rule is NON_COMPLIANT if the REST API stage does not have an associated SSL certificate.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -354,7 +354,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-stage-tagged
 	checker.Register(TaggedCheck(
 		"api-gw-stage-tagged",
-		"This rule checks tagging for API Gateway stage exist.",
+		"Checks if AWS ApiGateway stage resources resources have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -383,7 +383,7 @@ func RegisterAPIGatewayChecks(d *awsdata.Data) {
 	// api-gw-xray-enabled
 	checker.Register(EnabledCheck(
 		"api-gw-xray-enabled",
-		"This rule checks X-Ray tracing is enabled for API Gateway.",
+		"Checks if AWS X-Ray tracing is enabled on Amazon API Gateway REST APIs. The rule is COMPLIANT if X-Ray tracing is enabled and NON_COMPLIANT otherwise.",
 		"apigateway",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {

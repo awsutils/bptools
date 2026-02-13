@@ -17,7 +17,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-cluster-configuration-check
 	checker.Register(ConfigCheck(
 		"redshift-cluster-configuration-check",
-		"This rule checks Redshift cluster configuration.",
+		"Checks if Amazon Redshift clusters have the specified settings. The rule is NON_COMPLIANT if the Amazon Redshift cluster is not encrypted or encrypted with another key, or if a cluster does not have audit logging enabled.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -46,7 +46,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-audit-logging-enabled
 	checker.Register(LoggingCheck(
 		"redshift-audit-logging-enabled",
-		"This rule checks Redshift audit logging enabled.",
+		"Checks if Amazon Redshift clusters are logging audits to a specific bucket. The rule is NON_COMPLIANT if audit logging is not enabled for a Redshift cluster or if the 'bucketNames' parameter is provided but the audit logging destination does not match.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -65,7 +65,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-backup-enabled
 	checker.Register(ConfigCheck(
 		"redshift-backup-enabled",
-		"This rule checks Redshift backup enabled.",
+		"Checks that Amazon Redshift automated snapshots are enabled for clusters. The rule is NON_COMPLIANT if the value for automatedSnapshotRetentionPeriod is greater than MaxRetentionPeriod or less than MinRetentionPeriod or the value is 0.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -86,7 +86,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-cluster-kms-enabled
 	checker.Register(EncryptionCheck(
 		"redshift-cluster-kms-enabled",
-		"This rule checks Redshift cluster KMS enabled.",
+		"Checks if Amazon Redshift clusters are using a specified AWS Key Management Service (AWS KMS) key for encryption. The rule is COMPLIANT if encryption is enabled and the cluster is encrypted with the key provided in the kmsKeyArn parameter. The rule is NON_COMPLIANT if the cluster is not encrypted or encrypted with another key.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -107,7 +107,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-cluster-public-access-check
 	checker.Register(ConfigCheck(
 		"redshift-cluster-public-access-check",
-		"This rule checks Redshift cluster public access.",
+		"Checks whether Amazon Redshift clusters are not publicly accessible. The rule is NON_COMPLIANT if the publiclyAccessible field is true in the cluster configuration item.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -128,7 +128,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-cluster-subnet-group-multi-az
 	checker.Register(ConfigCheck(
 		"redshift-cluster-subnet-group-multi-az",
-		"This rule checks Redshift cluster subnet group multi-AZ.",
+		"Checks If Amazon Redshift subnet groups contain subnets from more than one Availability Zone. The rule is NON_COMPLIANT if an Amazon Redshift subnet group does not contain subnets from at least two different Availability Zones.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -159,7 +159,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-cluster-maintenancesettings-check
 	checker.Register(ConfigCheck(
 		"redshift-cluster-maintenancesettings-check",
-		"This rule checks Redshift cluster maintenance settings.",
+		"Checks if Amazon Redshift clusters have the specified maintenance settings. The rule is NON_COMPLIANT if the automatic upgrades to major version is disabled.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -180,7 +180,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-cluster-multi-az-enabled
 	checker.Register(EnabledCheck(
 		"redshift-cluster-multi-az-enabled",
-		"This rule checks Redshift cluster multi-AZ enabled.",
+		"Checks if an Amazon Redshift cluster has multiple Availability Zones deployments enabled. This rule is NON_COMPLIANT if Amazon Redshift cluster does not have multiple Availability Zones deployments enabled.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -201,7 +201,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-default-admin-check + redshift-default-db-name-check
 	checker.Register(ConfigCheck(
 		"redshift-default-admin-check",
-		"This rule checks Redshift default admin.",
+		"Checks if an Amazon Redshift cluster has changed the admin username from its default value. The rule is NON_COMPLIANT if the admin username for a Redshift cluster is set to “awsuser” or if the username does not match what is listed in parameter.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -221,7 +221,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"redshift-default-db-name-check",
-		"This rule checks Redshift default DB name.",
+		"Checks if a Redshift cluster has changed its database name from the default value. The rule is NON_COMPLIANT if the database name for a Redshift cluster is set to “dev”, or if the optional parameter is provided and the database name does not match.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -243,7 +243,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-enhanced-vpc-routing-enabled
 	checker.Register(EnabledCheck(
 		"redshift-enhanced-vpc-routing-enabled",
-		"This rule checks Redshift enhanced VPC routing enabled.",
+		"Checks if Amazon Redshift cluster has 'enhancedVpcRouting' enabled. The rule is NON_COMPLIANT if 'enhancedVpcRouting' is not enabled or if the configuration.enhancedVpcRouting field is 'false'.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -264,7 +264,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-cluster-parameter-group-tagged
 	checker.Register(TaggedCheck(
 		"redshift-cluster-parameter-group-tagged",
-		"This rule checks Redshift cluster parameter group tagged.",
+		"Checks if Amazon Redshift cluster parameter groups have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -290,7 +290,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-require-tls-ssl
 	checker.Register(ConfigCheck(
 		"redshift-require-tls-ssl",
-		"This rule checks Redshift require TLS/SSL.",
+		"Checks if Amazon Redshift clusters require TLS/SSL encryption to connect to SQL clients. The rule is NON_COMPLIANT if any Amazon Redshift cluster has parameter require_SSL not set to true.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -325,7 +325,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-unrestricted-port-access
 	checker.Register(ConfigCheck(
 		"redshift-unrestricted-port-access",
-		"This rule checks Redshift unrestricted port access.",
+		"Checks if security groups associated with an Amazon Redshift cluster have inbound rules that allow unrestricted incoming traffic. The rule is NON_COMPLIANT if there are inbound rules that allow unrestricted incoming traffic to the Redshift cluster port.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -390,7 +390,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-serverless-default-admin-check + redshift-serverless-default-db-name-check
 	checker.Register(ConfigCheck(
 		"redshift-serverless-default-admin-check",
-		"This rule checks Redshift Serverless default admin.",
+		"Checks if an Amazon Redshift Serverless Namespace has changed the admin username from its default value. The rule is NON_COMPLIANT if the admin username for a Redshift Serverless Namespace is set to “admin”.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -410,7 +410,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"redshift-serverless-default-db-name-check",
-		"This rule checks Redshift Serverless default DB name.",
+		"Checks if an Amazon Redshift Serverless namespace has changed its database name from the default value. The rule is NON_COMPLIANT if the database name for an Amazon Redshift Serverless namespace is set to `dev`.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -432,7 +432,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-serverless-namespace-cmk-encryption
 	checker.Register(EncryptionCheck(
 		"redshift-serverless-namespace-cmk-encryption",
-		"This rule checks Redshift Serverless namespace CMK encryption.",
+		"Checks if Amazon Redshift Serverless namespaces are encrypted by customer managed AWS KMS keys. The rule is NON_COMPLIANT if a namespace is not encrypted by a customer managed key. Optionally, you can specify a list of KMS keys for rule to check.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -453,7 +453,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-serverless-publish-logs-to-cloudwatch
 	checker.Register(LoggingCheck(
 		"redshift-serverless-publish-logs-to-cloudwatch",
-		"This rule checks Redshift Serverless publish logs to CloudWatch.",
+		"Checks if Amazon Redshift Serverless Namespace is configured to publish the following logs to Amazon CloudWatch Logs. This rule is NON_COMPLIANT if the Namespace is not configured to publish the following logs to Amazon CloudWatch Logs.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -474,7 +474,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	// redshift-serverless-workgroup-encrypted-in-transit + no public access + routes within vpc
 	checker.Register(ConfigCheck(
 		"redshift-serverless-workgroup-encrypted-in-transit",
-		"This rule checks Redshift Serverless workgroup encrypted in transit.",
+		"Checks if AWS Redshift Serverless workgroups have the require_ssl config parameter set to true. The rule is NON_COMPLIANT if require_ssl is set to false.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -501,7 +501,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"redshift-serverless-workgroup-no-public-access",
-		"This rule checks Redshift Serverless workgroup no public access.",
+		"Checks if Amazon Redshift Serverless workgroups do not allow public access. The rule is NON_COMPLIANT if a workgroup has 'Turn on Public Accessible' enabled.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -520,7 +520,7 @@ func RegisterRedshiftChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"redshift-serverless-workgroup-routes-within-vpc",
-		"This rule checks Redshift Serverless workgroup routes within VPC.",
+		"Checks if Amazon Redshift Serverless workgroups route the network traffic through a VPC. The rule is NON_COMPLIANT if workgroups have 'Turn on Enhanced VPC routing' disabled.",
 		"redshift",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

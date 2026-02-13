@@ -13,7 +13,7 @@ import (
 func RegisterElasticsearchChecks(d *awsdata.Data) {
 	checker.Register(EncryptionCheck(
 		"elasticsearch-encrypted-at-rest",
-		"This rule checks elasticsearch encrypted at rest.",
+		"Checks if Amazon OpenSearch Service (previously called Elasticsearch) domains have encryption at rest configuration enabled. The rule is NON_COMPLIANT if the EncryptionAtRestOptions field is not enabled.",
 		"elasticsearch",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -33,7 +33,7 @@ func RegisterElasticsearchChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"elasticsearch-in-vpc-only",
-		"This rule checks elasticsearch in VPC only.",
+		"Checks if Amazon OpenSearch Service (previously called Elasticsearch) domains are in Amazon Virtual Private Cloud (Amazon VPC). The rule is NON_COMPLIANT if an OpenSearch Service domain endpoint is public.",
 		"elasticsearch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -53,7 +53,7 @@ func RegisterElasticsearchChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"elasticsearch-logs-to-cloudwatch",
-		"This rule checks elasticsearch logs to CloudWatch.",
+		"Checks if OpenSearch Service (previously called Elasticsearch) domains are configured to send logs to CloudWatch Logs. The rule is COMPLIANT if a log is enabled for an OpenSearch Service domain. The rule is NON_COMPLIANT if logging is not configured.",
 		"elasticsearch",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -81,7 +81,7 @@ func RegisterElasticsearchChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"elasticsearch-node-to-node-encryption-check",
-		"This rule checks configuration for elasticsearch node to node encryption.",
+		"Check that Amazon OpenSearch Service nodes are encrypted end to end. The rule is NON_COMPLIANT if the node-to-node encryption is disabled on the domain.",
 		"elasticsearch",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {

@@ -11,7 +11,7 @@ import (
 func RegisterServiceCatalogChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"service-catalog-portfolio-tagged",
-		"This rule checks service catalog portfolio tagged.",
+		"Checks if AWS Service Catalog portfolio resources have tags. Optionally, required tag keys can be specified. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"servicecatalog",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -41,7 +41,7 @@ func RegisterServiceCatalogChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"service-catalog-shared-within-organization",
-		"This rule checks service catalog shared within organization.",
+		"Checks if AWS Service Catalog shares portfolios to an organization (a collection of AWS accounts treated as a single unit) when integration is enabled with AWS Organizations. The rule is NON_COMPLIANT if the `Type` value of a share is `ACCOUNT`.",
 		"servicecatalog",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

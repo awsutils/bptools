@@ -13,7 +13,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 	// athena-data-catalog-description
 	checker.Register(DescriptionCheck(
 		"athena-data-catalog-description",
-		"This rule checks Athena data catalog description.",
+		"Checks if Amazon Athena data catalogs have a description. The rule is NON_COMPLIANT if configuration.Description does not exist.",
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -36,7 +36,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 	// athena-prepared-statement-description
 	checker.Register(DescriptionCheck(
 		"athena-prepared-statement-description",
-		"This rule checks Athena prepared statement description.",
+		"Checks if Amazon Athena prepared statements have a description. The rule is NON_COMPLIANT if configuration.Description does not exist.",
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -80,7 +80,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 	// athena-workgroup-description
 	checker.Register(DescriptionCheck(
 		"athena-workgroup-description",
-		"This rule checks Athena workgroup description.",
+		"Checks if Amazon Athena workgroups have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -99,7 +99,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 	// athena-workgroup-encrypted-at-rest
 	checker.Register(EncryptionCheck(
 		"athena-workgroup-encrypted-at-rest",
-		"This rule checks Athena workgroup encrypted at rest.",
+		"Checks if an Amazon Athena workgroup is encrypted at rest. The rule is NON_COMPLIANT if encryption of data at rest is not enabled for an Athena workgroup.",
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -119,7 +119,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 	// athena-workgroup-enforce-workgroup-configuration
 	checker.Register(EnabledCheck(
 		"athena-workgroup-enforce-workgroup-configuration",
-		"This rule checks Athena workgroup enforce workgroup configuration.",
+		"Checks if Amazon Athena workgroups using Athena engine enforce workgroup configuration to override client-side settings. The rule is NON_COMPLIANT if configuration.WorkGroupConfiguration.EnforceWorkGroupConfiguration is false.",
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -139,7 +139,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 	// athena-workgroup-engine-version-auto-upgrade
 	checker.Register(EnabledCheck(
 		"athena-workgroup-engine-version-auto-upgrade",
-		"This rule checks Athena workgroup engine version auto upgrade.",
+		"Checks if Amazon Athena workgroups using Athena engine are configured to auto upgrade. The rule is NON_COMPLIANT if configuration.WorkGroupConfiguration.EngineVersion.SelectedEngineVersion is not 'AUTO'.",
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -162,7 +162,7 @@ func RegisterAthenaChecks(d *awsdata.Data) {
 	// athena-workgroup-logging-enabled
 	checker.Register(LoggingCheck(
 		"athena-workgroup-logging-enabled",
-		"This rule checks Athena workgroup logging enabled.",
+		"Checks if Amazon Athena WorkGroup publishes usage metrics to Amazon CloudWatch. The rule is NON_COMPLIANT if an Amazon Athena WorkGroup 'PublishCloudWatchMetricsEnabled' is set to false.",
 		"athena",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {

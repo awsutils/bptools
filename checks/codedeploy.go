@@ -16,7 +16,7 @@ import (
 func RegisterCodeDeployChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"codedeploy-auto-rollback-monitor-enabled",
-		"This rule checks enabled state for codedeploy auto rollback monitor.",
+		"Checks if the deployment group is configured with automatic deployment rollback and deployment monitoring with alarms attached. The rule is NON_COMPLIANT if AutoRollbackConfiguration or AlarmConfiguration has not been configured or is not enabled.",
 		"codedeploy",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -48,7 +48,7 @@ func RegisterCodeDeployChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"codedeploy-deployment-group-auto-rollback-enabled",
-		"This rule checks enabled state for codedeploy deployment group auto rollback.",
+		"Checks if AWS CodeDeploy deployment groups have auto rollback configuration enabled. The rule is NON_COMPLIANT if configuration.autoRollbackConfiguration.enabled is false or does not exist.",
 		"codedeploy",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -67,7 +67,7 @@ func RegisterCodeDeployChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"codedeploy-deployment-group-outdated-instances-update",
-		"This rule checks codedeploy deployment group outdated instances update.",
+		"Checks if AWS CodeDeploy deployment groups automatically update outdated instances. The rule is NON_COMPLIANT if configuration.outdatedInstancesStrategy is 'IGNORE'.",
 		"codedeploy",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -90,7 +90,7 @@ func RegisterCodeDeployChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"codedeploy-ec2-minimum-healthy-hosts-configured",
-		"This rule checks codedeploy EC2 minimum healthy hosts configured.",
+		"Checks if the deployment group for EC2/On-Premises Compute Platform is configured with a minimum healthy hosts fleet percentage or host count greater than or equal to the input threshold. The rule is NON_COMPLIANT if either is below the threshold.",
 		"codedeploy",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -151,7 +151,7 @@ func RegisterCodeDeployChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"codedeploy-lambda-allatonce-traffic-shift-disabled",
-		"This rule checks disabled state for codedeploy LAMBDA allatonce traffic shift.",
+		"Checks if the deployment group for Lambda Compute Platform is not using the default deployment configuration. The rule is NON_COMPLIANT if the deployment group is using the deployment configuration 'CodeDeployDefault.LambdaAllAtOnce'.",
 		"codedeploy",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

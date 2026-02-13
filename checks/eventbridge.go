@@ -11,7 +11,7 @@ import (
 func RegisterEventBridgeChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"custom-eventbus-policy-attached",
-		"This rule checks custom eventbus policy attached.",
+		"Checks if Amazon EventBridge custom event buses have a resource-based policy attached. The rule is NON_COMPLIANT if a custom event bus policy does not have an attached resource-based policy.",
 		"eventbridge",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -38,7 +38,7 @@ func RegisterEventBridgeChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"global-endpoint-event-replication-enabled",
-		"This rule checks global endpoint event replication enabled.",
+		"Checks if event replication is enabled for Amazon EventBridge global endpoints. The rule is NON_COMPLIANT if event replication is not enabled.",
 		"eventbridge",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

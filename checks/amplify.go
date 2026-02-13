@@ -33,7 +33,7 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 	// amplify-app-description
 	checker.Register(DescriptionCheck(
 		"amplify-app-description",
-		"This rule checks descriptions for Amplify app exist.",
+		"Checks if AWS Amplify apps have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"amplify",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -52,7 +52,7 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 	// amplify-app-no-environment-variables
 	checker.Register(ConfigCheck(
 		"amplify-app-no-environment-variables",
-		"This rule checks environment variables are absent for Amplify app.",
+		"Checks that AWS Amplify apps do not contain environment variables. The rule is NON_COMPLIANT if configuration.EnvironmentVariables is not an empty list.",
 		"amplify",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -75,7 +75,7 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 	// amplify-app-branch-auto-deletion-enabled
 	checker.Register(EnabledCheck(
 		"amplify-app-branch-auto-deletion-enabled",
-		"This rule checks enabled state for Amplify app branch auto deletion.",
+		"Checks if AWS Amplify apps automatically disconnect a branch in Amplify Hosting when you delete a branch from your Git repository. The rule is NON_COMPLIANT if configuration.EnableBranchAutoDeletion is false.",
 		"amplify",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -95,7 +95,7 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 	// amplify-app-tagged
 	checker.Register(TaggedCheck(
 		"amplify-app-tagged",
-		"This rule checks tagging for Amplify app exist.",
+		"Checks if AWS Amplify apps have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"amplify",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -121,7 +121,7 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 	// amplify-branch-description
 	checker.Register(DescriptionCheck(
 		"amplify-branch-description",
-		"This rule checks descriptions for Amplify branch exist.",
+		"Checks if AWS Amplify branches have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"amplify",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -142,7 +142,7 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 	// amplify-branch-performance-mode-enabled
 	checker.Register(EnabledCheck(
 		"amplify-branch-performance-mode-enabled",
-		"This rule checks enabled state for Amplify branch performance mode.",
+		"Checks if AWS Amplify branches have performance mode enabled. The rule is NON_COMPLIANT if configuration.EnablePerformanceMode is false.",
 		"amplify",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -164,7 +164,7 @@ func RegisterAmplifyChecks(d *awsdata.Data) {
 	// amplify-branch-tagged
 	checker.Register(TaggedCheck(
 		"amplify-branch-tagged",
-		"This rule checks tagging for Amplify branch exist.",
+		"Checks if AWS Amplify branches have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"amplify",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

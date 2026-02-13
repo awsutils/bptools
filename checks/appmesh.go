@@ -13,7 +13,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-mesh-tagged
 	checker.Register(TaggedCheck(
 		"appmesh-mesh-tagged",
-		"This rule checks tagging for App Mesh mesh exist.",
+		"Checks if AWS App Mesh meshes have tags. Optionally, you can specify tag keys for the rule to check. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -39,7 +39,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-route-tagged
 	checker.Register(TaggedCheck(
 		"appmesh-route-tagged",
-		"This rule checks tagging for App Mesh route exist.",
+		"Checks if AWS App Mesh routes have tags. Optionally, you can specify tag keys for the rule to check. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -67,7 +67,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-gateway-route-tagged
 	checker.Register(TaggedCheck(
 		"appmesh-gateway-route-tagged",
-		"This rule checks tagging for App Mesh gateway route exist.",
+		"Checks if AWS App Mesh gateway routes have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -95,7 +95,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-node-tagged
 	checker.Register(TaggedCheck(
 		"appmesh-virtual-node-tagged",
-		"This rule checks tagging for App Mesh virtual node exist.",
+		"Checks if AWS App Mesh virtual nodes have tags. Optionally, you can specify tag keys for the rule to check. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -123,7 +123,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-router-tagged
 	checker.Register(TaggedCheck(
 		"appmesh-virtual-router-tagged",
-		"This rule checks tagging for App Mesh virtual router exist.",
+		"Checks if AWS App Mesh virtual routers have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -151,7 +151,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-service-tagged
 	checker.Register(TaggedCheck(
 		"appmesh-virtual-service-tagged",
-		"This rule checks tagging for App Mesh virtual service exist.",
+		"Checks if AWS App Mesh virtual services have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -179,7 +179,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-gateway-tagged
 	checker.Register(TaggedCheck(
 		"appmesh-virtual-gateway-tagged",
-		"This rule checks tagging for App Mesh virtual gateway exist.",
+		"Checks if AWS App Mesh virtual gateways have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -207,7 +207,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-mesh-deny-tcp-forwarding
 	checker.Register(ConfigCheck(
 		"appmesh-mesh-deny-tcp-forwarding",
-		"This rule checks App Mesh mesh deny tcp forwarding.",
+		"Checks if proxies for AWS App Mesh service meshes do not forward TCP traffic directly to services that aren't deployed with a proxy that is defined in the mesh. The rule is NON_COMPLIANT if configuration.Spec.EgressFilter.Type is set to 'ALLOW_ALL'.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -227,7 +227,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-gateway-backend-defaults-tls
 	checker.Register(ConfigCheck(
 		"appmesh-virtual-gateway-backend-defaults-tls",
-		"This rule checks App Mesh virtual gateway backend defaults TLS.",
+		"Checks if backend defaults for AWS App Mesh virtual gateways require the virtual gateways to communicate with all ports using TLS. The rule is NON_COMPLIANT if configuration.Spec.BackendDefaults.ClientPolicy.Tls.Enforce is false.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -250,7 +250,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-gateway-logging-file-path-exists
 	checker.Register(ConfigCheck(
 		"appmesh-virtual-gateway-logging-file-path-exists",
-		"This rule checks logging file paths exist for App Mesh virtual gateway.",
+		"Checks if AWS App Mesh virtual gateways have a file path to write access logs to. The rule is NON_COMPLIANT if configuration.Spec.Logging.AccessLog.File.Path does not exist.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -276,7 +276,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-node-backend-defaults-tls-on
 	checker.Register(ConfigCheck(
 		"appmesh-virtual-node-backend-defaults-tls-on",
-		"This rule checks App Mesh virtual node backend defaults TLS on.",
+		"Checks if backend defaults for AWS App Mesh virtual nodes require the virtual nodes to communicate with all ports using TLS. The rule is NON_COMPLIANT if configuration.Spec.BackendDefaults.ClientPolicy.Tls.Enforce is false.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -299,7 +299,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-node-cloud-map-ip-pref-check
 	checker.Register(ConfigCheck(
 		"appmesh-virtual-node-cloud-map-ip-pref-check",
-		"This rule checks configuration for App Mesh virtual node cloud map IP pref.",
+		"Checks if an AWS App Mesh virtual node is configured with the specified IP preference for AWS Cloud Map service discovery. The rule is NON_COMPLIANT if the virtual node is not configured with the IP preference specified in the required rule parameter.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -324,7 +324,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-node-dns-ip-pref-check
 	checker.Register(ConfigCheck(
 		"appmesh-virtual-node-dns-ip-pref-check",
-		"This rule checks configuration for App Mesh virtual node DNS IP pref.",
+		"Checks if an AWS App Mesh virtual node is configured with the specified IP preference for DNS service discovery. The rule is NON_COMPLIANT if the virtual node is not configured with the IP preference specified in the required rule parameter.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -349,7 +349,7 @@ func RegisterAppMeshChecks(d *awsdata.Data) {
 	// appmesh-virtual-node-logging-file-path-exists
 	checker.Register(ConfigCheck(
 		"appmesh-virtual-node-logging-file-path-exists",
-		"This rule checks logging file paths exist for App Mesh virtual node.",
+		"Checks if AWS App Mesh virtual nodes have a file path to write access logs to. The rule is NON_COMPLIANT if configuration.Spec.Logging.AccessLog.File.Path does not exist.",
 		"appmesh",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

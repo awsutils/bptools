@@ -9,7 +9,7 @@ import (
 func RegisterAMPChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"aps-rule-groups-namespace-tagged",
-		"This rule checks aps rule groups namespace tagged.",
+		"Checks if Amazon Managed Service for Prometheus rule groups namepaces have tags. You can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"amp",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

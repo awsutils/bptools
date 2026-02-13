@@ -12,7 +12,7 @@ import (
 func RegisterMQChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"active-mq-supported-version",
-		"This rule checks active mq supported version.",
+		"Checks if an Amazon MQ ActiveMQ broker is running on a specified minimum supported engine version. The rule is NON_COMPLIANT if the ActiveMQ broker is not running on the minimum supported engine version that you specify.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -42,7 +42,7 @@ func RegisterMQChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"rabbit-mq-supported-version",
-		"This rule checks rabbit mq supported version.",
+		"Checks if an Amazon MQ RabbitMQ broker is running on a specified minimum supported engine version. The rule is NON_COMPLIANT if the RabbitMQ broker is not running on the minimum supported engine version that you specify.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -95,7 +95,7 @@ func RegisterMQChecks(d *awsdata.Data) {
 	// mq-broker-general-logging-enabled
 	checker.Register(LoggingCheck(
 		"mq-broker-general-logging-enabled",
-		"This rule checks MQ broker general logging enabled.",
+		"Checks if Amazon MQ brokers have general logging enabled. The rule is NON_COMPLIANT if configuration.Logs.General is false.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -138,7 +138,7 @@ func RegisterMQChecks(d *awsdata.Data) {
 	// mq-no-public-access
 	checker.Register(ConfigCheck(
 		"mq-no-public-access",
-		"This rule checks MQ no public access.",
+		"Checks if Amazon MQ brokers are not publicly accessible. The rule is NON_COMPLIANT if the 'PubliclyAccessible' field is set to true for an Amazon MQ broker.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -158,7 +158,7 @@ func RegisterMQChecks(d *awsdata.Data) {
 	// mq-active-deployment-mode + mq-rabbit-deployment-mode
 	checker.Register(ConfigCheck(
 		"mq-active-deployment-mode",
-		"This rule checks MQ ActiveMQ deployment mode.",
+		"Checks the deployment mode configured for Amazon MQ ActiveMQ broker engine. The rule is NON_COMPLIANT if the default single-instance broker mode is being used.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -179,7 +179,7 @@ func RegisterMQChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"mq-rabbit-deployment-mode",
-		"This rule checks MQ RabbitMQ deployment mode.",
+		"Checks the deployment mode configured for the Amazon MQ RabbitMQ broker engine. The rule is NON_COMPLIANT if the default single-instance broker mode is being used.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -202,7 +202,7 @@ func RegisterMQChecks(d *awsdata.Data) {
 	// mq-active-broker-ldap-authentication
 	checker.Register(ConfigCheck(
 		"mq-active-broker-ldap-authentication",
-		"This rule checks MQ ActiveMQ LDAP authentication.",
+		"Checks if Amazon MQ ActiveMQ brokers use the LDAP authentication strategy to secure the broker. The rule is NON_COMPLIANT if configuration.AuthenticationStrategy is not 'ldap'.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -229,7 +229,7 @@ func RegisterMQChecks(d *awsdata.Data) {
 	// mq-active-single-instance-broker-storage-type-efs
 	checker.Register(ConfigCheck(
 		"mq-active-single-instance-broker-storage-type-efs",
-		"This rule checks MQ ActiveMQ single instance storage type EFS.",
+		"Checks if an Amazon MQ for ActiveMQ single-instance broker using the mq.m5 instance type family is configured with Amazon Elastic File System (EFS) for broker storage. The rule is NON_COMPLIANT if configuration.StorageType is not 'efs'.",
 		"mq",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

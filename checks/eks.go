@@ -120,7 +120,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	// eks-cluster-logging-enabled and eks-cluster-log-enabled
 	checker.Register(LoggingCheck(
 		"eks-cluster-logging-enabled",
-		"This rule checks EKS cluster logging enabled.",
+		"Checks if an Amazon Elastic Kubernetes Service (Amazon EKS) cluster is configured with logging enabled. The rule is NON_COMPLIANT if logging for Amazon EKS clusters is not enabled for all log types.",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -138,7 +138,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	))
 	checker.Register(LoggingCheck(
 		"eks-cluster-log-enabled",
-		"This rule checks EKS cluster log enabled.",
+		"Checks if an Amazon Elastic Kubernetes Service (Amazon EKS) cluster is configured with logging enabled. The rule is NON_COMPLIANT if logging for Amazon EKS clusters is not enabled or if logging is not enabled with the log type mentioned.",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -158,7 +158,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	// eks-endpoint-no-public-access
 	checker.Register(ConfigCheck(
 		"eks-endpoint-no-public-access",
-		"This rule checks EKS endpoint no public access.",
+		"Checks if the Amazon Elastic Kubernetes Service (Amazon EKS) endpoint is not publicly accessible. The rule is NON_COMPLIANT if the endpoint is publicly accessible.",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -178,7 +178,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	// eks-secrets-encrypted + eks-cluster-secrets-encrypted
 	checker.Register(EncryptionCheck(
 		"eks-secrets-encrypted",
-		"This rule checks EKS secrets encrypted.",
+		"Checks if Amazon Elastic Kubernetes Service clusters are configured to have Kubernetes secrets encrypted using AWS Key Management Service (KMS) keys.",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -196,7 +196,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	))
 	checker.Register(EncryptionCheck(
 		"eks-cluster-secrets-encrypted",
-		"This rule checks EKS cluster secrets encrypted.",
+		"Checks if Amazon EKS clusters are configured to have Kubernetes secrets encrypted using AWS KMS. The rule is NON_COMPLIANT if an EKS cluster does not have an encryptionConfig resource or if encryptionConfig does not name secrets as a resource.",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -216,7 +216,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	// eks-addon-tagged
 	checker.Register(TaggedCheck(
 		"eks-addon-tagged",
-		"This rule checks EKS addon tagged.",
+		"Checks if Amazon EKS add-ons have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -241,7 +241,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	// eks-fargate-profile-tagged
 	checker.Register(TaggedCheck(
 		"eks-fargate-profile-tagged",
-		"This rule checks EKS fargate profile tagged.",
+		"Checks if Amazon EKS fargate profiles have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -266,7 +266,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	// eks-cluster-supported-version + eks-cluster-oldest-supported-version
 	checker.Register(ConfigCheck(
 		"eks-cluster-supported-version",
-		"This rule checks EKS cluster supported version.",
+		"Checks if an Amazon Elastic Kubernetes Service (EKS) cluster is running a supported Kubernetes version. This rule is NON_COMPLIANT if an EKS cluster is running an unsupported version (less than the parameter 'oldestVersionSupported').",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -297,7 +297,7 @@ func RegisterEKSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"eks-cluster-oldest-supported-version",
-		"This rule checks EKS cluster oldest supported version.",
+		"Checks if an Amazon Elastic Kubernetes Service (EKS) cluster is running the oldest supported version. The rule is NON_COMPLIANT if an EKS cluster is running oldest supported version (equal to the parameter 'oldestVersionSupported').",
 		"eks",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

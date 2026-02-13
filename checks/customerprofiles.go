@@ -11,7 +11,7 @@ import (
 func RegisterCustomerProfilesChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"customerprofiles-domain-tagged",
-		"This rule checks customerprofiles domain tagged.",
+		"Checks if Amazon Connect Customer Profiles domains have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"customerprofiles",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -33,7 +33,7 @@ func RegisterCustomerProfilesChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"customerprofiles-object-type-allow-profile-creation",
-		"This rule checks customerprofiles object type allow profile creation.",
+		"Checks if Amazon Connect Customer Profiles object types allow the creation of a new standard profile if one does not exist. The rule is NON_COMPLIANT if configuration.AllowProfileCreation is false.",
 		"customerprofiles",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -55,7 +55,7 @@ func RegisterCustomerProfilesChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"customerprofiles-object-type-tagged",
-		"This rule checks customerprofiles object type tagged.",
+		"Checks if Amazon Connect Customer Profiles object types have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"customerprofiles",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

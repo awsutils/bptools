@@ -18,7 +18,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-storage-encrypted
 	checker.Register(EncryptionCheck(
 		"rds-storage-encrypted",
-		"This rule checks RDS storage encrypted.",
+		"Checks if storage encryption is enabled for your Amazon Relational Database Service (Amazon RDS) DB instances. The rule is NON_COMPLIANT if storage encryption is not enabled.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -41,7 +41,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-cluster-encrypted-at-rest
 	checker.Register(EncryptionCheck(
 		"rds-cluster-encrypted-at-rest",
-		"This rule checks RDS cluster encrypted at rest.",
+		"Checks if an Amazon Relational Database Service (Amazon RDS) cluster is encrypted at rest. The rule is NON_COMPLIANT if an Amazon RDS cluster is not encrypted at rest.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -64,7 +64,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-instance-public-access-check
 	checker.Register(ConfigCheck(
 		"rds-instance-public-access-check",
-		"This rule checks RDS instance public access.",
+		"Checks if the Amazon Relational Database Service (Amazon RDS) instances are not publicly accessible. The rule is NON_COMPLIANT if the publiclyAccessible field is true in the instance configuration item.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -88,7 +88,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-instance-deletion-protection-enabled + rds-cluster-deletion-protection-enabled
 	checker.Register(EnabledCheck(
 		"rds-instance-deletion-protection-enabled",
-		"This rule checks RDS instance deletion protection enabled.",
+		"Checks if an Amazon Relational Database Service (Amazon RDS) instance has deletion protection enabled. The rule is NON_COMPLIANT if an Amazon RDS instance does not have deletion protection enabled; for example, deletionProtection is set to false.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -110,7 +110,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(EnabledCheck(
 		"rds-cluster-deletion-protection-enabled",
-		"This rule checks RDS cluster deletion protection enabled.",
+		"Checks if an Amazon Relational Database Service (Amazon RDS) cluster has deletion protection enabled. This rule is NON_COMPLIANT if an RDS cluster does not have deletion protection enabled.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -134,7 +134,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-instance-iam-authentication-enabled + rds-cluster-iam-authentication-enabled
 	checker.Register(EnabledCheck(
 		"rds-instance-iam-authentication-enabled",
-		"This rule checks RDS instance IAM authentication enabled.",
+		"Checks if an Amazon Relational Database Service (Amazon RDS) instance has AWS Identity and Access Management (IAM) authentication enabled. The rule is NON_COMPLIANT if an Amazon RDS instance does not have IAM authentication enabled.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -156,7 +156,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(EnabledCheck(
 		"rds-cluster-iam-authentication-enabled",
-		"This rule checks RDS cluster IAM authentication enabled.",
+		"Checks if an Amazon Relational Database Service (Amazon RDS) cluster has AWS Identity and Access Management (IAM) authentication enabled. The rule is NON_COMPLIANT if an Amazon RDS Cluster does not have IAM authentication enabled.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -180,7 +180,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-automatic-minor-version-upgrade-enabled
 	checker.Register(EnabledCheck(
 		"rds-automatic-minor-version-upgrade-enabled",
-		"This rule checks RDS automatic minor version upgrade.",
+		"Checks if Amazon Relational Database Service (RDS) database instances are configured for automatic minor version upgrades. The rule is NON_COMPLIANT if the value of 'autoMinorVersionUpgrade' is false.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -204,7 +204,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-cluster-auto-minor-version-upgrade-enable
 	checker.Register(EnabledCheck(
 		"rds-cluster-auto-minor-version-upgrade-enable",
-		"This rule checks RDS cluster auto minor version upgrade.",
+		"Checks if automatic minor version upgrades are enabled for Amazon RDS Multi-AZ cluster deployments. The rule is NON_COMPLIANT if autoMinorVersionUpgrade is set to false.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -228,7 +228,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-enhanced-monitoring-enabled
 	checker.Register(EnabledCheck(
 		"rds-enhanced-monitoring-enabled",
-		"This rule checks RDS enhanced monitoring enabled.",
+		"Checks if enhanced monitoring is enabled for Amazon RDS instances. This rule is NON_COMPLIANT if 'monitoringInterval' is '0' in the configuration item of the RDS instance, or if 'monitoringInterval' does not match the rule parameter value.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -252,7 +252,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-event-subscription-tagged
 	checker.Register(TaggedCheck(
 		"rds-event-subscription-tagged",
-		"This rule checks RDS event subscription tagged.",
+		"Checks if Amazon RDS event subscriptions have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -278,7 +278,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-option-group-tagged
 	checker.Register(TaggedCheck(
 		"rds-option-group-tagged",
-		"This rule checks RDS option group tagged.",
+		"Checks if Amazon RDS option group resources have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -304,7 +304,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-instance-default-admin-check + rds-cluster-default-admin-check
 	checker.Register(ConfigCheck(
 		"rds-instance-default-admin-check",
-		"This rule checks RDS instance default admin.",
+		"Checks if an Amazon Relational Database Service (Amazon RDS) database has changed the admin username from its default value. This rule will only run on RDS database instances. The rule is NON_COMPLIANT if the admin username is set to the default value.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -330,7 +330,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-cluster-default-admin-check",
-		"This rule checks RDS cluster default admin.",
+		"Checks if an Amazon Relational Database Service (Amazon RDS) database cluster has changed the admin username from its default value. The rule is NON_COMPLIANT if the admin username is set to the default value.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -358,7 +358,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-logging-enabled + engine-specific logging checks
 	checker.Register(LoggingCheck(
 		"rds-logging-enabled",
-		"This rule checks RDS logging enabled.",
+		"Checks if respective logs of Amazon Relational Database Service (Amazon RDS) are enabled. The rule is NON_COMPLIANT if any log types are not enabled.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -378,7 +378,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			return res, nil
 		},
 	))
-	checker.Register(LoggingCheck("rds-aurora-mysql-audit-logging-enabled", "This rule checks Aurora MySQL audit logging enabled.", "rds", d,
+	checker.Register(LoggingCheck("rds-aurora-mysql-audit-logging-enabled", "Checks if Amazon Aurora MySQL-Compatible Edition clusters are configured to publish audit logs to Amazon CloudWatch Logs. The rule is NON_COMPLIANT if Aurora MySQL-Compatible Edition clusters do not have audit log publishing configured.", "rds", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			clusters, err := d.RDSDBClusters.Get()
 			if err != nil {
@@ -395,7 +395,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			}
 			return res, nil
 		}))
-	checker.Register(LoggingCheck("aurora-mysql-cluster-audit-logging", "This rule checks configuration for Aurora MySQL cluster audit logging.", "rds", d,
+	checker.Register(LoggingCheck("aurora-mysql-cluster-audit-logging", "Checks if Amazon Aurora MySQL DB clusters have audit logging enabled. The rule is NON_COMPLIANT if a DB cluster does not have audit logging enabled.", "rds", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			clusters, err := d.RDSDBClusters.Get()
 			if err != nil {
@@ -421,7 +421,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			}
 			return res, nil
 		}))
-	checker.Register(ConfigCheck("aurora-mysql-backtracking-enabled", "This rule checks Aurora MySQL backtracking enabled.", "rds", d,
+	checker.Register(ConfigCheck("aurora-mysql-backtracking-enabled", "Checks if an Amazon Aurora MySQL cluster has backtracking enabled. The rule is NON_COMPLIANT if the Aurora cluster uses MySQL and it does not have backtracking enabled.", "rds", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			clusters, err := d.RDSDBClusters.Get()
 			if err != nil {
@@ -445,7 +445,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			}
 			return res, nil
 		}))
-	checker.Register(LoggingCheck("rds-aurora-postgresql-logs-to-cloudwatch", "This rule checks Aurora PostgreSQL logs to CloudWatch.", "rds", d,
+	checker.Register(LoggingCheck("rds-aurora-postgresql-logs-to-cloudwatch", "Checks if an Amazon Aurora PostgreSQL DB cluster is configured to publish PostgreSQL logs to Amazon CloudWatch Logs. This rule is NON_COMPLIANT if the DB cluster is not configured to publish PostgreSQL logs to Amazon CloudWatch Logs.", "rds", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			clusters, err := d.RDSDBClusters.Get()
 			if err != nil {
@@ -462,7 +462,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			}
 			return res, nil
 		}))
-	checker.Register(LoggingCheck("rds-postgresql-logs-to-cloudwatch", "This rule checks PostgreSQL logs to CloudWatch.", "rds", d,
+	checker.Register(LoggingCheck("rds-postgresql-logs-to-cloudwatch", "Checks if an Amazon PostgreSQL DB instance is configured to publish logs to Amazon CloudWatch Logs. The rule is NON_COMPLIANT if the DB instance is not configured to publish logs to Amazon CloudWatch Logs.", "rds", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			instances, err := d.RDSDBInstances.Get()
 			if err != nil {
@@ -479,7 +479,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 			}
 			return res, nil
 		}))
-	checker.Register(LoggingCheck("rds-sql-server-logs-to-cloudwatch", "This rule checks SQL Server logs to CloudWatch.", "rds", d,
+	checker.Register(LoggingCheck("rds-sql-server-logs-to-cloudwatch", "Checks if an Amazon SQL Server DB instance is configured to publish logs to Amazon CloudWatch Logs. This rule is NON_COMPLIANT if the DB instance is not configured to publish logs to Amazon CloudWatch Logs.", "rds", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			instances, err := d.RDSDBInstances.Get()
 			if err != nil {
@@ -500,7 +500,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-instance-subnet-igw-check
 	checker.Register(ConfigCheck(
 		"rds-instance-subnet-igw-check",
-		"This rule checks RDS instance subnet IGW.",
+		"Checks if RDS DB instances are deployed in a public subnet with a route to the internet gateway. The rule is NON_COMPLIANT if RDS DB instances is deployed in a public subnet",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -540,7 +540,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-multi-az-support + rds-cluster-multi-az-enabled
 	checker.Register(EnabledCheck(
 		"rds-multi-az-support",
-		"This rule checks RDS multi-AZ support.",
+		"Checks whether high availability is enabled for your RDS DB instances.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -562,7 +562,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(EnabledCheck(
 		"rds-cluster-multi-az-enabled",
-		"This rule checks RDS cluster multi-AZ enabled.",
+		"Checks if Multi-Availability Zone (Multi-AZ) replication is enabled on Amazon Aurora and Multi-AZ DB clusters managed by Amazon Relational Database Service (Amazon RDS). The rule is NON_COMPLIANT if an Amazon RDS instance is not configured with Multi-AZ.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -586,7 +586,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-proxy-tls-encryption
 	checker.Register(ConfigCheck(
 		"rds-proxy-tls-encryption",
-		"This rule checks RDS proxy TLS encryption.",
+		"Checks if Amazon RDS proxies enforce TLS for all connections. The rule is NON_COMPLIANT if an Amazon RDS proxy does not have TLS enforced for all connections.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -610,7 +610,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-snapshots-public-prohibited + rds-snapshot-encrypted
 	checker.Register(ConfigCheck(
 		"rds-snapshots-public-prohibited",
-		"This rule checks RDS snapshots public prohibited.",
+		"Checks if Amazon Relational Database Service (Amazon RDS) snapshots are public. The rule is NON_COMPLIANT if any existing and new Amazon RDS snapshots are public.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -641,7 +641,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(EncryptionCheck(
 		"rds-snapshot-encrypted",
-		"This rule checks RDS snapshot encrypted.",
+		"Checks if Amazon Relational Database Service (Amazon RDS) DB snapshots are encrypted. The rule is NON_COMPLIANT if the Amazon RDS DB snapshots are not encrypted.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -664,7 +664,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-resources-protected-by-backup-plan + rds-in-backup-plan + rds-last-backup-recovery-point-created + rds-meets-restore-time-target
 	checker.Register(ConfigCheck(
 		"rds-resources-protected-by-backup-plan",
-		"This rule checks RDS resources protected by backup plan.",
+		"Checks if Amazon Relational Database Service (Amazon RDS) instances are protected by a backup plan. The rule is NON_COMPLIANT if the Amazon RDS Database instance is not covered by a backup plan.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -690,7 +690,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-in-backup-plan",
-		"This rule checks RDS in backup plan.",
+		"Checks if Amazon Relational Database Service (Amazon RDS) databases are present in AWS Backup plans. The rule is NON_COMPLIANT if Amazon RDS databases are not included in any AWS Backup plan.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -716,7 +716,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-last-backup-recovery-point-created",
-		"This rule checks RDS last backup recovery point created.",
+		"Checks if a recovery point was created for Amazon Relational Database Service (Amazon RDS). The rule is NON_COMPLIANT if the Amazon RDS instance does not have a corresponding recovery point created within the specified time period.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -742,7 +742,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-meets-restore-time-target",
-		"This rule checks RDS meets restore time target.",
+		"Checks if the restore time of Amazon Relational Database Service (Amazon RDS) instances meets specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of an Amazon RDS instance is greater than maxRestoreTime minutes.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -769,7 +769,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// Aurora backup and encryption checks
 	checker.Register(EncryptionCheck(
 		"aurora-global-database-encryption-at-rest",
-		"This rule checks Aurora global database encryption at rest.",
+		"Checks if Amazon Aurora Global Databases have storage encryption enabled. This rule is NON_COMPLIANT if an Amazon Aurora Global Database does not have storage encryption enabled.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -796,7 +796,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"aurora-last-backup-recovery-point-created",
-		"This rule checks Aurora last backup recovery point created.",
+		"Checks if a recovery point was created for Amazon Aurora DB clusters. The rule is NON_COMPLIANT if the Amazon Relational Database Service (Amazon RDS) DB Cluster does not have a corresponding recovery point created within the specified time period.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -822,7 +822,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"aurora-meets-restore-time-target",
-		"This rule checks Aurora meets restore time target.",
+		"Checks if the restore time of Amazon Aurora DB clusters meets the specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of an Aurora DB Cluster is greater than maxRestoreTime minutes.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -847,7 +847,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"aurora-resources-in-logically-air-gapped-vault",
-		"This rule checks Aurora resources in logically air gapped vault.",
+		"Checks if Amazon Aurora DB clusters are in a logically air-gapped vault. The rule is NON_COMPLIANT if an Amazon Aurora DB cluster is not in a logically air-gapped vault within the specified time period.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -873,7 +873,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"aurora-resources-protected-by-backup-plan",
-		"This rule checks Aurora resources protected by backup plan.",
+		"Checks if Amazon Aurora DB clusters are protected by a backup plan. The rule is NON_COMPLIANT if the Amazon Relational Database Service (Amazon RDS) Database Cluster is not protected by a backup plan.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -901,7 +901,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-db-security-group-not-allowed
 	checker.Register(ConfigCheck(
 		"rds-db-security-group-not-allowed",
-		"This rule checks RDS DB security group not allowed.",
+		"Checks if there are any Amazon Relational Database Service (Amazon RDS) DB security groups that are not the default DB security group. The rule is NON_COMPLIANT if there are any DB security groups that are not the default DB security group.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -925,7 +925,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-mysql-instance-encrypted-in-transit + rds-postgres-instance-encrypted-in-transit + rds-mariadb-instance-encrypted-in-transit + rds-sqlserver-encrypted-in-transit
 	checker.Register(ConfigCheck(
 		"rds-mysql-instance-encrypted-in-transit",
-		"This rule checks RDS MySQL instance encrypted in transit.",
+		"Checks if connections to Amazon RDS for MySQL database instances are configured to use encryption in transit. The rule is NON_COMPLIANT if the associated database parameter group is not in-sync or if the require_secure_transport parameter is not set to 1.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -958,7 +958,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-mariadb-instance-encrypted-in-transit",
-		"This rule checks RDS MariaDB instance encrypted in transit.",
+		"Checks if connections to Amazon RDS for MariaDB DB instances with engine version greater than or equal to 10.5 use encryption in transit. The rule is NON_COMPLIANT if the DB parameter group is not in-sync or if require_secure_transport is not set to ON.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -991,7 +991,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-postgres-instance-encrypted-in-transit",
-		"This rule checks RDS PostgreSQL instance encrypted in transit.",
+		"Checks if connections to Amazon RDS PostgreSQL database instances are configured to use encryption in transit. The rule is NON_COMPLIANT if the associated database parameter group is not in-sync or if the rds.force_ssl parameter is not set to 1.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -1024,7 +1024,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-sqlserver-encrypted-in-transit",
-		"This rule checks RDS SQL Server encrypted in transit.",
+		"Checks if connections to Amazon RDS SQL server database instances are configured to use encryption in transit. The rule is NON_COMPLIANT if the DB parameter force_ssl for the parameter group is not set to 1 or the ApplyStatus parameter is not 'in-sync'.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -1059,7 +1059,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	// rds-mysql-cluster-copy-tags-to-snapshot-check + rds-pgsql-cluster-copy-tags-to-snapshot-check
 	checker.Register(ConfigCheck(
 		"rds-mysql-cluster-copy-tags-to-snapshot-check",
-		"This rule checks RDS MySQL cluster copy tags to snapshot.",
+		"Checks if Amazon Relational Database Service (Amazon RDS) MySQL DB clusters are configured to copy tags to snapshots. The rule is NON_COMPLIANT if an Amazon RDS MySQL DB cluster is not configured to copy tags to snapshots.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -1081,7 +1081,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"rds-pgsql-cluster-copy-tags-to-snapshot-check",
-		"This rule checks RDS PostgreSQL cluster copy tags to snapshot.",
+		"Checks if Amazon Relational Database Service (Amazon RDS) PostgreSQL DB clusters are configured to copy tags to snapshots. The rule is NON_COMPLIANT if an RDS PostgreSQL DB cluster's CopyTagsToSnapshot property is set to false.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -1104,7 +1104,7 @@ func RegisterRDSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"mariadb-publish-logs-to-cloudwatch-logs",
-		"This rule checks mariadb publish logs to cloudwatch logs.",
+		"Checks if Amazon MariaDB database instances are configured to publish logs to Amazon CloudWatch Logs. The rule is NON_COMPLIANT if a database instance is not configured to publish logs to CloudWatch Logs.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

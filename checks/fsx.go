@@ -13,7 +13,7 @@ import (
 func RegisterFSxChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"fsx-last-backup-recovery-point-created",
-		"This rule checks FSX last backup recovery point created.",
+		"Checks if a recovery point was created for Amazon FSx File Systems. The rule is NON_COMPLIANT if the Amazon FSx File System does not have a corresponding recovery point created within the specified time period.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -40,7 +40,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-lustre-copy-tags-to-backups",
-		"This rule checks FSX lustre copy tags to backups.",
+		"Checks if the Amazon FSx for Lustre file systems are configured to copy tags to backups. The rule is NON_COMPLIANT if Lustre file systems are not configured to copy tags to backups.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -63,7 +63,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-meets-restore-time-target",
-		"This rule checks FSX meets restore time target.",
+		"Checks if the restore time of Amazon FSx File Systems meets the specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of an Amazon FSx File System is greater than maxRestoreTime minutes.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -90,7 +90,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-ontap-deployment-type-check",
-		"This rule checks configuration for FSX ontap deployment type.",
+		"Checks if Amazon FSx for NetApp ONTAP file systems are configured with certain deployment types. The rule is NON_COMPLIANT if the Amazon FSx for NetApp ONTAP file systems are not configured with the deployment types you specify.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -117,7 +117,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-openzfs-copy-tags-enabled",
-		"This rule checks enabled state for FSX openzfs copy tags.",
+		"Checks if the Amazon FSx for OpenZFS file systems are configured to copy tags to backups and volumes. The rule is NON_COMPLIANT if FSx for OpenZFS file systems are not configured to copy tags to backups and volumes.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -140,7 +140,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-openzfs-deployment-type-check",
-		"This rule checks configuration for FSX openzfs deployment type.",
+		"Checks if the Amazon FSx for OpenZFS file systems are configured with certain deployment types. The rule is NON_COMPLIANT if FSx for OpenZFS file systems are not configured with the deployment types you specify.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -167,7 +167,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-resources-protected-by-backup-plan",
-		"This rule checks FSX resources protected by backup plan.",
+		"Checks if Amazon FSx File Systems are protected by a backup plan. The rule is NON_COMPLIANT if the Amazon FSx File System is not covered by a backup plan.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -194,7 +194,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-windows-audit-log-configured",
-		"This rule checks FSX windows audit log configured.",
+		"Checks if the Amazon FSx for Windows File Server file systems have file access auditing enabled. The rule is NON_COMPLIANT if the FSx for Windows File Server file systems do not have file access auditing enabled.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -217,7 +217,7 @@ func RegisterFSxChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"fsx-windows-deployment-type-check",
-		"This rule checks configuration for FSX windows deployment type.",
+		"Checks if the Amazon FSx for WINDOWS file systems are configured with certain deployment types. The rule is NON_COMPLIANT if FSx for WINDOWS file systems are not configured with the deployment types you specify.",
 		"fsx",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

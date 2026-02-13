@@ -9,7 +9,7 @@ import (
 func RegisterFISChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"fis-experiment-template-log-configuration-exists",
-		"This rule checks fis experiment template log configuration exists.",
+		"Checks if AWS FIS experiment templates have experiment logging configured. The rule is NON_COMPLIANT if configuration.LogConfiguration does not exist.",
 		"fis",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -28,7 +28,7 @@ func RegisterFISChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"fis-experiment-template-tagged",
-		"This rule checks fis experiment template tagged.",
+		"Checks if AWS FIS experiment templates have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"fis",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

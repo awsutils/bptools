@@ -9,7 +9,7 @@ import (
 func RegisterWorkspacesChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"workspaces-connection-alias-tagged",
-		"This rule checks tagging for workspaces connection alias exist.",
+		"Checks if Amazon WorkSpaces connection aliases have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"workspaces",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -35,7 +35,7 @@ func RegisterWorkspacesChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"workspaces-root-volume-encryption-enabled",
-		"This rule checks enabled state for workspaces root volume encryption.",
+		"Checks if an Amazon WorkSpace volume has the root volume encryption settings set to enabled. This rule is NON_COMPLIANT if the encryption setting is not enabled for the root volume.",
 		"workspaces",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -58,7 +58,7 @@ func RegisterWorkspacesChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"workspaces-user-volume-encryption-enabled",
-		"This rule checks enabled state for workspaces user volume encryption.",
+		"Checks if an Amazon WorkSpace volume has the user volume encryption settings set to enabled. This rule is NON_COMPLIANT if the encryption setting is not enabled for the user volume.",
 		"workspaces",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -81,7 +81,7 @@ func RegisterWorkspacesChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"workspaces-workspace-tagged",
-		"This rule checks tagging for workspaces workspace exist.",
+		"Checks if Amazon WorkSpaces workspaces have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"workspaces",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

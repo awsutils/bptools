@@ -16,7 +16,7 @@ import (
 func RegisterCloudWatchChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"cloudwatch-alarm-action-check",
-		"This rule checks cloudwatch alarm action check.",
+		"Checks if CloudWatch alarms have an action configured for the ALARM, INSUFFICIENT_DATA, or OK state. Optionally checks if any actions match a named ARN. The rule is NON_COMPLIANT if there is no action specified for the alarm or optional parameter.",
 		"cloudwatch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -29,11 +29,12 @@ func RegisterCloudWatchChecks(d *awsdata.Data) {
 				id := alarmID(a)
 				hasAlarmAction := len(a.AlarmActions) > 0
 				hasInsufficientDataAction := len(a.InsufficientDataActions) > 0
-				ok := hasAlarmAction && hasInsufficientDataAction
+				hasOKAction := len(a.OKActions) > 0
+				ok := hasAlarmAction || hasInsufficientDataAction || hasOKAction
 				res = append(res, ConfigResource{
 					ID:      id,
 					Passing: ok,
-					Detail:  fmt.Sprintf("AlarmActions: %d, InsufficientDataActions: %d", len(a.AlarmActions), len(a.InsufficientDataActions)),
+					Detail:  fmt.Sprintf("AlarmActions: %d, InsufficientDataActions: %d, OKActions: %d", len(a.AlarmActions), len(a.InsufficientDataActions), len(a.OKActions)),
 				})
 			}
 			return res, nil
@@ -42,7 +43,7 @@ func RegisterCloudWatchChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cloudwatch-alarm-action-enabled-check",
-		"This rule checks cloudwatch alarm action enabled.",
+		"Checks if Amazon CloudWatch alarms actions are in enabled state. The rule is NON_COMPLIANT if the CloudWatch alarms actions are not in enabled state.",
 		"cloudwatch",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -62,7 +63,7 @@ func RegisterCloudWatchChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudwatch-alarm-resource-check",
-		"This rule checks cloudwatch alarm resource check.",
+		"Checks if a resource type has a CloudWatch alarm for the named metric. For resource type, you can specify EBS volumes, EC2 instances, Amazon RDS clusters, or S3 buckets. The rule is COMPLIANT if the named metric has a resource ID and CloudWatch alarm.",
 		"cloudwatch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -110,7 +111,7 @@ func RegisterCloudWatchChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudwatch-alarm-settings-check",
-		"This rule checks cloudwatch alarm settings check.",
+		"Checks whether CloudWatch alarms with the given metric name have the specified settings.",
 		"cloudwatch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -214,7 +215,7 @@ func RegisterCloudWatchChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"cloudwatch-log-group-encrypted",
-		"This rule checks cloudwatch log group encrypted.",
+		"Checks if Amazon CloudWatch Log Groups are encrypted with any AWS KMS key or a specified AWS KMS key Id. The rule is NON_COMPLIANT if a CloudWatch Log Group is not encrypted with a KMS key or is encrypted with a KMS key not supplied in the rule parameter.",
 		"cloudwatch",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -234,7 +235,7 @@ func RegisterCloudWatchChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cw-loggroup-retention-period-check",
-		"This rule checks cw loggroup retention period.",
+		"Checks if an Amazon CloudWatch LogGroup retention period is set to greater than 365 days or else a specified retention period. The rule is NON_COMPLIANT if the retention period is less than MinRetentionTime, if specified, or else 365 days.",
 		"cloudwatch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -258,7 +259,7 @@ func RegisterCloudWatchChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"cloudwatch-metric-stream-tagged",
-		"This rule checks tagging for CloudWatch metric stream exist.",
+		"Checks if Amazon CloudWatch metric streams have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"cloudwatch",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

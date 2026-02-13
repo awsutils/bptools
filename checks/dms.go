@@ -15,7 +15,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-auto-minor-version-upgrade-check
 	checker.Register(ConfigCheck(
 		"dms-auto-minor-version-upgrade-check",
-		"This rule checks DMS auto minor version upgrade.",
+		"Checks if an AWS Database Migration Service (AWS DMS) replication instance has automatic minor version upgrades enabled. The rule is NON_COMPLIANT if an AWS DMS replication instance is not configured with automatic minor version upgrades.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -39,7 +39,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-endpoint-ssl-configured
 	checker.Register(ConfigCheck(
 		"dms-endpoint-ssl-configured",
-		"This rule checks DMS endpoint SSL configured.",
+		"Checks if AWS Database Migration Service (AWS DMS) endpoints are configured with an SSL connection. The rule is NON_COMPLIANT if AWS DMS does not have an SSL connection configured.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -64,7 +64,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-endpoint-tagged
 	checker.Register(TaggedCheck(
 		"dms-endpoint-tagged",
-		"This rule checks DMS endpoint tagged.",
+		"Checks if AWS DMS endpoints have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -90,7 +90,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-mongo-db-authentication-enabled
 	checker.Register(ConfigCheck(
 		"dms-mongo-db-authentication-enabled",
-		"This rule checks DMS MongoDB authentication enabled.",
+		"Checks if AWS Database Migration Service (AWS DMS) endpoints for MongoDb data stores are enabled for password-based authentication and access control. The rule is NON_COMPLIANT if password-based authentication and access control is not enabled.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -121,7 +121,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-neptune-iam-authorization-enabled
 	checker.Register(ConfigCheck(
 		"dms-neptune-iam-authorization-enabled",
-		"This rule checks DMS Neptune IAM authorization enabled.",
+		"Checks if an AWS Database Migration Service (AWS DMS) endpoint for Amazon Neptune databases is configured with IAM authorization. The rule is NON_COMPLIANT if an AWS DMS endpoint where Neptune is the target has IamAuthEnabled set to false.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -148,7 +148,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-redis-tls-enabled
 	checker.Register(ConfigCheck(
 		"dms-redis-tls-enabled",
-		"This rule checks DMS Redis TLS enabled.",
+		"Checks if AWS Database Migration Service (AWS DMS) endpoints for Redis data stores are enabled for TLS/SSL encryption of data communicated with other endpoints. The rule is NON_COMPLIANT if TLS/SSL encryption is not enabled.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -179,7 +179,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-replication-instance-multi-az-enabled
 	checker.Register(EnabledCheck(
 		"dms-replication-instance-multi-az-enabled",
-		"This rule checks DMS replication instance multi-AZ enabled.",
+		"Checks if AWS Database Migration Service (DMS) replication instances are configured with multiple Availability Zones. The rule is NON_COMPLIANT if a DMS replication instance is not configured to use multiple Availability Zones.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -202,7 +202,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-replication-not-public
 	checker.Register(ConfigCheck(
 		"dms-replication-not-public",
-		"This rule checks DMS replication not public.",
+		"Checks if AWS Database Migration Service (AWS DMS) replication instances are public. The rule is NON_COMPLIANT if PubliclyAccessible field is set to true.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -226,7 +226,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-replication-task-sourcedb-logging
 	checker.Register(ConfigCheck(
 		"dms-replication-task-sourcedb-logging",
-		"This rule checks DMS replication task source DB logging.",
+		"Checks if logging is enabled with a valid severity level for AWS DMS replication tasks of a source database. The rule is NON_COMPLIANT if logging is not enabled or logs for DMS replication tasks of a source database have a severity level that is not valid.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -250,7 +250,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-replication-task-targetdb-logging
 	checker.Register(ConfigCheck(
 		"dms-replication-task-targetdb-logging",
-		"This rule checks DMS replication task target DB logging.",
+		"Checks if logging is enabled with a valid severity level for AWS DMS replication task events of a target database. The rule is NON_COMPLIANT if logging is not enabled or replication task logging of a target database has a severity level that is not valid.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -274,7 +274,7 @@ func RegisterDMSChecks(d *awsdata.Data) {
 	// dms-replication-task-tagged
 	checker.Register(TaggedCheck(
 		"dms-replication-task-tagged",
-		"This rule checks DMS replication task tagged.",
+		"Checks if AWS DMS replication tasks have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"dms",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

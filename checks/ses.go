@@ -14,7 +14,7 @@ import (
 func RegisterSESChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"ses-malware-scanning-enabled",
-		"This rule checks enabled state for ses malware scanning.",
+		"Checks if malware and spam scanning on receiving messages is enabled for Amazon Simple Email Service (Amazon SES). The rule is NON_COMPLIANT if malware and spam scanning is not enabled.",
 		"ses",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -43,7 +43,7 @@ func RegisterSESChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ses-sending-tls-required",
-		"This rule checks ses sending tls required.",
+		"Checks if Amazon Simple Email Service (SES) Configuration Set has TLS encryption enforced for email delivery. The rule is NON_COMPLIANT if the TLS Policy is not set to 'REQUIRE' in the Configuration Set.",
 		"ses",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

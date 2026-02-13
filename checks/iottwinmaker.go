@@ -9,7 +9,7 @@ import (
 func RegisterIoTTwinMakerChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"iottwinmaker-component-type-tagged",
-		"This rule checks tagging for iottwinmaker component type exist.",
+		"Checks if AWS IoT TwinMaker component types have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iottwinmaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -37,7 +37,7 @@ func RegisterIoTTwinMakerChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iottwinmaker-entity-tagged",
-		"This rule checks tagging for iottwinmaker entity exist.",
+		"Checks if AWS IoT TwinMaker entities have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iottwinmaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -65,7 +65,7 @@ func RegisterIoTTwinMakerChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iottwinmaker-scene-tagged",
-		"This rule checks tagging for iottwinmaker scene exist.",
+		"Checks if AWS IoT TwinMaker scenes have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iottwinmaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -93,7 +93,7 @@ func RegisterIoTTwinMakerChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iottwinmaker-sync-job-tagged",
-		"This rule checks tagging for iottwinmaker sync job exist.",
+		"Checks if AWS IoT TwinMaker sync jobs have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iottwinmaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -121,7 +121,7 @@ func RegisterIoTTwinMakerChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iottwinmaker-workspace-tagged",
-		"This rule checks tagging for iottwinmaker workspace exist.",
+		"Checks if AWS IoT TwinMaker workspaces have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iottwinmaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

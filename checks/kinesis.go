@@ -11,7 +11,7 @@ import (
 func RegisterKinesisChecks(d *awsdata.Data) {
 	checker.Register(EncryptionCheck(
 		"kinesis-stream-encrypted",
-		"This rule checks Kinesis stream encrypted.",
+		"Checks if Amazon Kinesis streams are encrypted at rest with server-side encryption. The rule is NON_COMPLIANT for a Kinesis stream if 'StreamEncryption' is not present.",
 		"kinesis",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -30,7 +30,7 @@ func RegisterKinesisChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"kinesis-stream-backup-retention-check",
-		"This rule checks Kinesis stream backup retention.",
+		"Checks if an Amazon Kinesis Data Stream has its data record retention period set to a specific number of hours. The rule is NON_COMPLIANT if the property `RetentionPeriodHours` is set to a value less than the value specified by the parameter.",
 		"kinesis",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -53,7 +53,7 @@ func RegisterKinesisChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"kinesis-firehose-delivery-stream-encrypted",
-		"This rule checks Kinesis Firehose delivery stream encrypted.",
+		"Checks if Amazon Kinesis Data Firehose delivery streams are encrypted at rest with server-side encryption. The rule is NON_COMPLIANT if a Kinesis Data Firehose delivery stream is not encrypted at rest with server-side encryption.",
 		"firehose",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -72,7 +72,7 @@ func RegisterKinesisChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"kinesis-video-stream-minimum-data-retention",
-		"This rule checks Kinesis video stream minimum data retention.",
+		"Checks if an Amazon Kinesis Video stream is configured with a value greater than or equal to the specified minimum data retention. The rule is NON_COMPLIANT if DataRetentionInHours is less than the value specified in the required rule parameter.",
 		"kinesisvideo",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

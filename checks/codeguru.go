@@ -9,7 +9,7 @@ import (
 func RegisterCodeGuruChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"codeguruprofiler-profiling-group-tagged",
-		"This rule checks codeguruprofiler profiling group tagged.",
+		"Checks if Amazon CodeGuru Profiler profiling groups have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"codeguruprofiler",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -39,7 +39,7 @@ func RegisterCodeGuruChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"codegurureviewer-repository-association-tagged",
-		"This rule checks codegurureviewer repository association tagged.",
+		"Checks if Amazon CodeGuru Reviewer repository associations have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"codegurureviewer",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

@@ -9,7 +9,7 @@ import (
 func RegisterConnectChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"connect-instance-logging-enabled",
-		"This rule checks connect instance logging enabled.",
+		"Checks if Amazon Connect instances have flow logs enabled in an Amazon CloudWatch log group. The rule is NON_COMPLIANT if an Amazon Connect instance does not have flow logs enabled.",
 		"connect",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {

@@ -29,7 +29,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-function-description
 	checker.Register(DescriptionCheck(
 		"lambda-function-description",
-		"Lambda functions should have a description",
+		"Checks if AWS Lambda functions have a description. The rule is NON_COMPLIANT if configuration.description does not exist or is an empty string.",
 		"lambda", d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
 			funcs, err := d.LambdaFunctions.Get()
@@ -50,7 +50,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-function-xray-enabled
 	checker.Register(EnabledCheck(
 		"lambda-function-xray-enabled",
-		"Lambda functions should have X-Ray tracing enabled",
+		"Checks if AWS X-Ray is enabled on AWS Lambda functions.The rule is NON_COMPLIANT if X-Ray tracing is disabled for a Lambda function.",
 		"lambda", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			funcs, err := d.LambdaFunctions.Get()
@@ -71,7 +71,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-inside-vpc
 	checker.Register(ConfigCheck(
 		"lambda-inside-vpc",
-		"Lambda functions should be deployed inside a VPC",
+		"Checks if a Lambda function is allowed access to a virtual private cloud (VPC). The rule is NON_COMPLIANT if the Lambda function is not VPC enabled.",
 		"lambda", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			funcs, err := d.LambdaFunctions.Get()
@@ -98,7 +98,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-vpc-multi-az-check
 	checker.Register(ConfigCheck(
 		"lambda-vpc-multi-az-check",
-		"Lambda functions in a VPC should span multiple availability zones",
+		"Checks if Lambda has more than 1 availability zone associated. The rule is NON_COMPLIANT if only 1 availability zone is associated with the Lambda or the number of availability zones associated is less than number specified in the optional parameter.",
 		"lambda", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			funcs, err := d.LambdaFunctions.Get()
@@ -147,7 +147,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-dlq-check
 	checker.Register(ConfigCheck(
 		"lambda-dlq-check",
-		"Lambda functions should have a dead-letter queue configured",
+		"Checks whether an AWS Lambda function is configured with a dead-letter queue. The rule is NON_COMPLIANT if the Lambda function is not configured with a dead-letter queue.",
 		"lambda", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			funcs, err := d.LambdaFunctions.Get()
@@ -174,7 +174,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-function-settings-check
 	checker.Register(ConfigCheck(
 		"lambda-function-settings-check",
-		"Lambda functions should comply with configured runtime/role/timeout/memory settings",
+		"Checks if the AWS Lambda function settings for runtime, role, timeout, and memory size match the expected values. The rule ignores functions with the 'Image' package type and functions with runtime set to 'OS-only Runtime'. The rule is NON_COMPLIANT if the Lambda function settings do not match the expected values.",
 		"lambda", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			funcs, err := d.LambdaFunctions.Get()
@@ -260,7 +260,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-concurrency-check
 	checker.Register(&BaseCheck{
 		CheckID: "lambda-concurrency-check",
-		Desc:    "Lambda functions should have reserved concurrency configured",
+		Desc:    "Checks if the Lambda function is configured with a function-level concurrent execution limit. The rule is NON_COMPLIANT if the Lambda function is not configured with a function-level concurrent execution limit.",
 		Svc:     "lambda",
 		RunFunc: func() []checker.Result {
 			funcs, err := d.LambdaFunctions.Get()
@@ -303,7 +303,7 @@ func RegisterLambdaChecks(d *awsdata.Data) {
 	// lambda-function-public-access-prohibited
 	checker.Register(&BaseCheck{
 		CheckID: "lambda-function-public-access-prohibited",
-		Desc:    "Lambda function policies should not allow public access",
+		Desc:    "Checks if the Lambda function is configured with a function-level concurrent execution limit. The rule is NON_COMPLIANT if the Lambda function is not configured with a function-level concurrent execution limit.",
 		Svc:     "lambda",
 		RunFunc: func() []checker.Result {
 			funcs, err := d.LambdaFunctions.Get()

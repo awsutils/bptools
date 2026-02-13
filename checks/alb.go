@@ -33,7 +33,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// elbv2-acm-certificate-required
 	checker.Register(ConfigCheck(
 		"elbv2-acm-certificate-required",
-		"This rule checks ELBv2 ACM certificate required.",
+		"Checks if Application Load Balancers and Network Load Balancers have listeners that are configured to use certificates from AWS Certificate Manager (ACM). This rule is NON_COMPLIANT if at least 1 load balancer has at least 1 listener that is configured without a certificate from ACM or is configured with a certificate different from an ACM certificate.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -70,7 +70,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// elbv2-listener-encryption-in-transit
 	checker.Register(ConfigCheck(
 		"elbv2-listener-encryption-in-transit",
-		"This rule checks encryption in transit for ELBv2 listener.",
+		"Checks if listeners for the load balancers are configured with HTTPS or TLS termination. The rule is NON_COMPLIANT if listeners are not configured with HTTPS or TLS termination.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -94,7 +94,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// elbv2-multiple-az
 	checker.Register(ConfigCheck(
 		"elbv2-multiple-az",
-		"This rule checks ELBv2 multiple az.",
+		"Checks if an Elastic Load Balancer V2 (Application, Network, or Gateway Load Balancer) is mapped to multiple Availability Zones (AZs). The rule is NON_COMPLIANT if an Elastic Load Balancer V2 is mapped to less than 2 AZs. For more information, see Availability Zones for your Application Load Balancer.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -121,7 +121,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// elbv2-predefined-security-policy-ssl-check
 	checker.Register(ConfigCheck(
 		"elbv2-predefined-security-policy-ssl-check",
-		"This rule checks configuration for ELBv2 predefined security policy SSL.",
+		"Checks if listeners for Application Load Balancers (ALBs) or Network Load Balancers (NLBs) use certain security policies. The rule is NON_COMPLIANT if an HTTPS listener for an ALB or a TLS listener for a NLB does not use the security policies you specify.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -151,7 +151,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// alb-tagged
 	checker.Register(TaggedCheck(
 		"alb-tagged",
-		"This rule checks tagging for ALB exist.",
+		"Checks if Application Load Balancers have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -177,7 +177,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// alb-listener-tagged
 	checker.Register(TaggedCheck(
 		"alb-listener-tagged",
-		"This rule checks tagging for ALB listener exist.",
+		"Checks if Application Load Balancer listeners have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -216,7 +216,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// alb-internal-scheme-check
 	checker.Register(ConfigCheck(
 		"alb-internal-scheme-check",
-		"This rule checks configuration for ALB internal scheme.",
+		"Checks if an Application Load Balancer scheme is internal. The rule is NON_COMPLIANT if configuration.scheme is not set to internal.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -239,7 +239,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// alb-http-to-https-redirection-check
 	checker.Register(ConfigCheck(
 		"alb-http-to-https-redirection-check",
-		"This rule checks configuration for ALB HTTP to HTTPS redirection.",
+		"Checks if HTTP to HTTPS redirection is configured on all HTTP listeners of Application Load Balancers. The rule is NON_COMPLIANT if one or more HTTP listeners of Application Load Balancer do not have HTTP to HTTPS redirection configured. The rule is also NON_COMPLIANT if one of more HTTP listeners have forwarding to an HTTP listener instead of redirection.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -293,7 +293,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// alb-http-drop-invalid-header-enabled + alb-desync-mode-check
 	checker.Register(ConfigCheck(
 		"alb-http-drop-invalid-header-enabled",
-		"This rule checks enabled state for ALB HTTP drop invalid header.",
+		"Checks if rule evaluates AWS Application Load Balancers (ALB) to ensure they are configured to drop http headers. The rule is NON_COMPLIANT if the value of routing.http.drop_invalid_header_fields.enabled is set to false",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -320,7 +320,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"alb-desync-mode-check",
-		"This rule checks configuration for ALB desync mode.",
+		"Checks if an Application Load Balancer (ALB) is configured with a user defined desync mitigation mode. The rule is NON_COMPLIANT if ALB desync mitigation mode does not match with the user defined desync mitigation mode.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -348,7 +348,7 @@ func RegisterALBChecks(d *awsdata.Data) {
 	// alb-waf-enabled
 	checker.Register(EnabledCheck(
 		"alb-waf-enabled",
-		"This rule checks enabled state for ALB WAF.",
+		"Checks if Web Application Firewall (WAF) is enabled on Application Load Balancers (ALBs). This rule is NON_COMPLIANT if key: waf.enabled is set to false.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {

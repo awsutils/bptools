@@ -13,7 +13,7 @@ import (
 func RegisterCodeBuildChecks(d *awsdata.Data) {
 	checker.Register(EncryptionCheck(
 		"codebuild-project-artifact-encryption",
-		"This rule checks codebuild project artifact encryption.",
+		"Checks if an AWS CodeBuild project has encryption enabled for all of its artifacts. The rule is NON_COMPLIANT if 'encryptionDisabled' is set to 'true' for any primary or secondary (if present) artifact configurations.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -42,7 +42,7 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"codebuild-project-environment-privileged-check",
-		"This rule checks configuration for codebuild project environment privileged.",
+		"Checks if an AWS CodeBuild project environment has privileged mode enabled. The rule is NON_COMPLIANT for a CodeBuild project if ‘privilegedMode’ is set to ‘true’.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -62,7 +62,7 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"codebuild-project-envvar-awscred-check",
-		"This rule checks configuration for codebuild project envvar awscred.",
+		"Checks if the project contains environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. The rule is NON_COMPLIANT when the project environment variables contains plaintext credentials.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -94,7 +94,7 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"codebuild-project-logging-enabled",
-		"This rule checks logging is enabled for codebuild project.",
+		"Checks if an AWS CodeBuild project environment has at least one log option enabled. The rule is NON_COMPLIANT if the status of all present log configurations is set to 'DISABLED'.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -122,7 +122,7 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"codebuild-project-s3-logs-encrypted",
-		"This rule checks codebuild project S3 logs encrypted.",
+		"Checks if a AWS CodeBuild project configured with Amazon S3 Logs has encryption enabled for its logs. The rule is NON_COMPLIANT if ‘encryptionDisabled’ is set to ‘true’ in a S3LogsConfig of a CodeBuild project.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -145,7 +145,7 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"codebuild-project-source-repo-url-check",
-		"This rule checks configuration for codebuild project source repo url.",
+		"Checks if the Bitbucket source repository URL contains sign-in credentials or not. The rule is NON_COMPLIANT if the URL contains any sign-in information and COMPLIANT if it doesn't.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -192,7 +192,7 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"codebuild-report-group-encrypted-at-rest",
-		"This rule checks encryption at rest for codebuild report group.",
+		"Checks if an AWS CodeBuild report group has encryption at rest setting enabled. The rule is NON_COMPLIANT if 'EncryptionDisabled' is 'true'.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -214,7 +214,7 @@ func RegisterCodeBuildChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"codebuild-report-group-tagged",
-		"This rule checks tagging for codebuild report group exist.",
+		"Checks if AWS CodeBuild report groups have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"codebuild",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

@@ -16,7 +16,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-compute-environment-enabled
 	checker.Register(EnabledCheck(
 		"batch-compute-environment-enabled",
-		"This rule checks Batch compute environment enabled.",
+		"Checks if AWS Batch compute environments are enabled. The rule is NON_COMPLIANT if configuration.State is 'DISABLED'.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -40,7 +40,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-compute-environment-managed
 	checker.Register(ConfigCheck(
 		"batch-compute-environment-managed",
-		"This rule checks Batch compute environment managed.",
+		"Checks if AWS Batch compute environments are managed. The rule is NON_COMPLIANT if configuration.Type is 'UNMANAGED'.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -64,7 +64,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-compute-environment-tagged
 	checker.Register(TaggedCheck(
 		"batch-compute-environment-tagged",
-		"This rule checks tagging for Batch compute environment.",
+		"Checks if AWS Batch compute environments have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -90,7 +90,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-job-queue-enabled
 	checker.Register(EnabledCheck(
 		"batch-job-queue-enabled",
-		"This rule checks Batch job queue enabled.",
+		"Checks if AWS Batch job queues are enabled. The rule is NON_COMPLIANT if configuration.State is 'DISABLED'.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -114,7 +114,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-job-queue-tagged
 	checker.Register(TaggedCheck(
 		"batch-job-queue-tagged",
-		"This rule checks tagging for Batch job queue.",
+		"Checks if AWS Batch job queues have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -140,7 +140,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-managed-compute-environment-using-launch-template
 	checker.Register(ConfigCheck(
 		"batch-managed-compute-environment-using-launch-template",
-		"This rule checks Batch managed compute environment using launch template.",
+		"Checks if AWS Batch managed compute environments are configured using a launch template. The rule is NON_COMPLIANT if configuration.ComputeResources.LaunchTemplate does not exist.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -169,7 +169,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-managed-compute-env-allocation-strategy-check
 	checker.Register(ConfigCheck(
 		"batch-managed-compute-env-allocation-strategy-check",
-		"This rule checks Batch managed compute environment allocation strategy.",
+		"Checks if an AWS Batch managed compute environment is configured with a specified allocation strategy. The rule is NON_COMPLIANT if the compute environment is not configured with an allocation strategy specified in the required rule parameter.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -199,7 +199,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-managed-compute-env-compute-resources-tagged
 	checker.Register(TaggedCheck(
 		"batch-managed-compute-env-compute-resources-tagged",
-		"This rule checks Batch managed compute env compute resources tagged.",
+		"Checks if AWS Batch managed compute environments compute resources have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. Tags starting with 'aws:' are not checked.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -226,7 +226,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-managed-spot-compute-environment-max-bid
 	checker.Register(ConfigCheck(
 		"batch-managed-spot-compute-environment-max-bid",
-		"This rule checks Batch managed spot compute environment max bid.",
+		"Checks if an AWS Batch managed Spot compute environment is configured to have a bid percentage less than or equal to the specified value. The rule is NON_COMPLIANT if the bid percentage is greater than the value specified in the required rule parameter.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -259,7 +259,7 @@ func RegisterBatchChecks(d *awsdata.Data) {
 	// batch-scheduling-policy-tagged
 	checker.Register(TaggedCheck(
 		"batch-scheduling-policy-tagged",
-		"This rule checks tagging for Batch scheduling policy.",
+		"Checks if AWS Batch scheduling policies have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"batch",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

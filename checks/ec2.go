@@ -96,7 +96,7 @@ func ec2StoppedTransitionTime(reason *string) (time.Time, bool) {
 
 func RegisterEC2Checks(d *awsdata.Data) {
 	// ec2-imdsv2-check
-	checker.Register(ConfigCheck("ec2-imdsv2-check", "Check EC2 IMDSv2 required", "ec2", d,
+	checker.Register(ConfigCheck("ec2-imdsv2-check", "Checks whether your Amazon Elastic Compute Cloud (Amazon EC2) instance metadata version is configured with Instance Metadata Service Version 2 (IMDSv2). The rule is NON_COMPLIANT if the HttpTokens is set to optional.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -111,7 +111,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-instance-detailed-monitoring-enabled
-	checker.Register(EnabledCheck("ec2-instance-detailed-monitoring-enabled", "Check detailed monitoring", "ec2", d,
+	checker.Register(EnabledCheck("ec2-instance-detailed-monitoring-enabled", "Checks if detailed monitoring is enabled for EC2 instances. The rule is NON_COMPLIANT if detailed monitoring is not enabled.", "ec2", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -125,7 +125,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-instance-no-public-ip
-	checker.Register(ConfigCheck("ec2-instance-no-public-ip", "Check no public IP", "ec2", d,
+	checker.Register(ConfigCheck("ec2-instance-no-public-ip", "Checks whether Amazon Elastic Compute Cloud (Amazon EC2) instances have a public IP association. The rule is NON_COMPLIANT if the publicIp field is present in the Amazon EC2 instance configuration item. This rule applies only to IPv4.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -140,7 +140,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-instance-profile-attached
-	checker.Register(ConfigCheck("ec2-instance-profile-attached", "Check instance profile", "ec2", d,
+	checker.Register(ConfigCheck("ec2-instance-profile-attached", "Checks if an EC2 instance has an AWS Identity and Access Management (IAM) profile attached to it. The rule is NON_COMPLIANT if no IAM profile is attached to the EC2 instance.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -154,7 +154,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-no-amazon-key-pair
-	checker.Register(ConfigCheck("ec2-no-amazon-key-pair", "Check no key pair", "ec2", d,
+	checker.Register(ConfigCheck("ec2-no-amazon-key-pair", "Checks if running Amazon Elastic Compute Cloud (EC2) instances are launched using amazon key pairs. The rule is NON_COMPLIANT if a running EC2 instance is launched with a key pair.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -169,7 +169,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-paravirtual-instance-check
-	checker.Register(ConfigCheck("ec2-paravirtual-instance-check", "Check not paravirtual", "ec2", d,
+	checker.Register(ConfigCheck("ec2-paravirtual-instance-check", "Checks if the virtualization type of an EC2 instance is paravirtual. This rule is NON_COMPLIANT for an EC2 instance if 'virtualizationType' is set to 'paravirtual'.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -183,7 +183,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-stopped-instance
-	checker.Register(ConfigCheck("ec2-stopped-instance", "Check for stopped instances", "ec2", d,
+	checker.Register(ConfigCheck("ec2-stopped-instance", "Checks if there are Amazon Elastic Compute Cloud (Amazon EC2) instances stopped for more than the allowed number of days. The rule is NON_COMPLIANT if the state of an Amazon EC2 instance has been stopped for longer than the allowed number of days, or if the amount of time cannot be determined.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -213,7 +213,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-token-hop-limit-check
-	checker.Register(ConfigCheck("ec2-token-hop-limit-check", "Check token hop limit", "ec2", d,
+	checker.Register(ConfigCheck("ec2-token-hop-limit-check", "Checks if an Amazon Elastic Compute Cloud (EC2) instance metadata has a specified token hop limit that is below the desired limit. The rule is NON_COMPLIANT for an instance if it has a hop limit value above the intended limit.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -228,7 +228,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-instance-multiple-eni-check
-	checker.Register(ConfigCheck("ec2-instance-multiple-eni-check", "Check multiple ENIs", "ec2", d,
+	checker.Register(ConfigCheck("ec2-instance-multiple-eni-check", "Checks if Amazon Elastic Compute Cloud (Amazon EC2) uses multiple Elastic Network Interfaces (ENIs) or Elastic Fabric Adapters (EFAs). The rule is NON_COMPLIANT an Amazon EC2 instance use multiple network interfaces.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -242,7 +242,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-instances-in-vpc
-	checker.Register(ConfigCheck("ec2-instances-in-vpc", "Check instances in VPC", "ec2", d,
+	checker.Register(ConfigCheck("ec2-instances-in-vpc", "Checks if your EC2 instances belong to a virtual private cloud (VPC). Optionally, you can specify the VPC ID to associate with your instances.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -256,7 +256,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ebs-optimized-instance
-	checker.Register(EnabledCheck("ebs-optimized-instance", "Check EBS optimized", "ec2", d,
+	checker.Register(EnabledCheck("ebs-optimized-instance", "Checks if Amazon EBS optimization is enabled for your Amazon Elastic Compute Cloud (Amazon EC2) instances that can be Amazon EBS-optimized. The rule is NON_COMPLIANT if EBS optimization is not enabled for an Amazon EC2 instance that can be EBS-optimized.", "ec2", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -270,7 +270,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-instance-managed-by-systems-manager
-	checker.Register(ConfigCheck("ec2-instance-managed-by-systems-manager", "Check SSM managed", "ec2", d,
+	checker.Register(ConfigCheck("ec2-instance-managed-by-systems-manager", "Checks if your Amazon EC2 instances are managed by AWS Systems Manager Agent (SSM Agent). The rule is NON_COMPLIANT if an EC2 instance is running and the SSM Agent is stopped, or if an EC2 instance is running and the SSM Agent is terminated.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -373,7 +373,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		return out, nil
 	}
 
-	checker.Register(ConfigCheck("approved-amis-by-id", "This rule checks approved amis by id.", "ec2", d,
+	checker.Register(ConfigCheck("approved-amis-by-id", "Checks if EC2 instances are using specified Amazon Machine Images (AMIs). Specify a list of approved AMI IDs. Running instances with AMIs that are not on this list are NON_COMPLIANT.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -400,7 +400,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("approved-amis-by-tag", "This rule checks approved amis by tag.", "ec2", d,
+	checker.Register(ConfigCheck("approved-amis-by-tag", "Checks if EC2 instances are using specified Amazon Machine Images (AMIs). Specify the tags that identify the AMIs. Running instances with AMIs that don't have at least one of the specified tags are NON_COMPLIANT.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -442,7 +442,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-instance-launched-with-allowed-ami", "This rule checks EC2 instance launched with allowed AMI.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-instance-launched-with-allowed-ami", "Checks if running or stopped EC2 instances were launched with Amazon Machine Images (AMIs) that meet your Allowed AMIs criteria. The rule is NON_COMPLIANT if an AMI doesn't meet the Allowed AMIs criteria and the Allowed AMIs settings isn't disabled.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -488,7 +488,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// desired-instance-tenancy + desired-instance-type
-	checker.Register(ConfigCheck("desired-instance-tenancy", "This rule checks desired instance tenancy.", "ec2", d,
+	checker.Register(ConfigCheck("desired-instance-tenancy", "Checks EC2 instances for a 'tenancy' value. Also checks if AMI IDs are specified to be launched from those AMIs or if Host IDs are launched on those Dedicated Hosts. The rule is COMPLIANT if the instance matches a host and an AMI, if specified, in a list.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -516,7 +516,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("desired-instance-type", "This rule checks desired instance type.", "ec2", d,
+	checker.Register(ConfigCheck("desired-instance-type", "Checks if your EC2 instances are of a specific instance type. The rule is NON_COMPLIANT if an EC2 instance is not specified in the parameter list. For a list of supported EC2 instance types, see Instance types in the EC2 User Guide for Linux Instances.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -541,7 +541,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-ebs-encryption-by-default
-	checker.Register(SingleCheck("ec2-ebs-encryption-by-default", "Check EBS encryption by default", "ec2", d,
+	checker.Register(SingleCheck("ec2-ebs-encryption-by-default", "Checks if Amazon Elastic Block Store (EBS) encryption is enabled by default. The rule is NON_COMPLIANT if the encryption is not enabled.", "ec2", d,
 		func(d *awsdata.Data) (bool, string, error) {
 			enabled, err := d.EC2EBSEncryptionByDefault.Get()
 			if err != nil {
@@ -551,7 +551,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ebs-snapshot-block-public-access
-	checker.Register(SingleCheck("ebs-snapshot-block-public-access", "Check snapshot public access blocked", "ec2", d,
+	checker.Register(SingleCheck("ebs-snapshot-block-public-access", "Checks if block public access is enabled for Amazon EBS snapshots in an AWS Region. The rule is NON_COMPLIANT if block public access is not enabled for all public sharing of EBS snapshots in an AWS Region.", "ec2", d,
 		func(d *awsdata.Data) (bool, string, error) {
 			state, err := d.EC2EBSSnapshotBlockPublicAccess.Get()
 			if err != nil {
@@ -562,7 +562,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// encrypted-volumes
-	checker.Register(EncryptionCheck("encrypted-volumes", "Check volume encryption", "ec2", d,
+	checker.Register(EncryptionCheck("encrypted-volumes", "Checks if attached Amazon EBS volumes are encrypted and optionally are encrypted with a specified KMS key. The rule is NON_COMPLIANT if attached EBS volumes are unencrypted or are encrypted with a KMS key not in the supplied parameters.", "ec2", d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
 			volumes, err := d.EC2Volumes.Get()
 			if err != nil {
@@ -580,7 +580,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-volume-inuse-check
-	checker.Register(ConfigCheck("ec2-volume-inuse-check", "Check volumes in use", "ec2", d,
+	checker.Register(ConfigCheck("ec2-volume-inuse-check", "Checks if EBS volumes are attached to EC2 instances. Optionally checks if EBS volumes are marked for deletion when an instance is terminated.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			volumes, err := d.EC2Volumes.Get()
 			if err != nil {
@@ -599,7 +599,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// eip-attached
-	checker.Register(ConfigCheck("eip-attached", "Check EIPs attached", "ec2", d,
+	checker.Register(ConfigCheck("eip-attached", "Checks if all Elastic IP addresses that are allocated to an AWS account are attached to EC2 instances or in-use elastic network interfaces. The rule is NON_COMPLIANT if the 'AssociationId' is null for the Elastic IP address.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			addrs, err := d.EC2Addresses.Get()
 			if err != nil {
@@ -618,7 +618,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ebs-snapshot-public-restorable-check
-	checker.Register(ConfigCheck("ebs-snapshot-public-restorable-check", "Check snapshots not public", "ec2", d,
+	checker.Register(ConfigCheck("ebs-snapshot-public-restorable-check", "Checks if Amazon Elastic Block Store (Amazon EBS) snapshots are not publicly restorable. The rule is NON_COMPLIANT if one or more snapshots with RestorableByUserIds field are set to all, that is, Amazon EBS snapshots are public.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			snaps, err := d.EC2Snapshots.Get()
 			if err != nil {
@@ -648,7 +648,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-enis-source-destination-check-enabled
-	checker.Register(EnabledCheck("ec2-enis-source-destination-check-enabled", "Check ENI source/dest check", "ec2", d,
+	checker.Register(EnabledCheck("ec2-enis-source-destination-check-enabled", "Checks if EC2 ENIs managed by users have source/destination check enabled. The rule is NON_COMPLIANT if source/destination check is disabled on these ENIs for 'lambda', 'aws_codestar_connections_managed', 'branch', 'efa', 'interface', and 'quicksight'.", "ec2", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			enis, err := d.EC2NetworkInterfaces.Get()
 			if err != nil {
@@ -666,7 +666,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-transit-gateway-auto-vpc-attach-disabled
-	checker.Register(ConfigCheck("ec2-transit-gateway-auto-vpc-attach-disabled", "Check TGW auto attach disabled", "ec2", d,
+	checker.Register(ConfigCheck("ec2-transit-gateway-auto-vpc-attach-disabled", "Checks if Amazon Elastic Compute Cloud (Amazon EC2) Transit Gateways have 'AutoAcceptSharedAttachments' enabled. The rule is NON_COMPLIANT for a Transit Gateway if 'AutoAcceptSharedAttachments' is set to 'enable'.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			tgws, err := d.EC2TransitGateways.Get()
 			if err != nil {
@@ -685,7 +685,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-client-vpn-connection-log-enabled
-	checker.Register(EnabledCheck("ec2-client-vpn-connection-log-enabled", "Check client VPN logging", "ec2", d,
+	checker.Register(EnabledCheck("ec2-client-vpn-connection-log-enabled", "Checks if AWS Client VPN endpoint has client connection logging enabled. The rule is NON_COMPLIANT if 'Configuration.ConnectionLogOptions.Enabled' is set to false.", "ec2", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			eps, err := d.EC2ClientVPNEndpoints.Get()
 			if err != nil {
@@ -704,7 +704,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-client-vpn-not-authorize-all
-	checker.Register(ConfigCheck("ec2-client-vpn-not-authorize-all", "Check client VPN auth rules", "ec2", d,
+	checker.Register(ConfigCheck("ec2-client-vpn-not-authorize-all", "Checks if the AWS Client VPN authorization rules authorizes connection access for all clients. The rule is NON_COMPLIANT if 'AccessAll' is present and set to true.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			eps, err := d.EC2ClientVPNEndpoints.Get()
 			if err != nil {
@@ -731,7 +731,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-vpn-connection-logging-enabled
-	checker.Register(ConfigCheck("ec2-vpn-connection-logging-enabled", "Check VPN logging", "ec2", d,
+	checker.Register(ConfigCheck("ec2-vpn-connection-logging-enabled", "Checks if AWS Site-to-Site VPN connections have Amazon CloudWatch logging enabled for both tunnels. The rule is NON_COMPLIANT if a Site-to-Site VPN connection does not have CloudWatch logging enabled for either or both tunnels.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			vpns, err := d.EC2VPNConnections.Get()
 			if err != nil {
@@ -760,7 +760,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-launch-template-imdsv2-check + ec2-launch-template-public-ip-disabled + ec2-launch-templates-ebs-volume-encrypted
-	checker.Register(&BaseCheck{CheckID: "ec2-launch-template-imdsv2-check", Desc: "Check LT IMDSv2", Svc: "ec2",
+	checker.Register(&BaseCheck{CheckID: "ec2-launch-template-imdsv2-check", Desc: "Checks if the currently set default version of an Amazon EC2 Launch Template requires new launched instances to use V2 of the Amazon EC2 Instance Metadata Service (IMDSv2). The rule is NON_COMPLIANT if 'Metadata version' is not specified as V2 (IMDSv2).", Svc: "ec2",
 		RunFunc: func() []checker.Result {
 			lts, err := d.EC2LaunchTemplates.Get()
 			if err != nil {
@@ -793,7 +793,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return results
 		}})
 
-	checker.Register(ConfigCheck("ec2-launch-template-public-ip-disabled", "Check LT no public IP", "ec2", d,
+	checker.Register(ConfigCheck("ec2-launch-template-public-ip-disabled", "Checks if Amazon EC2 Launch Templates are set to assign public IP addresses to Network Interfaces. The rule is NON_COMPLIANT if the default version of an EC2 Launch Template has at least 1 Network Interface with 'AssociatePublicIpAddress' set to 'true'.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			lts, err := d.EC2LaunchTemplates.Get()
 			if err != nil {
@@ -820,7 +820,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-launch-templates-ebs-volume-encrypted", "Check LT EBS encryption", "ec2", d,
+	checker.Register(ConfigCheck("ec2-launch-templates-ebs-volume-encrypted", "Checks whether Amazon EC2 launch templates have encryption enabled for all attached EBS volumes.The rule is NON_COMPLIANT if encryption is set to False for any EBS volume configured in the launch template.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			lts, err := d.EC2LaunchTemplates.Get()
 			if err != nil {
@@ -848,7 +848,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ec2-spot-fleet-request-ct-encryption-at-rest
-	checker.Register(ConfigCheck("ec2-spot-fleet-request-ct-encryption-at-rest", "Check spot fleet encryption", "ec2", d,
+	checker.Register(ConfigCheck("ec2-spot-fleet-request-ct-encryption-at-rest", "Checks if Amazon EC2 Spot Fleet request launch parameters set encrypted to True for attached EBS volumes. The rule is NON_COMPLIANT if any EBS volumes has encrypted set to False. The rule does not evaluate spot fleet requests using launch templates.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			ebsDefault, err := d.EC2EBSEncryptionByDefault.Get()
 			if err != nil {
@@ -1084,7 +1084,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		checker.Register(TaggedCheck(id, "This rule checks tagging for EC2 resource", "ec2", d, fn))
 	}
 
-	checker.Register(TaggedCheck("ec2-carrier-gateway-tagged", "This rule checks tagging for EC2 carrier gateway exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-carrier-gateway-tagged", "Checks if Amazon EC2 carrier gateways have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeCarrierGateways(d.Ctx, &ec2.DescribeCarrierGatewaysInput{})
 			if err != nil {
@@ -1101,7 +1101,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-network-insights-access-scope-tagged", "This rule checks tagging for EC2 network insights access scope exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-network-insights-access-scope-tagged", "Checks if Amazon EC2 network insights access scopes have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeNetworkInsightsAccessScopes(d.Ctx, &ec2.DescribeNetworkInsightsAccessScopesInput{})
 			if err != nil {
@@ -1118,7 +1118,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-network-insights-access-scope-analysis-tagged", "This rule checks tagging for EC2 network insights access scope analysis exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-network-insights-access-scope-analysis-tagged", "Checks if Amazon EC2 network insights access scope analyses have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeNetworkInsightsAccessScopeAnalyses(d.Ctx, &ec2.DescribeNetworkInsightsAccessScopeAnalysesInput{})
 			if err != nil {
@@ -1135,7 +1135,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-network-insights-analysis-tagged", "This rule checks tagging for EC2 network insights analysis exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-network-insights-analysis-tagged", "Checks if Amazon EC2 network insights analyses have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeNetworkInsightsAnalyses(d.Ctx, &ec2.DescribeNetworkInsightsAnalysesInput{})
 			if err != nil {
@@ -1152,7 +1152,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-network-insights-path-tagged", "This rule checks tagging for EC2 network insights path exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-network-insights-path-tagged", "Checks if Amazon EC2 network insights paths have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeNetworkInsightsPaths(d.Ctx, &ec2.DescribeNetworkInsightsPathsInput{})
 			if err != nil {
@@ -1169,7 +1169,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-traffic-mirror-filter-tagged", "This rule checks tagging for EC2 traffic mirror filter exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-traffic-mirror-filter-tagged", "Checks if Amazon EC2 traffic mirror filters have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeTrafficMirrorFilters(d.Ctx, &ec2.DescribeTrafficMirrorFiltersInput{})
 			if err != nil {
@@ -1186,7 +1186,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-traffic-mirror-session-tagged", "This rule checks tagging for EC2 traffic mirror session exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-traffic-mirror-session-tagged", "Checks if Amazon EC2 traffic mirror sessions have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeTrafficMirrorSessions(d.Ctx, &ec2.DescribeTrafficMirrorSessionsInput{})
 			if err != nil {
@@ -1203,7 +1203,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-traffic-mirror-target-tagged", "This rule checks tagging for EC2 traffic mirror target exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-traffic-mirror-target-tagged", "Checks if Amazon EC2 traffic mirror targets have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeTrafficMirrorTargets(d.Ctx, &ec2.DescribeTrafficMirrorTargetsInput{})
 			if err != nil {
@@ -1220,7 +1220,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(TaggedCheck("ec2-transit-gateway-multicast-domain-tagged", "This rule checks tagging for EC2 transit gateway multicast domain exist.", "ec2", d,
+	checker.Register(TaggedCheck("ec2-transit-gateway-multicast-domain-tagged", "Checks if Amazon EC2 transit gateway multicast domains have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ec2", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			out, err := d.Clients.EC2.DescribeTransitGatewayMulticastDomains(d.Ctx, &ec2.DescribeTransitGatewayMulticastDomainsInput{})
 			if err != nil {
@@ -1237,7 +1237,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(DescriptionCheck("ec2-traffic-mirror-filter-description", "This rule checks descriptions for EC2 traffic mirror filter exist.", "ec2", d,
+	checker.Register(DescriptionCheck("ec2-traffic-mirror-filter-description", "Checks if Amazon EC2 traffic mirror filters have a description. The rule is NON_COMPLIANT if configuration.Description does not exist.", "ec2", d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
 			out, err := d.Clients.EC2.DescribeTrafficMirrorFilters(d.Ctx, &ec2.DescribeTrafficMirrorFiltersInput{})
 			if err != nil {
@@ -1254,7 +1254,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(DescriptionCheck("ec2-traffic-mirror-session-description", "This rule checks descriptions for EC2 traffic mirror session exist.", "ec2", d,
+	checker.Register(DescriptionCheck("ec2-traffic-mirror-session-description", "Checks if Amazon EC2 traffic mirror sessions have a description. The rule is NON_COMPLIANT if configuration.Description does not exist.", "ec2", d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
 			out, err := d.Clients.EC2.DescribeTrafficMirrorSessions(d.Ctx, &ec2.DescribeTrafficMirrorSessionsInput{})
 			if err != nil {
@@ -1271,7 +1271,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(DescriptionCheck("ec2-traffic-mirror-target-description", "This rule checks descriptions for EC2 traffic mirror target exist.", "ec2", d,
+	checker.Register(DescriptionCheck("ec2-traffic-mirror-target-description", "Checks if Amazon EC2 traffic mirror targets have a description. The rule is NON_COMPLIANT if configuration.Description does not exist.", "ec2", d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
 			out, err := d.Clients.EC2.DescribeTrafficMirrorTargets(d.Ctx, &ec2.DescribeTrafficMirrorTargetsInput{})
 			if err != nil {
@@ -1289,7 +1289,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// Security group checks
-	checker.Register(ConfigCheck("ec2-security-group-attached-to-eni", "Check SG attached to ENI", "ec2", d,
+	checker.Register(ConfigCheck("ec2-security-group-attached-to-eni", "Checks that non-default security groups are attached to Amazon Elastic Compute Cloud (EC2) instances or an elastic network interfaces (ENIs). The rule returns NON_COMPLIANT if the security group is not associated with an EC2 instance or an ENI.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			sgs, err := d.EC2SecurityGroups.Get()
 			if err != nil {
@@ -1318,7 +1318,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-security-group-attached-to-eni-periodic", "Check SG attached to ENI (periodic)", "ec2", d,
+	checker.Register(ConfigCheck("ec2-security-group-attached-to-eni-periodic", "Checks if non-default security groups are attached to Elastic network interfaces (ENIs). The rule is NON_COMPLIANT if the security group is not associated with an ENI. Security groups not owned by the calling account evaluate as NOT_APPLICABLE.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			sgs, err := d.EC2SecurityGroups.Get()
 			if err != nil {
@@ -1395,7 +1395,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		return out, nil
 	}
 
-	checker.Register(ConfigCheck("ec2-managedinstance-platform-check", "This rule checks configuration for EC2 managedinstance platform.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-managedinstance-platform-check", "Checks whether EC2 managed instances have the desired configurations.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			infos, err := loadManagedInstances()
 			if err != nil {
@@ -1422,7 +1422,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-managedinstance-association-compliance-status-check", "This rule checks configuration for EC2 managedinstance association compliance status.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-managedinstance-association-compliance-status-check", "Checks if the status of the AWS Systems Manager association compliance is COMPLIANT or NON_COMPLIANT after the association execution on the instance. The rule is compliant if the field status is COMPLIANT. For more information about associations, see What is an association?.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			infos, err := loadManagedInstances()
 			if err != nil {
@@ -1444,7 +1444,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-managedinstance-patch-compliance-status-check", "This rule checks configuration for EC2 managedinstance patch compliance status.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-managedinstance-patch-compliance-status-check", "Checks if the compliance status of the AWS Systems Manager patch compliance is COMPLIANT or NON_COMPLIANT after the patch installation on the instance. The rule is compliant if the field status is COMPLIANT.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			infos, err := loadManagedInstances()
 			if err != nil {
@@ -1489,7 +1489,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-managedinstance-applications-required", "This rule checks EC2 managedinstance applications required.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-managedinstance-applications-required", "Checks if all of the specified applications are installed on the instance. Optionally, specify the minimum acceptable version. You can also specify the platform to apply the rule only to instances running that platform.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			infos, err := loadManagedInstances()
 			if err != nil {
@@ -1532,7 +1532,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-managedinstance-applications-blacklisted", "This rule checks EC2 managedinstance applications blacklisted.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-managedinstance-applications-blacklisted", "Checks if none of the specified applications are installed on the instance. Optionally, specify the version. Newer versions will not be denylisted. Optionally, specify the platform to apply the rule only to instances running that platform.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			infos, err := loadManagedInstances()
 			if err != nil {
@@ -1576,7 +1576,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-managedinstance-inventory-blacklisted", "This rule checks EC2 managedinstance inventory blacklisted.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-managedinstance-inventory-blacklisted", "Checks whether instances managed by Amazon EC2 Systems Manager are configured to collect blacklisted inventory types.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			infos, err := loadManagedInstances()
 			if err != nil {
@@ -1659,7 +1659,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		return isProtected, lastBackup, inProtectedVault, nil
 	}
 
-	checker.Register(ConfigCheck("ec2-resources-protected-by-backup-plan", "This rule checks EC2 resources protected by backup plan.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-resources-protected-by-backup-plan", "Checks if Amazon Elastic Compute Cloud (Amazon EC2) instances are protected by a backup plan. The rule is NON_COMPLIANT if the Amazon EC2 instance is not covered by a backup plan.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -1683,7 +1683,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-last-backup-recovery-point-created", "This rule checks EC2 last backup recovery point created.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-last-backup-recovery-point-created", "Checks if a recovery point was created for Amazon Elastic Compute Cloud (Amazon EC2) instances. The rule is NON_COMPLIANT if the Amazon EC2 instance does not have a corresponding recovery point created within the specified time period.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -1712,7 +1712,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-meets-restore-time-target", "This rule checks EC2 meets restore time target.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-meets-restore-time-target", "Checks if the restore time of Amazon Elastic Compute Cloud (Amazon EC2) instances meets the specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of an Amazon EC2 instance is greater than maxRestoreTime minutes.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -1736,7 +1736,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ec2-resources-in-logically-air-gapped-vault", "This rule checks EC2 resources in logically air gapped vault.", "ec2", d,
+	checker.Register(ConfigCheck("ec2-resources-in-logically-air-gapped-vault", "Checks if Amazon Elastic Compute Cloud (Amazon EC2) instances are in a logically air-gapped vault. The rule is NON_COMPLIANT if an Amazon EC2 instance is not in a logically air-gapped vault within the specified time period.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			instances, err := allInstances(d)
 			if err != nil {
@@ -1760,7 +1760,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ebs-in-backup-plan", "This rule checks ebs in backup plan.", "ec2", d,
+	checker.Register(ConfigCheck("ebs-in-backup-plan", "Check if Amazon Elastic Block Store (Amazon EBS) volumes are added in backup plans of AWS Backup. The rule is NON_COMPLIANT if Amazon EBS volumes are not included in backup plans.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			volumes, err := d.EC2Volumes.Get()
 			if err != nil {
@@ -1787,7 +1787,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ebs-resources-protected-by-backup-plan", "This rule checks ebs resources protected by backup plan.", "ec2", d,
+	checker.Register(ConfigCheck("ebs-resources-protected-by-backup-plan", "Checks if Amazon Elastic Block Store (Amazon EBS) volumes are protected by a backup plan. The rule is NON_COMPLIANT if the Amazon EBS volume is not covered by a backup plan.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			volumes, err := d.EC2Volumes.Get()
 			if err != nil {
@@ -1814,7 +1814,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ebs-last-backup-recovery-point-created", "This rule checks ebs last backup recovery point created.", "ec2", d,
+	checker.Register(ConfigCheck("ebs-last-backup-recovery-point-created", "Checks if a recovery point was created for Amazon Elastic Block Store (Amazon EBS). The rule is NON_COMPLIANT if the Amazon EBS volume does not have a corresponding recovery point created within the specified time period.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			volumes, err := d.EC2Volumes.Get()
 			if err != nil {
@@ -1846,7 +1846,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ebs-meets-restore-time-target", "This rule checks ebs meets restore time target.", "ec2", d,
+	checker.Register(ConfigCheck("ebs-meets-restore-time-target", "Checks if the restore time of Amazon Elastic Block Store (Amazon EBS) volumes meets the specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of an Amazon EBS volume is greater than maxRestoreTime minutes.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			volumes, err := d.EC2Volumes.Get()
 			if err != nil {
@@ -1880,7 +1880,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ebs-resources-in-logically-air-gapped-vault", "This rule checks ebs resources in logically air gapped vault.", "ec2", d,
+	checker.Register(ConfigCheck("ebs-resources-in-logically-air-gapped-vault", "Checks if Amazon Elastic Block Store (Amazon EBS) volumes are in a logically air-gapped vault. The rule is NON_COMPLIANT if an Amazon EBS volume is not in a logically air-gapped vault within the specified time period.", "ec2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			volumes, err := d.EC2Volumes.Get()
 			if err != nil {
@@ -1908,7 +1908,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 		}))
 
 	// ECR checks
-	checker.Register(TaggedCheck("ecr-repository-tagged", "Check ECR repo tagged", "ecr", d,
+	checker.Register(TaggedCheck("ecr-repository-tagged", "Checks if Amazon ECR repositories have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "ecr", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			repos, err := d.ECRRepositories.Get()
 			if err != nil {
@@ -1931,7 +1931,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(EnabledCheck("ecr-private-image-scanning-enabled", "Check ECR scanning", "ecr", d,
+	checker.Register(EnabledCheck("ecr-private-image-scanning-enabled", "Checks if a private Amazon Elastic Container Registry (Amazon ECR) repository has image scanning enabled. The rule is NON_COMPLIANT if the private Amazon ECR repository's scan frequency is not on scan on push or continuous scan. For more information on enabling image scanning, see Image scanning in the Amazon ECR User Guide.", "ecr", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			repos, err := d.ECRRepositories.Get()
 			if err != nil {
@@ -1949,7 +1949,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(EnabledCheck("ecr-private-tag-immutability-enabled", "Check ECR tag immutability", "ecr", d,
+	checker.Register(EnabledCheck("ecr-private-tag-immutability-enabled", "Checks if a private Amazon Elastic Container Registry (ECR) repository has tag immutability enabled. This rule is NON_COMPLIANT if tag immutability is not enabled for the private ECR repository.", "ecr", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			repos, err := d.ECRRepositories.Get()
 			if err != nil {
@@ -1966,7 +1966,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ecr-private-lifecycle-policy-configured", "Check ECR lifecycle policy", "ecr", d,
+	checker.Register(ConfigCheck("ecr-private-lifecycle-policy-configured", "Checks if a private Amazon Elastic Container Registry (ECR) repository has at least one lifecycle policy configured. The rule is NON_COMPLIANT if no lifecycle policy is configured for the ECR private repository.", "ecr", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			repos, err := d.ECRRepositories.Get()
 			if err != nil {
@@ -1985,7 +1985,7 @@ func RegisterEC2Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("ecr-repository-cmk-encryption-enabled", "Check ECR CMK encryption", "ecr", d,
+	checker.Register(ConfigCheck("ecr-repository-cmk-encryption-enabled", "Checks if ECR repository is encrypted at rest using customer-managed KMS key. This rule is NON_COMPLIANT if the repository is encrypted using AES256 or the default KMS key ('aws/ecr').", "ecr", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			repos, err := d.ECRRepositories.Get()
 			if err != nil {

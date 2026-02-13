@@ -16,7 +16,7 @@ import (
 func RegisterDocDBChecks(d *awsdata.Data) {
 	checker.Register(LoggingCheck(
 		"docdb-cluster-audit-logging-enabled",
-		"This rule checks logging is enabled for docdb cluster audit.",
+		"Checks if an Amazon DocumentDB (with MongoDB compatibility) instance cluster has CloudWatch log export enabled for audit logs. The rule is NON_COMPLIANT if an Amazon DocumentDB instance cluster does not have CloudWatch log export enabled for audit logs.",
 		"docdb",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -42,7 +42,7 @@ func RegisterDocDBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"docdb-cluster-backup-retention-check",
-		"This rule checks configuration for docdb cluster backup retention.",
+		"Checks if an Amazon Document DB cluster retention period is set to specific number of days. The rule is NON_COMPLIANT if the retention period is less than the value specified by the parameter.",
 		"docdb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -66,7 +66,7 @@ func RegisterDocDBChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"docdb-cluster-deletion-protection-enabled",
-		"This rule checks enabled state for docdb cluster deletion protection.",
+		"Checks if an Amazon DocumentDB (with MongoDB compatibility) cluster has deletion protection enabled. The rule is NON_COMPLIANT if an Amazon DocumentDB cluster has the deletionProtection field set to false.",
 		"docdb",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -86,7 +86,7 @@ func RegisterDocDBChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"docdb-cluster-encrypted",
-		"This rule checks docdb cluster encrypted.",
+		"Checks if storage encryption is enabled for your Amazon DocumentDB (with MongoDB compatibility) clusters. The rule is NON_COMPLIANT if storage encryption is not enabled.",
 		"docdb",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -106,7 +106,7 @@ func RegisterDocDBChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"docdb-cluster-encrypted-in-transit",
-		"This rule checks docdb cluster encrypted in transit.",
+		"Checks if connections to Amazon DocumentDB clusters are configured to use encryption in transit. The rule is NON_COMPLIANT if the parameter group is not \"in-sync\", or the TLS parameter is set to either \"disabled\" or a value in excludeTlsParameters.",
 		"docdb",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -132,7 +132,7 @@ func RegisterDocDBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"docdb-cluster-snapshot-public-prohibited",
-		"This rule checks docdb cluster snapshot public prohibited.",
+		"Checks if Amazon DocumentDB manual cluster snapshots are public. The rule is NON_COMPLIANT if any Amazon DocumentDB manual cluster snapshots are public.",
 		"docdb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

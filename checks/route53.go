@@ -11,7 +11,7 @@ import (
 func RegisterRoute53Checks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"route53-health-check-tagged",
-		"This rule checks tagging for route53 health check exist.",
+		"Checks if Amazon Route 53 health checks have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"route53",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -37,7 +37,7 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"route53-hosted-zone-tagged",
-		"This rule checks tagging for route53 hosted zone exist.",
+		"Checks if Amazon Route 53 hosted zones have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"route53",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -63,7 +63,7 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"route53-query-logging-enabled",
-		"This rule checks route53 query logging enabled.",
+		"Checks if DNS query logging is enabled for your Amazon Route 53 public hosted zones. The rule is NON_COMPLIANT if DNS query logging is not enabled for your Amazon Route 53 public hosted zones.",
 		"route53",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -90,7 +90,7 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"route53-resolver-firewall-domain-list-tagged",
-		"This rule checks tagging for route53 resolver firewall domain list exist.",
+		"Checks if Amazon Route 53 Resolver firewall domain lists have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"route53resolver",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -119,7 +119,7 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"route53-resolver-firewall-rule-group-association-tagged",
-		"This rule checks tagging for route53 resolver firewall rule group association exist.",
+		"Checks if Amazon Route 53 Resolver firewall rule group associations have tags. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"route53resolver",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -145,7 +145,7 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"route53-resolver-firewall-rule-group-tagged",
-		"This rule checks tagging for route53 resolver firewall rule group exist.",
+		"Checks if Amazon Route 53 Resolver firewall rule groups have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"route53resolver",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -171,7 +171,7 @@ func RegisterRoute53Checks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"route53-resolver-resolver-rule-tagged",
-		"This rule checks tagging for route53 resolver rule exist.",
+		"Checks if Amazon Route 53 Resolver resolver rules have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"route53resolver",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

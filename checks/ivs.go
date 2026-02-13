@@ -9,7 +9,7 @@ import (
 func RegisterIVSChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"ivs-channel-playback-authorization-enabled",
-		"This rule checks IVS channel playback authorization enabled.",
+		"Checks if Amazon IVS channels have playback authorization enabled. The rule is NON_COMPLIANT if configuration.Authorized is false.",
 		"ivs",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -28,7 +28,7 @@ func RegisterIVSChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"ivs-channel-tagged",
-		"This rule checks tagging for IVS channel exist.",
+		"Checks if Amazon IVS channels have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"ivs",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -54,7 +54,7 @@ func RegisterIVSChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"ivs-playback-key-pair-tagged",
-		"This rule checks tagging for IVS playback key pair exist.",
+		"Checks if Amazon IVS playback key pairs have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"ivs",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -80,7 +80,7 @@ func RegisterIVSChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"ivs-recording-configuration-tagged",
-		"This rule checks tagging for IVS recording configuration exist.",
+		"Checks if Amazon IVS recording configurations have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"ivs",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

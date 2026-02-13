@@ -16,7 +16,7 @@ import (
 func RegisterVPCChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"vpc-default-security-group-closed",
-		"This rule checks VPC default security group closed.",
+		"Checks if the default security group of any Amazon Virtual Private Cloud (Amazon VPC) does not allow inbound or outbound traffic. The rule is NON_COMPLIANT if the default security group has one or more inbound or outbound traffic rules.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -53,7 +53,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"vpc-endpoint-enabled",
-		"This rule checks enabled state for VPC endpoint.",
+		"Checks if each service specified in the parameter has an Amazon VPC endpoint. The rule is NON_COMPLIANT if Amazon VPC does not have a VPC endpoint created for each specified service. Optionally, you can specify certain VPCs for the rule to check.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -85,7 +85,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"vpc-flow-logs-enabled",
-		"This rule checks enabled state for VPC flow logs.",
+		"Checks if Amazon Virtual Private Cloud (Amazon VPC) flow logs are found and enabled for all Amazon VPCs. The rule is NON_COMPLIANT if flow logs are not enabled for at least one Amazon VPC.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -118,7 +118,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"vpc-network-acl-unused-check",
-		"This rule checks configuration for VPC network acl unused.",
+		"Checks if there are unused network access control lists (network ACLs). The rule is COMPLIANT if each network ACL is associated with a subnet. The rule is NON_COMPLIANT if a network ACL is not associated with a subnet.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -141,7 +141,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"vpc-peering-dns-resolution-check",
-		"This rule checks configuration for VPC peering DNS resolution.",
+		"Checks if DNS resolution from accepter/requester VPC to private IP is enabled. The rule is NON_COMPLIANT if DNS resolution from accepter/requester VPC to private IP is not enabled.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -170,7 +170,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"vpc-sg-open-only-to-authorized-ports",
-		"This rule checks VPC sg open only to authorized ports.",
+		"Checks if security groups allowing unrestricted incoming traffic ('0.0.0.0/0' or '::/0') only allow inbound TCP or UDP connections on authorized ports. The rule is NON_COMPLIANT if such security groups do not have ports specified in the rule parameters.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -200,7 +200,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"vpc-sg-port-restriction-check",
-		"This rule checks configuration for VPC sg port restriction.",
+		"Checks if security groups restrict incoming traffic to restricted ports explicitly from 0.0.0.0/0 or ::/0. The rule is NON_COMPLIANT if security groups allow incoming traffic from 0.0.0.0/0 or ::/0 over TCP/UDP ports 22/3389 or as specified in parameters.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -229,7 +229,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"vpc-vpn-2-tunnels-up",
-		"This rule checks VPC VPN 2 tunnels up.",
+		"Checks if both virtual private network (VPN) tunnels provided by AWS Site-to-Site VPN are in UP status. The rule is NON_COMPLIANT if one or both tunnels are in DOWN status.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -258,7 +258,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"subnet-auto-assign-public-ip-disabled",
-		"This rule checks subnet auto assign public ip disabled.",
+		"Checks if Amazon Virtual Private Cloud (Amazon VPC) subnets are configured to automatically assign public IP addresses to instances launched within them. This rule is COMPLIANT if subnets do not auto-assign public IPv4 or IPv6 addresses. This rule is NON_COMPLIANT if subnets auto-assign public IPv4 or IPv6 addresses.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -286,7 +286,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"restricted-common-ports",
-		"This rule checks restricted common ports.",
+		"Checks if the security groups in use do not allow unrestricted incoming Transmission Control Protocol (TCP) traffic to specified ports. The rule is COMPLIANT if:",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -316,7 +316,7 @@ func RegisterVPCChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"service-vpc-endpoint-enabled",
-		"This rule checks service vpc endpoint enabled.",
+		"Checks if Service Endpoint for the service provided in rule parameter is created for each Amazon Virtual Private Cloud (Amazon VPC). The rule is NON_COMPLIANT if an Amazon VPC doesn't have an Amazon VPC endpoint created for the service.",
 		"vpc",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

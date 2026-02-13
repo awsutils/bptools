@@ -15,7 +15,7 @@ import (
 func RegisterEMRChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"emr-block-public-access",
-		"This rule checks EMR block public access.",
+		"Checks if an account with Amazon EMR has block public access settings enabled. The rule is NON_COMPLIANT if BlockPublicSecurityGroupRules is false, or if true, ports other than Port 22 are listed in PermittedPublicSecurityGroupRuleRanges.",
 		"emr",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -31,7 +31,7 @@ func RegisterEMRChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"emr-kerberos-enabled",
-		"This rule checks enabled state for EMR kerberos.",
+		"Checks if Amazon EMR clusters have Kerberos enabled. The rule is NON_COMPLIANT if a security configuration is not attached to the cluster or the security configuration does not satisfy the specified rule parameters.",
 		"emr",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -62,7 +62,7 @@ func RegisterEMRChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"emr-master-no-public-ip",
-		"This rule checks EMR master no public IP.",
+		"Checks if Amazon EMR clusters' master nodes have public IPs. The rule is NON_COMPLIANT if the master node has a public IP.",
 		"emr",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -84,7 +84,7 @@ func RegisterEMRChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"emr-security-configuration-encryption-rest",
-		"This rule checks EMR security configuration encryption rest.",
+		"Checks if an Amazon EMR security configuration has encryption at rest enabled. The rule is NON_COMPLIANT if configuration.SecurityConfiguration.EncryptionConfiguration.EnableAtRestEncryption is false.",
 		"emr",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -107,7 +107,7 @@ func RegisterEMRChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"emr-security-configuration-encryption-transit",
-		"This rule checks EMR security configuration encryption transit.",
+		"Checks if an Amazon EMR security configuration has encryption in transit enabled. The rule is NON_COMPLIANT if configuration.SecurityConfiguration.EncryptionConfiguration.EnableInTransitEncryption is false.",
 		"emr",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

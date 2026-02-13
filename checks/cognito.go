@@ -14,7 +14,7 @@ import (
 func RegisterCognitoChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"cognito-identity-pool-unauthenticated-logins",
-		"This rule checks COGNITO identity pool unauthenticated logins.",
+		"Checks if Amazon Cognito identity pools disallow unauthenticated logins. The rule is NON_COMPLIANT if configuration.AllowUnauthenticatedIdentities is true.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -34,7 +34,7 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cognito-identity-pool-unauth-access-check",
-		"This rule checks configuration for COGNITO identity pool unauth access.",
+		"Checks if Amazon Cognito Identity Pool allows unauthenticated identities. The rule is NON_COMPLIANT if the Identity Pool is configured to allow unauthenticated identities.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -54,7 +54,7 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cognito-userpool-cust-auth-threat-full-check",
-		"This rule checks configuration for COGNITO userpool cust auth threat full.",
+		"Checks if Amazon Cognito user pools have threat protection enabled with full-function enforcement mode for custom authentication. This rule is NON_COMPLIANT if threat protection for custom authentication is not set to full-function enforcement mode.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -90,7 +90,7 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cognito-user-pool-advanced-security-enabled",
-		"This rule checks enabled state for COGNITO user pool advanced security.",
+		"Checks if an Amazon Cognito user pool has advanced security enabled for standard authentication. The rule is NON_COMPLIANT if advanced security is not enabled. Optionally, you can specify an advanced security mode for the rule to check.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -114,7 +114,7 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cognito-user-pool-deletion-protection-enabled",
-		"This rule checks enabled state for COGNITO user pool deletion protection.",
+		"Checks whether Amazon Cognito user pools has deletion protection enabled. This rule is NON_COMPLIANT if a user pool has deletion protection disabled.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -134,7 +134,7 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cognito-user-pool-mfa-enabled",
-		"This rule checks enabled state for COGNITO user pool MFA.",
+		"Checks if Amazon Cognito user pools configured with a PASSWORD-only sign-in policy have Multi-Factor Authentication (MFA) enabled. This rule is NON_COMPLIANT if the Cognito user pool configured with PASSWORD only sign in policy does not have MFA enabled.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -155,7 +155,7 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cognito-user-pool-password-policy-check",
-		"This rule checks configuration for COGNITO user pool password policy.",
+		"Checks if the password policy for Amazon cognito user pool meets the specified requirements indicated in the parameters. The rule is NON_COMPLIANT if the user pool password policy does not meet the specified requirements.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -180,7 +180,7 @@ func RegisterCognitoChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"cognito-user-pool-tagged",
-		"This rule checks tagging for COGNITO user pool exist.",
+		"Checks if Amazon Cognito user pools have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"cognito",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

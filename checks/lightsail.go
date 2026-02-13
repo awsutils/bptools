@@ -9,7 +9,7 @@ import (
 func RegisterLightsailChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"lightsail-bucket-allow-public-overrides-disabled",
-		"This rule checks disabled state for lightsail bucket allow public overrides.",
+		"Checks if Amazon Lightsail buckets have allow public overrides disabled. The rule is NON_COMPLIANT if AllowPublicOverrides is true. Note: AllowPublicOverrides has no effect if GetObject is public, see lightsail-bucket-get-object-private.",
 		"lightsail",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -32,7 +32,7 @@ func RegisterLightsailChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"lightsail-bucket-tagged",
-		"This rule checks tagging for lightsail bucket exist.",
+		"Checks if Amazon Lightsail buckets have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"lightsail",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -60,7 +60,7 @@ func RegisterLightsailChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"lightsail-certificate-tagged",
-		"This rule checks tagging for lightsail certificate exist.",
+		"Checks if Amazon Lightsail certificates have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"lightsail",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -88,7 +88,7 @@ func RegisterLightsailChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"lightsail-disk-tagged",
-		"This rule checks tagging for lightsail disk exist.",
+		"Checks if Amazon Lightsail disks have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"lightsail",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

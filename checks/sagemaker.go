@@ -16,7 +16,7 @@ import (
 func RegisterSageMakerChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"sagemaker-app-image-config-tagged",
-		"This rule checks tagging for SageMaker app image config exist.",
+		"Checks if Amazon SageMaker app image configs have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -42,7 +42,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-domain-in-vpc",
-		"This rule checks VPC placement for SageMaker domain.",
+		"Checks if an Amazon SageMaker domain uses a customer owned Amazon Virtual Private Cloud (VPC) for non-EFS traffic. The rule is NON_COMPLIANT if configuration.AppNetworkAccessType is not set to VpcOnly.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -74,7 +74,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"sagemaker-domain-tagged",
-		"This rule checks tagging for SageMaker domain exist.",
+		"Checks if Amazon SageMaker domains have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -100,7 +100,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-endpoint-configuration-kms-key-configured",
-		"This rule checks SageMaker endpoint configuration KMS key configured.",
+		"Checks if AWS Key Management Service (AWS KMS) key is configured for an Amazon SageMaker endpoint configuration. The rule is NON_COMPLIANT if 'KmsKeyId' is not specified for the Amazon SageMaker endpoint configuration.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -124,7 +124,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-endpoint-config-prod-instance-count",
-		"This rule checks SageMaker endpoint config prod instance count.",
+		"Checks if Amazon SageMaker endpoint configurations have production variants `InitialInstanceCount` set to a value greater than 1. The rule is NON_COMPLIANT if production variants `InitialInstanceCount` is equal to 1.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -151,7 +151,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"sagemaker-feature-group-tagged",
-		"This rule checks tagging for SageMaker feature group exist.",
+		"Checks if Amazon SageMaker feature groups have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -177,7 +177,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(DescriptionCheck(
 		"sagemaker-image-description",
-		"This rule checks descriptions for SageMaker image exist.",
+		"Checks if Amazon SageMaker images have a description. The rule is NON_COMPLIANT if configuration.ImageDescription does not exist.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -205,7 +205,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"sagemaker-image-tagged",
-		"This rule checks tagging for SageMaker image exist.",
+		"Checks if Amazon SageMaker images have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -231,7 +231,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-model-in-vpc",
-		"This rule checks VPC placement for SageMaker model.",
+		"Checks if an Amazon SageMaker model uses an Amazon Virtual Private Cloud (Amazon VPC) for container traffic. The rule is NON_COMPLIANT if configuration.VpcConfig does not exist.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -251,7 +251,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"sagemaker-model-isolation-enabled",
-		"This rule checks enabled state for SageMaker model isolation.",
+		"Checks if an Amazon SageMaker model has network isolation enabled. The rule is NON_COMPLIANT if configuration.EnableNetworkIsolation is false.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -271,7 +271,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-notebook-instance-inside-vpc",
-		"This rule checks SageMaker notebook instance inside VPC.",
+		"Checks if an Amazon SageMaker notebook instance is launched within a VPC or within a list of approved subnets. The rule is NON_COMPLIANT if a notebook instance is not launched within a VPC or if its subnet ID is not included in the parameter list.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -295,7 +295,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-notebook-instance-kms-key-configured",
-		"This rule checks SageMaker notebook instance KMS key configured.",
+		"Checks if an AWS Key Management Service (AWS KMS) key is configured for an Amazon SageMaker notebook instance. The rule is NON_COMPLIANT if 'KmsKeyId' is not specified for the SageMaker notebook instance.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -319,7 +319,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-notebook-instance-platform-version",
-		"This rule checks versions for SageMaker notebook instance platform.",
+		"Checks if a Sagemaker Notebook Instance is configured to use a supported platform identifier version. The rule is NON_COMPLIANT if a Notebook Instance is not using the specified supported platform identifier version as specified in the parameter.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -355,7 +355,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-notebook-instance-root-access-check",
-		"This rule checks configuration for SageMaker notebook instance root access.",
+		"Checks if the Amazon SageMaker RootAccess setting is enabled for Amazon SageMaker notebook instances. The rule is NON_COMPLIANT if the RootAccess setting is set to ‘Enabled’ for an Amazon SageMaker notebook instance.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -375,7 +375,7 @@ func RegisterSageMakerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sagemaker-notebook-no-direct-internet-access",
-		"This rule checks SageMaker notebook no direct internet access.",
+		"Checks if direct internet access is disabled for an Amazon SageMaker notebook instance. The rule is NON_COMPLIANT if a SageMaker notebook instance is internet-enabled.",
 		"sagemaker",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

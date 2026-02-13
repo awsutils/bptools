@@ -18,7 +18,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	// dynamodb-autoscaling-enabled
 	checker.Register(EnabledCheck(
 		"dynamodb-autoscaling-enabled",
-		"This rule checks DynamoDB autoscaling enabled.",
+		"Checks if Amazon DynamoDB tables or global secondary indexes can process read/write capacity using on-demand mode or provisioned mode with auto scaling enabled. The rule is NON_COMPLIANT if either mode is used without auto scaling enabled",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -37,7 +37,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	// dynamodb-pitr-enabled
 	checker.Register(EnabledCheck(
 		"dynamodb-pitr-enabled",
-		"This rule checks DynamoDB PITR enabled.",
+		"Checks if point-in-time recovery (PITR) is enabled for Amazon DynamoDB tables. The rule is NON_COMPLIANT if PITR is not enabled for DynamoDB tables.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -56,7 +56,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	// dynamodb-table-deletion-protection-enabled
 	checker.Register(EnabledCheck(
 		"dynamodb-table-deletion-protection-enabled",
-		"This rule checks DynamoDB table deletion protection enabled.",
+		"Checks if an Amazon DynamoDB table have deletion protection set to enabled. The rule is NON_COMPLIANT if the table have deletion protection set to disabled.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -76,7 +76,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	// dynamodb-table-encryption-enabled + dynamodb-table-encrypted-kms
 	checker.Register(EncryptionCheck(
 		"dynamodb-table-encryption-enabled",
-		"This rule checks DynamoDB table encryption enabled.",
+		"Checks if the Amazon DynamoDB tables are encrypted and checks their status. The rule is COMPLIANT if the status is enabled or enabling.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -95,7 +95,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	))
 	checker.Register(EncryptionCheck(
 		"dynamodb-table-encrypted-kms",
-		"This rule checks DynamoDB table encrypted with KMS.",
+		"Checks if Amazon DynamoDB table is encrypted with AWS Key Management Service (KMS). The rule is NON_COMPLIANT if Amazon DynamoDB table is not encrypted with AWS KMS. The rule is also NON_COMPLIANT if the encrypted AWS KMS key is not present in kmsKeyArns input parameter.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -115,7 +115,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	// dynamodb-throughput-limit-check
 	checker.Register(ConfigCheck(
 		"dynamodb-throughput-limit-check",
-		"This rule checks DynamoDB throughput limits.",
+		"Checks if provisioned DynamoDB throughput is approaching the maximum limit for your account. By default, the rule checks if provisioned throughput exceeds a threshold of 80 percent of your account limits.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -205,7 +205,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	// Backup-related DynamoDB checks
 	checker.Register(ConfigCheck(
 		"dynamodb-in-backup-plan",
-		"This rule checks DynamoDB in backup plan.",
+		"Checks whether Amazon DynamoDB table is present in AWS Backup Plans. The rule is NON_COMPLIANT if Amazon DynamoDB tables are not present in any AWS Backup plan.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -231,7 +231,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"dynamodb-resources-protected-by-backup-plan",
-		"This rule checks DynamoDB resources protected by backup plan.",
+		"Checks if Amazon DynamoDB tables are protected by a backup plan. The rule is NON_COMPLIANT if the DynamoDB Table is not covered by a backup plan.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -257,7 +257,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"dynamodb-last-backup-recovery-point-created",
-		"This rule checks DynamoDB last backup recovery point created.",
+		"Checks if a recovery point was created for Amazon DynamoDB Tables within the specified period. The rule is NON_COMPLIANT if the DynamoDB Table does not have a corresponding recovery point created within the specified time period.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -283,7 +283,7 @@ func RegisterDynamoDBChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"dynamodb-meets-restore-time-target",
-		"This rule checks DynamoDB meets restore time target.",
+		"Checks if the restore time of Amazon DynamoDB Tables meets the specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of a DynamoDB Table is greater than maxRestoreTime minutes.",
 		"dynamodb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

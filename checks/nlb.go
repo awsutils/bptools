@@ -13,7 +13,7 @@ import (
 func RegisterNLBChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"nlb-cross-zone-load-balancing-enabled",
-		"This rule checks enabled state for nlb cross zone load balancing.",
+		"Checks if cross-zone load balancing is enabled on Network Load Balancers (NLBs). The rule is NON_COMPLIANT if cross-zone load balancing is not enabled for an NLB.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -40,7 +40,7 @@ func RegisterNLBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"nlb-internal-scheme-check",
-		"This rule checks configuration for nlb internal scheme.",
+		"Checks if a Network Load Balancer scheme is internal. The rule is NON_COMPLIANT if configuration.scheme is not set to internal.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -62,7 +62,7 @@ func RegisterNLBChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"nlb-tagged",
-		"This rule checks tagging for nlb exist.",
+		"Checks if Network Load Balancers have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -87,7 +87,7 @@ func RegisterNLBChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"nlb-listener-tagged",
-		"This rule checks tagging for nlb listener exist.",
+		"Checks if Network Load Balancer listeners have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -125,7 +125,7 @@ func RegisterNLBChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"nlb-logging-enabled",
-		"This rule checks logging is enabled for nlb.",
+		"Checks if access logging is enabled for Network Load Balancers. The rule is NON_COMPLIANT if access logging is not enabled for a Network Load balancer.",
 		"elbv2",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {

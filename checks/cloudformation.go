@@ -13,7 +13,7 @@ import (
 func RegisterCloudFormationChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"cloudformation-stack-drift-detection-check",
-		"This rule checks cloudformation stack drift detection check.",
+		"Checks if the actual configuration of a AWS CloudFormation (CloudFormation) stack differs, or has drifted, from the expected configuration. A stack is considered to have drifted if one or more of its resources differ from their expected configuration. The rule and the stack are COMPLIANT when the stack drift status is IN_SYNC. The rule is NON_COMPLIANT if the stack drift status is DRIFTED.",
 		"cloudformation",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -37,7 +37,7 @@ func RegisterCloudFormationChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudformation-stack-notification-check",
-		"This rule checks cloudformation stack notification check.",
+		"Checks if your CloudFormation stacks send event notifications to an Amazon SNS topic. Optionally checks if specified Amazon SNS topics are used. The rule is NON_COMPLIANT if CloudFormation stacks do not send notifications.",
 		"cloudformation",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -57,7 +57,7 @@ func RegisterCloudFormationChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudformation-stack-service-role-check",
-		"This rule checks cloudformation stack service role check.",
+		"Checks if AWS CloudFormation stacks are using service roles. The rule is NON_COMPLIANT if a CloudFormation stack does not have service role associated with it.",
 		"cloudformation",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -77,7 +77,7 @@ func RegisterCloudFormationChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cloudformation-termination-protection-check",
-		"This rule checks cloudformation termination protection check.",
+		"Checks if an AWS CloudFormation stack has termination protection enabled. This rule is NON_COMPLIANT if termination protection is not enabled on a CloudFormation stack.",
 		"cloudformation",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {

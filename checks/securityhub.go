@@ -9,7 +9,7 @@ import (
 func RegisterSecurityHubChecks(d *awsdata.Data) {
 	checker.Register(SingleCheck(
 		"securityhub-enabled",
-		"This rule checks enabled state for securityhub.",
+		"Checks if AWS Security Hub is enabled for an AWS Account. The rule is NON_COMPLIANT if AWS Security Hub is not enabled.",
 		"securityhub",
 		d,
 		func(d *awsdata.Data) (bool, string, error) {

@@ -9,7 +9,7 @@ import (
 func RegisterAppStreamChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"appstream-fleet-in-vpc",
-		"This rule checks appstream fleet in vpc.",
+		"Checks if Amazon AppStream 2.0 fleets use an Amazon Virtual Private Cloud (Amazon VPC). The rule is NON_COMPLIANT if configuration.VpcConfig does not exist. The rule does not check Elastic fleets.",
 		"appstream",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

@@ -9,7 +9,7 @@ import (
 func RegisterFraudDetectorChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"frauddetector-entity-type-tagged",
-		"This rule checks tagging for frauddetector entity type exist.",
+		"Checks if Amazon Fraud Detector entity types have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"frauddetector",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -35,7 +35,7 @@ func RegisterFraudDetectorChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"frauddetector-label-tagged",
-		"This rule checks tagging for frauddetector label exist.",
+		"Checks if Amazon Fraud Detector labels have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"frauddetector",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -61,7 +61,7 @@ func RegisterFraudDetectorChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"frauddetector-outcome-tagged",
-		"This rule checks tagging for frauddetector outcome exist.",
+		"Checks if Amazon Fraud Detector outcomes have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"frauddetector",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -87,7 +87,7 @@ func RegisterFraudDetectorChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"frauddetector-variable-tagged",
-		"This rule checks tagging for frauddetector variable exist.",
+		"Checks if Amazon Fraud Detector variables have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"frauddetector",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

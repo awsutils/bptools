@@ -2,6 +2,7 @@ package checks
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -10,7 +11,16 @@ import (
 	"bptools/checker"
 )
 
-const acmExpirationThreshold = 14 * 24 * time.Hour
+const acmDefaultExpirationDays = 90
+
+func acmExpirationThreshold() time.Duration {
+	if v := strings.TrimSpace(os.Getenv("BPTOOLS_ACM_EXPIRATION_DAYS")); v != "" {
+		if days, err := strconv.Atoi(v); err == nil && days > 0 {
+			return time.Duration(days) * 24 * time.Hour
+		}
+	}
+	return acmDefaultExpirationDays * 24 * time.Hour
+}
 
 func certID(arn *string) string {
 	if arn != nil {
@@ -24,7 +34,7 @@ func RegisterACMChecks(d *awsdata.Data) {
 	// acm-certificate-expiration-check
 	checker.Register(ConfigCheck(
 		"acm-certificate-expiration-check",
-		"This rule checks expiration for ACM certificate.",
+		"Checks if AWS Certificate Manager Certificates in your account are marked for expiration within the specified number of days. Certificates provided by ACM are automatically renewed. ACM does not automatically renew certificates that you import. The rule is NON_COMPLIANT if your certificates are about to expire.",
 		"acm",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -39,7 +49,7 @@ func RegisterACMChecks(d *awsdata.Data) {
 					continue
 				}
 				remaining := time.Until(*c.NotAfter)
-				ok := remaining >= acmExpirationThreshold
+				ok := remaining >= acmExpirationThreshold()
 				res = append(res, ConfigResource{ID: arn, Passing: ok, Detail: fmt.Sprintf("Expires in %s", remaining.Truncate(time.Hour))})
 			}
 			return res, nil
@@ -49,7 +59,7 @@ func RegisterACMChecks(d *awsdata.Data) {
 	// acm-certificate-rsa-check
 	checker.Register(ConfigCheck(
 		"acm-certificate-rsa-check",
-		"This rule checks RSA usage for ACM certificate.",
+		"Checks if RSA certificates managed by AWS Certificate Manager (ACM) have a key length of at least '2048' bits.The rule is NON_COMPLIANT if the minimum key length is less than 2048 bits.",
 		"acm",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

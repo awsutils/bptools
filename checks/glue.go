@@ -9,7 +9,7 @@ import (
 func RegisterGlueChecks(d *awsdata.Data) {
 	checker.Register(LoggingCheck(
 		"glue-job-logging-enabled",
-		"This rule checks logging is enabled for GLUE job.",
+		"Checks if an AWS Glue job has logging enabled. The rule is NON_COMPLIANT if an AWS Glue job does not have Amazon CloudWatch logs enabled.",
 		"glue",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -32,7 +32,7 @@ func RegisterGlueChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"glue-ml-transform-encrypted-at-rest",
-		"This rule checks Glue ML transform encrypted at rest.",
+		"Checks if an AWS Glue ML Transform has encryption at rest enabled. The rule is NON_COMPLIANT if `MLUserDataEncryptionMode` is set to `DISABLED`.",
 		"glue",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -55,7 +55,7 @@ func RegisterGlueChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"glue-ml-transform-tagged",
-		"This rule checks tagging for glue ml transform exist.",
+		"Checks if AWS Glue machine learning transforms have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"glue",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -81,7 +81,7 @@ func RegisterGlueChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"glue-spark-job-supported-version",
-		"This rule checks Glue spark job supported version.",
+		"Checks if an AWS Glue Spark job is running on the specified minimum supported AWS Glue version. The rule is NON_COMPLIANT if the AWS Glue Spark job is not running on the minimum supported AWS Glue version that you specify.",
 		"glue",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -104,7 +104,7 @@ func RegisterGlueChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"custom-schema-registry-policy-attached",
-		"This rule checks custom schema registry policy attached.",
+		"Checks if custom Amazon EventBridge schema registries have a resource policy attached. The rule is NON_COMPLIANT for custom schema registries without a resource policy attached.",
 		"glue",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

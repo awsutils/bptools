@@ -11,7 +11,7 @@ import (
 func RegisterMSKChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"msk-cluster-public-access-disabled",
-		"This rule checks disabled state for msk cluster public access.",
+		"Checks if public access is disabled on Amazon MSK clusters. The rule is NON_COMPLIANT if public access on an Amazon MSK cluster is not disabled.",
 		"msk",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -35,7 +35,7 @@ func RegisterMSKChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"msk-cluster-tagged",
-		"This rule checks tagging for msk cluster exist.",
+		"Checks if Amazon MSK clusters have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"msk",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -62,7 +62,7 @@ func RegisterMSKChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"msk-connect-connector-logging-enabled",
-		"This rule checks logging is enabled for msk connect connector.",
+		"Checks if Amazon MSK Connector has logging enabled to any one of the log destinations. The rule is NON_COMPLIANT if Amazon MSK Connector does not have logging enabled.",
 		"mskconnect",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -87,7 +87,7 @@ func RegisterMSKChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"msk-enhanced-monitoring-enabled",
-		"This rule checks enabled state for msk enhanced monitoring.",
+		"Checks if enhanced monitoring is enabled for an Amazon MSK cluster set to PER_TOPIC_PER_BROKER or PER_TOPIC_PER_PARTITION. The rule is NON_COMPLIANT if enhanced monitoring is enabled and set to DEFAULT or PER_BROKER.",
 		"msk",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -108,7 +108,7 @@ func RegisterMSKChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"msk-in-cluster-node-require-tls",
-		"This rule checks msk in cluster node require TLS.",
+		"Checks if an Amazon MSK cluster enforces encryption in transit using HTTPS (TLS) with the broker nodes of the cluster. The rule is NON_COMPLIANT if plain text communication is enabled for in-cluster broker node connections.",
 		"msk",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -132,7 +132,7 @@ func RegisterMSKChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"msk-unrestricted-access-check",
-		"This rule checks configuration for msk unrestricted access.",
+		"Checks if an Amazon MSK Cluster has unauthenticated access disabled. The rule is NON_COMPLIANT if Amazon MSK Cluster has unauthenticated access enabled.",
 		"msk",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

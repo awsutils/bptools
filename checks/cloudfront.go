@@ -33,7 +33,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-accesslogs-enabled
 	checker.Register(LoggingCheck(
 		"cloudfront-accesslogs-enabled",
-		"This rule checks CloudFront access logs enabled.",
+		"Checks if Amazon CloudFront distributions are configured to deliver access logs to an Amazon S3 bucket using standard logging (legacy). The rule is NON_COMPLIANT if a CloudFront distribution does not have legacy logging configured.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -49,7 +49,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-associated-with-waf
 	checker.Register(EnabledCheck(
 		"cloudfront-associated-with-waf",
-		"This rule checks CloudFront associated with WAF.",
+		"Checks if Amazon CloudFront distributions are associated with either web application firewall (WAF) or WAFv2 web access control lists (ACLs). The rule is NON_COMPLIANT if a CloudFront distribution is not associated with a WAF web ACL.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -68,7 +68,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-custom-ssl-certificate
 	checker.Register(ConfigCheck(
 		"cloudfront-custom-ssl-certificate",
-		"This rule checks CloudFront custom SSL certificate.",
+		"Checks if the certificate associated with an Amazon CloudFront distribution is the default SSL certificate. The rule is NON_COMPLIANT if a CloudFront distribution uses the default SSL certificate.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -85,7 +85,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-default-root-object-configured
 	checker.Register(ConfigCheck(
 		"cloudfront-default-root-object-configured",
-		"This rule checks CloudFront default root object configured.",
+		"Checks if an Amazon CloudFront distribution is configured to return a specific object that is the default root object. The rule is NON_COMPLIANT if Amazon CloudFront distribution does not have a default root object configured.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -101,7 +101,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-distribution-key-group-enabled
 	checker.Register(EnabledCheck(
 		"cloudfront-distribution-key-group-enabled",
-		"This rule checks CloudFront distribution key group enabled.",
+		"Checks if Amazon CloudFront distributions are configured to use only trusted key groups for signed URL or signed cookie authentication for all cache behaviors. The rule is NON_COMPLIANT if any cache behavior in the distribution is using trusted signers.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -130,7 +130,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-no-deprecated-ssl-protocols
 	checker.Register(ConfigCheck(
 		"cloudfront-no-deprecated-ssl-protocols",
-		"This rule checks CloudFront no deprecated SSL protocols.",
+		"Checks if CloudFront distributions are using deprecated SSL protocols for HTTPS communication between CloudFront edge locations and custom origins. This rule is NON_COMPLIANT for a CloudFront distribution if any ‘OriginSslProtocols’ includes ‘SSLv3’.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -143,7 +143,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 					}
 					for _, protocol := range origin.CustomOriginConfig.OriginSslProtocols.Items {
 						p := strings.ToUpper(strings.TrimSpace(string(protocol)))
-						if p == "SSLV3" || p == "TLSV1" || p == "TLSV1.1" {
+						if p == "SSLV3" {
 							ok = false
 							break
 						}
@@ -161,7 +161,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-origin-access-identity-enabled
 	checker.Register(ConfigCheck(
 		"cloudfront-origin-access-identity-enabled",
-		"This rule checks CloudFront origin access identity enabled.",
+		"Checks if CloudFront distribution with Amazon S3 Origin type has origin access identity configured. The rule is NON_COMPLIANT if the CloudFront distribution is backed by S3 and any origin type is not OAI configured, or the origin is not an S3 bucket.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -184,7 +184,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-origin-failover-enabled
 	checker.Register(ConfigCheck(
 		"cloudfront-origin-failover-enabled",
-		"This rule checks CloudFront origin failover enabled.",
+		"Checks if an origin group is configured for the distribution of at least two origins in the origin group for Amazon CloudFront. The rule is NON_COMPLIANT if there are no origin groups for the distribution.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -200,7 +200,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-origin-lambda-url-oac-enabled
 	checker.Register(ConfigCheck(
 		"cloudfront-origin-lambda-url-oac-enabled",
-		"This rule checks CloudFront origin Lambda URL OAC enabled.",
+		"Checks if Amazon CloudFront distributions with Amazon Lambda Function URL origins have origin access control (OAC) enabled. The rule is NON_COMPLIANT if any Lambda Function URL origin in a CloudFront distribution does not have OAC enabled.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -223,7 +223,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-s3-origin-access-control-enabled
 	checker.Register(ConfigCheck(
 		"cloudfront-s3-origin-access-control-enabled",
-		"This rule checks CloudFront S3 origin access control enabled.",
+		"Checks if an Amazon CloudFront distribution with an Amazon Simple Storage Service (Amazon S3) Origin type has origin access control (OAC) enabled. The rule is NON_COMPLIANT for CloudFront distributions with Amazon S3 origins that don't have OAC enabled.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -246,7 +246,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-s3-origin-non-existent-bucket
 	checker.Register(ConfigCheck(
 		"cloudfront-s3-origin-non-existent-bucket",
-		"This rule checks CloudFront S3 origin non-existent bucket.",
+		"Checks if Amazon CloudFront distributions point to a non-existent S3 bucket. The rule is NON_COMPLIANT if `S3OriginConfig` for a CloudFront distribution points to a non-existent S3 bucket. The rule does not evaluate S3 buckets with static website hosting.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -266,7 +266,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	allowedPolicies := cloudfrontAllowedViewerPolicies()
 	checker.Register(ConfigCheck(
 		"cloudfront-security-policy-check",
-		"This rule checks CloudFront security policy.",
+		"Checks if Amazon CloudFront distributions are using a minimum security policy and cipher suite of TLSv1.2 or greater for viewer connections. This rule is NON_COMPLIANT for a CloudFront distribution if the minimumProtocolVersion is below TLSv1.2_2018.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -285,7 +285,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudfront-ssl-policy-check",
-		"This rule checks CloudFront SSL policy.",
+		"Checks if Amazon CloudFront distributions are configured with the specified security policies.The rule is NON_COMPLIANT if a CloudFront Distribution is not configured with security policies that you specify.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -304,7 +304,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudfront-sni-enabled",
-		"This rule checks CloudFront SNI enabled.",
+		"Checks if Amazon CloudFront distributions are using a custom SSL certificate and are configured to use SNI to serve HTTPS requests. The rule is NON_COMPLIANT if a custom SSL certificate is associated but the SSL support method is a dedicated IP address.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -326,7 +326,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-traffic-to-origin-encrypted
 	checker.Register(ConfigCheck(
 		"cloudfront-traffic-to-origin-encrypted",
-		"This rule checks CloudFront traffic to origin encrypted.",
+		"Checks if Amazon CloudFront distributions are encrypting traffic to custom origins. The rule is NON_COMPLIANT if ‘OriginProtocolPolicy’ is ‘http-only’ or if ‘OriginProtocolPolicy’ is ‘match-viewer’ and ‘ViewerProtocolPolicy’ is ‘allow-all’.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -355,7 +355,7 @@ func RegisterCloudFrontChecks(d *awsdata.Data) {
 	// cloudfront-viewer-policy-https
 	checker.Register(ConfigCheck(
 		"cloudfront-viewer-policy-https",
-		"This rule checks CloudFront viewer policy HTTPS.",
+		"Checks whether your Amazon CloudFront distributions use HTTPS (directly or via a redirection). The rule is NON_COMPLIANT if the value of ViewerProtocolPolicy is set to 'allow-all' for the defaultCacheBehavior or for the CacheBehaviors.",
 		"cloudfront",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

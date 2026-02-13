@@ -9,7 +9,7 @@ import (
 func RegisterAuditManagerChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"auditmanager-assessment-tagged",
-		"This rule checks auditmanager assessment tagged.",
+		"Checks if AWS Audit Manager assessments have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"auditmanager",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -354,7 +355,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"access-keys-rotated",
-		"This rule checks rotation for access keys.",
+		"Checks if active IAM access keys are rotated (changed) within the number of days specified in maxAccessKeyAge. The rule is NON_COMPLIANT if access keys are not rotated within the specified time period. The default value is 90 days.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			report, err := d.IAMCredentialReport.Get()
@@ -391,7 +392,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-customer-policy-blocked-kms-actions",
-		"This rule checks IAM customer policy blocked KMS actions.",
+		"Checks if the managed AWS Identity and Access Management (IAM) policies that you create do not allow blocked KMS actions on all AWS KMS key resources. The rule is NON_COMPLIANT if any blocked action is allowed on all AWS KMS keys by the managed IAM policy.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			policies, err := d.IAMPolicies.Get()
@@ -444,7 +445,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(SingleCheck(
 		"iam-external-access-analyzer-enabled",
-		"This rule checks enabled state for IAM external access analyzer.",
+		"Checks if an IAM Access Analyzer for external access is activated in your account per region. The rule is NON_COMPLIANT if there are no analyzers for external access in the region or if the 'status' attribute is not set to 'ACTIVE'.",
 		"IAM", d,
 		func(d *awsdata.Data) (bool, string, error) {
 			out, err := d.Clients.AccessAnalyzer.ListAnalyzers(d.Ctx, &accessanalyzer.ListAnalyzersInput{
@@ -471,7 +472,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-group-has-users-check",
-		"This rule checks configuration for IAM group has users.",
+		"Checks whether IAM groups have at least one IAM user.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			groups, err := d.IAMGroups.Get()
@@ -504,7 +505,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(&BaseCheck{
 		CheckID: "iam-inline-policy-blocked-kms-actions",
-		Desc:    "This rule checks IAM inline policy blocked KMS actions.",
+		Desc:    "Checks if the inline policies attached to your IAM users, roles, and groups do not allow blocked actions on all AWS KMS keys. The rule is NON_COMPLIANT if any blocked action is allowed on all AWS KMS keys in an inline policy.",
 		Svc:     "IAM",
 		RunFunc: func() []checker.Result {
 			var results []checker.Result
@@ -615,7 +616,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(&BaseCheck{
 		CheckID: "iam-no-inline-policy-check",
-		Desc:    "This rule checks configuration for IAM no inline policy.",
+		Desc:    "Checks if the inline policies attached to your IAM users, roles, and groups do not allow blocked actions on all AWS KMS keys. The rule is NON_COMPLIANT if any blocked action is allowed on all AWS KMS keys in an inline policy.",
 		Svc:     "IAM",
 		RunFunc: func() []checker.Result {
 			var results []checker.Result
@@ -690,7 +691,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(TaggedCheck(
 		"iam-oidc-provider-tagged",
-		"This rule checks tagging for IAM oidc provider exist.",
+		"Checks if AWS IAM OIDC providers have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			arns, err := d.IAMOIDCProviders.Get()
@@ -724,7 +725,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(SingleCheck(
 		"iam-password-policy",
-		"This rule checks IAM password policy.",
+		"Checks if the account password policy for AWS Identity and Access Management (IAM) users meets the specified requirements indicated in the parameters. The rule is NON_COMPLIANT if the account password policy does not meet the specified requirements.",
 		"IAM", d,
 		func(d *awsdata.Data) (bool, string, error) {
 			pp, err := d.IAMAccountPasswordPolicy.Get()
@@ -734,9 +735,27 @@ func RegisterIAMChecks(d *awsdata.Data) {
 			if pp == nil {
 				return false, "No password policy configured", nil
 			}
+			minLength := 14
+			if v := strings.TrimSpace(os.Getenv("BPTOOLS_IAM_PWD_MIN_LENGTH")); v != "" {
+				if n, err := strconv.Atoi(v); err == nil && n > 0 {
+					minLength = n
+				}
+			}
+			minReuse := 24
+			if v := strings.TrimSpace(os.Getenv("BPTOOLS_IAM_PWD_REUSE_PREVENTION")); v != "" {
+				if n, err := strconv.Atoi(v); err == nil && n > 0 {
+					minReuse = n
+				}
+			}
+			maxAge := 90
+			if v := strings.TrimSpace(os.Getenv("BPTOOLS_IAM_PWD_MAX_AGE")); v != "" {
+				if n, err := strconv.Atoi(v); err == nil && n > 0 {
+					maxAge = n
+				}
+			}
 			var issues []string
-			if pp.MinimumPasswordLength == nil || *pp.MinimumPasswordLength < 14 {
-				issues = append(issues, "minimum length < 14")
+			if pp.MinimumPasswordLength == nil || int(*pp.MinimumPasswordLength) < minLength {
+				issues = append(issues, fmt.Sprintf("minimum length < %d", minLength))
 			}
 			if !pp.RequireUppercaseCharacters {
 				issues = append(issues, "uppercase not required")
@@ -750,11 +769,11 @@ func RegisterIAMChecks(d *awsdata.Data) {
 			if !pp.RequireSymbols {
 				issues = append(issues, "symbols not required")
 			}
-			if pp.PasswordReusePrevention == nil || *pp.PasswordReusePrevention < 24 {
-				issues = append(issues, "password reuse prevention < 24")
+			if pp.PasswordReusePrevention == nil || int(*pp.PasswordReusePrevention) < minReuse {
+				issues = append(issues, fmt.Sprintf("password reuse prevention < %d", minReuse))
 			}
-			if pp.MaxPasswordAge == nil || *pp.MaxPasswordAge <= 0 || *pp.MaxPasswordAge > 90 {
-				issues = append(issues, "max password age not set to 1-90 days")
+			if pp.MaxPasswordAge == nil || *pp.MaxPasswordAge <= 0 || int(*pp.MaxPasswordAge) > maxAge {
+				issues = append(issues, fmt.Sprintf("max password age not set to 1-%d days", maxAge))
 			}
 			if len(issues) > 0 {
 				return false, "Password policy issues: " + strings.Join(issues, ", "), nil
@@ -768,7 +787,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-policy-blacklisted-check",
-		"This rule checks configuration for IAM policy blacklisted.",
+		"Checks in each AWS Identity and Access Management (IAM) resource, if a policy Amazon Resource Name (ARN) in the input parameter is attached to the IAM resource. The rule is NON_COMPLIANT if the policy ARN is attached to the IAM resource.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			blacklisted := map[string]bool{
@@ -864,7 +883,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-policy-in-use",
-		"This rule checks IAM policy in use.",
+		"Checks whether the IAM policy ARN is attached to an IAM user, or a group with one or more IAM users, or an IAM role with one or more trusted entity.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			policies, err := d.IAMPolicies.Get()
@@ -914,7 +933,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-policy-no-statements-with-admin-access",
-		"This rule checks IAM policy no statements with admin access.",
+		"Checks if AWS Identity and Access Management (IAM) policies that you create have Allow statements that grant permissions to all actions on all resources. The rule is NON_COMPLIANT if any customer managed IAM policy statement includes \"Effect\": \"Allow\" with \"Action\": \"*\" over \"Resource\": \"*\".",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			policies, err := d.IAMPolicies.Get()
@@ -957,7 +976,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-policy-no-statements-with-full-access",
-		"This rule checks IAM policy no statements with full access.",
+		"Checks if AWS Identity and Access Management (IAM) policies that you create grant permissions to all actions on individual AWS resources. The rule is NON_COMPLIANT if any customer managed IAM policy allows full access to at least 1 AWS service.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			policies, err := d.IAMPolicies.Get()
@@ -1000,7 +1019,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-role-managed-policy-check",
-		"This rule checks configuration for IAM role managed policy.",
+		"Checks if all managed policies specified in the list of managed policies are attached to the AWS Identity and Access Management (IAM) role. The rule is NON_COMPLIANT if a managed policy is not attached to the IAM role.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			roles, err := d.IAMRoles.Get()
@@ -1039,7 +1058,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(SingleCheck(
 		"iam-root-access-key-check",
-		"This rule checks configuration for IAM root access key.",
+		"Checks if the root user access key is available. The rule is COMPLIANT if the user access key does not exist. Otherwise, NON_COMPLIANT.",
 		"IAM", d,
 		func(d *awsdata.Data) (bool, string, error) {
 			summary, err := d.IAMAccountSummary.Get()
@@ -1058,7 +1077,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(TaggedCheck(
 		"iam-saml-provider-tagged",
-		"This rule checks tagging for IAM SAML provider exist.",
+		"Checks if AWS IAM SAML providers have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			providers, err := d.IAMSAMLProviders.Get()
@@ -1095,7 +1114,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-server-certificate-expiration-check",
-		"This rule checks expiration for IAM server certificate.",
+		"Checks if AWS IAM SSL/TLS server certificates stored in IAM are expired. The rule is NON_COMPLIANT if an IAM server certificate is expired.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			certs, err := d.IAMServerCertificates.Get()
@@ -1123,7 +1142,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(TaggedCheck(
 		"iam-server-certificate-tagged",
-		"This rule checks tagging for IAM server certificate exist.",
+		"Checks if AWS IAM server certificates have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			certs, err := d.IAMServerCertificates.Get()
@@ -1162,7 +1181,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-user-group-membership-check",
-		"This rule checks configuration for IAM user group membership.",
+		"Checks whether IAM users are members of at least one IAM group.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			users, err := d.IAMUsers.Get()
@@ -1195,7 +1214,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-user-mfa-enabled",
-		"This rule checks enabled state for IAM user MFA.",
+		"Checks if the AWS Identity and Access Management (IAM) users have multi-factor authentication (MFA) enabled. The rule is NON_COMPLIANT if MFA is not enabled for at least one IAM user.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			report, err := d.IAMCredentialReport.Get()
@@ -1226,7 +1245,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-user-no-policies-check",
-		"This rule checks configuration for IAM user no policies.",
+		"Checks if none of your AWS Identity and Access Management (IAM) users have policies attached. IAM users must inherit permissions from IAM groups or roles. The rule is NON_COMPLIANT if there is at least one policy that is attached to the IAM user.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			users, err := d.IAMUsers.Get()
@@ -1266,7 +1285,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"iam-user-unused-credentials-check",
-		"This rule checks configuration for IAM user unused credentials.",
+		"Checks if your AWS Identity and Access Management (IAM) users have passwords or active access keys that have not been used within the specified number of days you provided. The rule is NON_COMPLIANT if there are inactive accounts not recently used.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			report, err := d.IAMCredentialReport.Get()
@@ -1313,7 +1332,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"mfa-enabled-for-iam-console-access",
-		"This rule checks MFA enabled for IAM console access.",
+		"Checks if AWS multi-factor authentication (MFA) is enabled for all AWS Identity and Access Management (IAM) users that use a console password. The rule is COMPLIANT if MFA is enabled.",
 		"IAM", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			report, err := d.IAMCredentialReport.Get()
@@ -1344,7 +1363,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(SingleCheck(
 		"root-account-hardware-mfa-enabled",
-		"This rule checks enabled state for root account hardware MFA.",
+		"Checks if your AWS account is enabled to use multi-factor authentication (MFA) hardware device to sign in with root credentials. The rule is NON_COMPLIANT if any virtual MFA devices are permitted for signing in with root credentials.",
 		"IAM", d,
 		func(d *awsdata.Data) (bool, string, error) {
 			summary, err := d.IAMAccountSummary.Get()
@@ -1374,7 +1393,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(SingleCheck(
 		"root-account-mfa-enabled",
-		"This rule checks enabled state for root account MFA.",
+		"Checks if the root user of your AWS account requires multi-factor authentication for console sign-in. The rule is NON_COMPLIANT if the AWS Identity and Access Management (IAM) root account user does not have multi-factor authentication (MFA) enabled.",
 		"IAM", d,
 		func(d *awsdata.Data) (bool, string, error) {
 			summary, err := d.IAMAccountSummary.Get()
@@ -1394,7 +1413,7 @@ func RegisterIAMChecks(d *awsdata.Data) {
 	// ---------------------------------------------------------------
 	checker.Register(ConfigCheck(
 		"restricted-ssh",
-		"This rule checks restricted SSH.",
+		"Checks if the incoming SSH traffic for the security groups is accessible. The rule is COMPLIANT if the IP addresses of the incoming SSH traffic in the security groups are restricted (CIDR other than 0.0.0.0/0 or ::/0). Otherwise, NON_COMPLIANT.",
 		"EC2", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			sgs, err := d.EC2SecurityGroups.Get()

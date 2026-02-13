@@ -14,7 +14,7 @@ func RegisterACMPcaChecks(d *awsdata.Data) {
 	// acmpca-certificate-authority-tagged
 	checker.Register(TaggedCheck(
 		"acmpca-certificate-authority-tagged",
-		"This rule checks tagging for ACM PCA certificate authority exist.",
+		"Checks if AWS Private CA certificate authorities have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"acmpca",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -40,7 +40,7 @@ func RegisterACMPcaChecks(d *awsdata.Data) {
 	// acm-pca-root-ca-disabled
 	checker.Register(ConfigCheck(
 		"acm-pca-root-ca-disabled",
-		"This rule checks disabled state for ACM PCA root CA.",
+		"Checks if AWS Private Certificate Authority (AWS Private CA) has a root CA that is disabled. The rule is NON_COMPLIANT for root CAs with status that is not DISABLED.",
 		"acmpca",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

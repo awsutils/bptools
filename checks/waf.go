@@ -14,7 +14,7 @@ import (
 func RegisterWAFChecks(d *awsdata.Data) {
 	checker.Register(LoggingCheck(
 		"waf-classic-logging-enabled",
-		"This rule checks logging is enabled for WAF classic.",
+		"Checks if logging is enabled on AWS WAF classic global web access control lists (web ACLs). The rule is NON_COMPLIANT for a global web ACL, if it does not have logging enabled.",
 		"waf",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -41,7 +41,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"waf-global-rulegroup-not-empty",
-		"This rule checks WAF global rulegroup not empty.",
+		"Checks if an AWS WAF Classic rule group contains any rules. The rule is NON_COMPLIANT if there are no rules present within a rule group.",
 		"waf",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -69,7 +69,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"waf-global-rule-not-empty",
-		"This rule checks WAF global rule not empty.",
+		"Checks if an AWS WAF global rule contains any conditions. The rule is NON_COMPLIANT if no conditions are present within the WAF global rule.",
 		"waf",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -88,7 +88,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"waf-global-webacl-not-empty",
-		"This rule checks WAF global webacl not empty.",
+		"Checks whether a WAF Global Web ACL contains any WAF rules or rule groups. This rule is NON_COMPLIANT if a Web ACL does not contain any WAF rule or rule group.",
 		"waf",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -107,7 +107,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"waf-regional-rulegroup-not-empty",
-		"This rule checks WAF regional rulegroup not empty.",
+		"Checks if WAF Regional rule groups contain any rules. The rule is NON_COMPLIANT if there are no rules present within a WAF Regional rule group.",
 		"wafregional",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -135,7 +135,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"waf-regional-rule-not-empty",
-		"This rule checks WAF regional rule not empty.",
+		"Checks whether WAF regional rule contains conditions. This rule is COMPLIANT if the regional rule contains at least one condition and NON_COMPLIANT otherwise.",
 		"wafregional",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -154,7 +154,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"waf-regional-webacl-not-empty",
-		"This rule checks WAF regional webacl not empty.",
+		"Checks if a WAF regional Web ACL contains any WAF rules or rule groups. The rule is NON_COMPLIANT if there are no WAF rules or rule groups present within a Web ACL.",
 		"wafregional",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -173,7 +173,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"wafv2-logging-enabled",
-		"This rule checks logging is enabled for wafv2.",
+		"Checks if logging is enabled on AWS WAFv2 regional and global web access control lists (web ACLs). The rule is NON_COMPLIANT if the logging is enabled but the logging destination does not match the value of the parameter.",
 		"wafv2",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -200,7 +200,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"wafv2-rulegroup-logging-enabled",
-		"This rule checks logging is enabled for wafv2 rulegroup.",
+		"Checks if Amazon CloudWatch security metrics collection on AWS WAFv2 rule groups is enabled. The rule is NON_COMPLIANT if the 'VisibilityConfig.CloudWatchMetricsEnabled' field is set to false.",
 		"wafv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -232,7 +232,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"wafv2-rulegroup-not-empty",
-		"This rule checks wafv2 rulegroup not empty.",
+		"Checks if WAFv2 Rule Groups contain rules. The rule is NON_COMPLIANT if there are no rules in a WAFv2 Rule Group.",
 		"wafv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -251,7 +251,7 @@ func RegisterWAFChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"wafv2-webacl-not-empty",
-		"This rule checks wafv2 webacl not empty.",
+		"Checks if a WAFv2 Web ACL contains any WAF rules or WAF rule groups. This rule is NON_COMPLIANT if a Web ACL does not contain any WAF rules or WAF rule groups.",
 		"wafv2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

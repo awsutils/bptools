@@ -13,7 +13,7 @@ import (
 func RegisterElasticBeanstalkChecks(d *awsdata.Data) {
 	checker.Register(DescriptionCheck(
 		"elasticbeanstalk-application-description",
-		"This rule checks elastic beanstalk application description.",
+		"Checks if AWS Elastic Beanstalk applications have a description. The rule is NON_COMPLIANT if configuration.description does not exist or is an empty string.",
 		"elasticbeanstalk",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -36,7 +36,7 @@ func RegisterElasticBeanstalkChecks(d *awsdata.Data) {
 
 	checker.Register(DescriptionCheck(
 		"elasticbeanstalk-application-version-description",
-		"This rule checks elastic beanstalk application version description.",
+		"Checks if AWS Elastic Beanstalk application versions have a description. The rule is NON_COMPLIANT if configuration.description does not exist or is an empty string.",
 		"elasticbeanstalk",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -61,7 +61,7 @@ func RegisterElasticBeanstalkChecks(d *awsdata.Data) {
 
 	checker.Register(DescriptionCheck(
 		"elasticbeanstalk-environment-description",
-		"This rule checks elastic beanstalk environment description.",
+		"Checks if AWS Elastic Beanstalk environments have a description. The rule is NON_COMPLIANT if configuration.description does not exist or is an empty string.",
 		"elasticbeanstalk",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -81,7 +81,7 @@ func RegisterElasticBeanstalkChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"elastic-beanstalk-logs-to-cloudwatch",
-		"This rule checks elastic beanstalk logs to CloudWatch.",
+		"Checks if AWS Elastic Beanstalk environments are configured to send logs to Amazon CloudWatch Logs. The rule is NON_COMPLIANT if the value of `StreamLogs` is false.",
 		"elasticbeanstalk",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -106,7 +106,7 @@ func RegisterElasticBeanstalkChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"elastic-beanstalk-managed-updates-enabled",
-		"This rule checks enabled state for elastic beanstalk managed updates.",
+		"Checks if managed platform updates in an AWS Elastic Beanstalk environment is enabled. The rule is COMPLIANT if the value for ManagedActionsEnabled is set to true. The rule is NON_COMPLIANT if the value for ManagedActionsEnabled is set to false, or if a parameter is provided and its value does not match the existing configurations.",
 		"elasticbeanstalk",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -131,7 +131,7 @@ func RegisterElasticBeanstalkChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"beanstalk-enhanced-health-reporting-enabled",
-		"This rule checks enabled state for elastic beanstalk enhanced health reporting.",
+		"Checks if an AWS Elastic Beanstalk environment is configured for enhanced health reporting. The rule is COMPLIANT if the environment is configured for enhanced health reporting. The rule is NON_COMPLIANT if the environment is configured for basic health reporting.",
 		"elasticbeanstalk",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {

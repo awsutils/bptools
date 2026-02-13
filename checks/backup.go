@@ -20,7 +20,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 	// backup-plan-min-frequency-and-min-retention-check
 	checker.Register(ConfigCheck(
 		"backup-plan-min-frequency-and-min-retention-check",
-		"This rule checks backup plan minimum frequency and retention.",
+		"Checks if a backup plan has a backup rule that satisfies the required frequency and retention period. The rule is NON_COMPLIANT if recovery points are not created at least as often as the specified frequency or expire before the specified period.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -69,7 +69,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 	// backup-recovery-point-encrypted
 	checker.Register(EncryptionCheck(
 		"backup-recovery-point-encrypted",
-		"This rule checks backup recovery point encrypted.",
+		"Checks if a recovery point is encrypted. The rule is NON_COMPLIANT if the recovery point is not encrypted.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -94,7 +94,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 	// backup-recovery-point-minimum-retention-check
 	checker.Register(ConfigCheck(
 		"backup-recovery-point-minimum-retention-check",
-		"This rule checks backup recovery point minimum retention.",
+		"Checks if a recovery point expires no earlier than after the specified period. The rule is NON_COMPLIANT if the recovery point has a retention point that is less than the required retention period.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -124,7 +124,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 	// backup-recovery-point-manual-deletion-disabled
 	checker.Register(ConfigCheck(
 		"backup-recovery-point-manual-deletion-disabled",
-		"This rule checks backup recovery point manual deletion disabled.",
+		"Checks if a backup vault has an attached resource-based policy which prevents deletion of recovery points. The rule is NON_COMPLIANT if the Backup Vault does not have resource-based policies or has policies without a suitable 'Deny' statement (statement with backup:DeleteRecoveryPoint, backup:UpdateRecoveryPointLifecycle, and backup:PutBackupVaultAccessPolicy permissions).",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -158,7 +158,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"storagegateway-resources-protected-by-backup-plan",
-		"This rule checks storagegateway resources protected by backup plan.",
+		"Checks if AWS Storage Gateway volumes are protected by a backup plan. The rule is NON_COMPLIANT if the Storage Gateway volume is not covered by a backup plan.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -179,7 +179,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"storagegateway-last-backup-recovery-point-created",
-		"This rule checks storagegateway last backup recovery point created.",
+		"Checks if a recovery point was created for AWS Storage Gateway volumes. The rule is NON_COMPLIANT if the Storage Gateway volume does not have a corresponding recovery point created within the specified time period.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -205,7 +205,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"storagegateway-resources-in-logically-air-gapped-vault",
-		"This rule checks storagegateway resources in logically air gapped vault.",
+		"Checks if AWS Storage Gateway volumes are in a logically air-gapped vault. The rule is NON_COMPLIANT if an AWS Storage Gateway volume is not in a logically air-gapped vault within the specified time period.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -231,7 +231,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"virtualmachine-resources-protected-by-backup-plan",
-		"This rule checks virtualmachine resources protected by backup plan.",
+		"Checks if AWS Backup-Gateway VirtualMachines are protected by a backup plan. The rule is NON_COMPLIANT if the Backup-Gateway VirtualMachine is not covered by a backup plan.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -252,7 +252,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"virtualmachine-last-backup-recovery-point-created",
-		"This rule checks virtualmachine last backup recovery point created.",
+		"Checks if a recovery point was created for AWS Backup-Gateway VirtualMachines. The rule is NON_COMPLIANT if an AWS Backup-Gateway VirtualMachines does not have a corresponding recovery point created within the specified time period.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -278,7 +278,7 @@ func RegisterBackupChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"virtualmachine-resources-in-logically-air-gapped-vault",
-		"This rule checks virtualmachine resources in logically air gapped vault.",
+		"Checks if AWS Backup-Gateway VirtualMachines are in a logically air-gapped vault. The rule is NON_COMPLIANT if an AWS Backup-Gateway VirtualMachines is not in a logically air-gapped vault within the specified time period.",
 		"backup",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -382,6 +382,12 @@ func backupVaultPolicyDeniesManualDelete(policy string) bool {
 	if err := json.Unmarshal([]byte(policy), &doc); err != nil {
 		return false
 	}
+	requiredActions := []string{
+		"backup:deleterecoverypoint",
+		"backup:updaterecoverypointlifecycle",
+		"backup:putbackupvaultaccesspolicy",
+	}
+	denied := make(map[string]bool, len(requiredActions))
 	for _, stmt := range doc.Statement {
 		if !strings.EqualFold(strings.TrimSpace(stmt.Effect), "Deny") {
 			continue
@@ -391,12 +397,22 @@ func backupVaultPolicyDeniesManualDelete(policy string) bool {
 		}
 		for _, action := range policyActions(stmt.Action) {
 			a := strings.ToLower(strings.TrimSpace(action))
-			if a == "backup:deleterecoverypoint" || a == "backup:*" || a == "*" {
+			if a == "backup:*" || a == "*" {
 				return true
+			}
+			for _, req := range requiredActions {
+				if a == req {
+					denied[req] = true
+				}
 			}
 		}
 	}
-	return false
+	for _, req := range requiredActions {
+		if !denied[req] {
+			return false
+		}
+	}
+	return len(denied) > 0
 }
 
 func policyPrincipalIsWildcard(principal interface{}) bool {

@@ -13,7 +13,7 @@ func RegisterAppFlowChecks(d *awsdata.Data) {
 	// appflow-flow-tagged
 	checker.Register(TaggedCheck(
 		"appflow-flow-tagged",
-		"This rule checks tagging for AppFlow flow exist.",
+		"Checks if Amazon AppFlow flows have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appflow",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -39,7 +39,7 @@ func RegisterAppFlowChecks(d *awsdata.Data) {
 	// appflow-flow-trigger-type-check
 	checker.Register(ConfigCheck(
 		"appflow-flow-trigger-type-check",
-		"This rule checks configuration for AppFlow flow trigger type.",
+		"Checks if an Amazon AppFlow flow runs using the specified trigger type. The rule is NON_COMPLAINT if the flow does not run using the flow type specified in the required rule parameter.",
 		"appflow",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

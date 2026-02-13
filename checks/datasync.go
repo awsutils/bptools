@@ -11,7 +11,7 @@ import (
 func RegisterDataSyncChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"datasync-location-object-storage-using-https",
-		"This rule checks datasync location object storage using HTTPS.",
+		"Checks if AWS DataSync location object storage servers use the HTTPS protocol to communicate. The rule is NON_COMPLIANT if configuration.ServerProtocol is not 'HTTPS'.",
 		"datasync",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -30,7 +30,7 @@ func RegisterDataSyncChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"datasync-task-data-verification-enabled",
-		"This rule checks datasync task data verification enabled.",
+		"Checks if AWS DataSync tasks have data verification enabled to perform additional verification at the end of your transfer. The rule is NON_COMPLIANT if configuration.Options.VerifyMode is 'NONE'.",
 		"datasync",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -53,7 +53,7 @@ func RegisterDataSyncChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"datasync-task-logging-enabled",
-		"This rule checks datasync task logging enabled.",
+		"Checks if an AWS DataSync task has Amazon CloudWatch logging enabled. The rule is NON_COMPLIANT if an AWS DataSync task does not have Amazon CloudWatch logging enabled or if the logging level is not equivalent to the logging level that you specify.",
 		"datasync",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -72,7 +72,7 @@ func RegisterDataSyncChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"datasync-task-tagged",
-		"This rule checks datasync task tagged.",
+		"Checks if AWS DataSync tasks have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"datasync",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

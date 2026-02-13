@@ -12,7 +12,7 @@ import (
 func RegisterSecretsManagerChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"secretsmanager-rotation-enabled-check",
-		"This rule checks configuration for secretsmanager rotation enabled.",
+		"Checks if AWS Secrets Manager secret has rotation enabled. The rule also checks an optional maximumAllowedRotationFrequency parameter. If the parameter is specified, the rotation frequency of the secret is compared with the maximum allowed frequency. The rule is NON_COMPLIANT if the secret is not scheduled for rotation. The rule is also NON_COMPLIANT if the rotation frequency is higher than the number specified in the maximumAllowedRotationFrequency parameter.",
 		"secretsmanager",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -31,7 +31,7 @@ func RegisterSecretsManagerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"secretsmanager-scheduled-rotation-success-check",
-		"This rule checks configuration for secretsmanager scheduled rotation success.",
+		"Checks if AWS Secrets Manager secrets rotated successfully according to the rotation schedule. Secrets Manager calculates the date the rotation should happen. The rule is NON_COMPLIANT if the date passes and the secret isn't rotated.",
 		"secretsmanager",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -64,7 +64,7 @@ func RegisterSecretsManagerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"secretsmanager-secret-periodic-rotation",
-		"This rule checks secretsmanager secret periodic rotation.",
+		"Checks if AWS Secrets Manager secrets have been rotated in the past specified number of days. The rule is NON_COMPLIANT if a secret has not been rotated for more than maxDaysSinceRotation number of days. The default value is 90 days.",
 		"secretsmanager",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -86,7 +86,7 @@ func RegisterSecretsManagerChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"secretsmanager-secret-unused",
-		"This rule checks secretsmanager secret unused.",
+		"Checks if AWS Secrets Manager secrets have been accessed within a specified number of days. The rule is NON_COMPLIANT if a secret has not been accessed in 'unusedForDays' number of days. The default value is 90 days.",
 		"secretsmanager",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -105,7 +105,7 @@ func RegisterSecretsManagerChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"secretsmanager-using-cmk",
-		"This rule checks secretsmanager using CMK.",
+		"Checks if all secrets in AWS Secrets Manager are encrypted using the AWS managed key (aws/secretsmanager) or a customer managed key that was created in AWS Key Management Service (AWS KMS). The rule is COMPLIANT if a secret is encrypted using a customer managed key. This rule is NON_COMPLIANT if a secret is encrypted using aws/secretsmanager.",
 		"secretsmanager",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {

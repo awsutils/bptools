@@ -9,7 +9,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	// transfer-family-server-no-ftp
 	checker.Register(ConfigCheck(
 		"transfer-family-server-no-ftp",
-		"This rule checks Transfer Family server no FTP.",
+		"Checks if a server created with AWS Transfer Family uses FTP for endpoint connection. The rule is NON_COMPLIANT if the server protocol for endpoint connection is FTP-enabled.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -35,7 +35,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	// transfer-agreement-description + transfer-agreement-tagged
 	checker.Register(DescriptionCheck(
 		"transfer-agreement-description",
-		"This rule checks Transfer agreement description.",
+		"Checks if AWS Transfer Family agreements have a description. The rule is NON_COMPLIANT if configuration.Description does not exist.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -52,7 +52,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	))
 	checker.Register(TaggedCheck(
 		"transfer-agreement-tagged",
-		"This rule checks Transfer agreement tagged.",
+		"Checks if AWS Transfer Family agreements have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -78,7 +78,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	// transfer-certificate-description + transfer-certificate-tagged
 	checker.Register(DescriptionCheck(
 		"transfer-certificate-description",
-		"This rule checks Transfer certificate description.",
+		"Checks if AWS Transfer Family certificates have a description. The rule is NON_COMPLIANT if configuration.Description does not exist.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -95,7 +95,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	))
 	checker.Register(TaggedCheck(
 		"transfer-certificate-tagged",
-		"This rule checks Transfer certificate tagged.",
+		"Checks if AWS Transfer Family certificates have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -121,7 +121,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	// transfer-connector-logging-enabled + transfer-connector-tagged
 	checker.Register(LoggingCheck(
 		"transfer-connector-logging-enabled",
-		"This rule checks Transfer connector logging enabled.",
+		"Checks if AWS Transfer Family Connector publishes logs to Amazon CloudWatch. The rule is NON_COMPLIANT if a Connector does not have a LoggingRole assigned.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -139,7 +139,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	))
 	checker.Register(TaggedCheck(
 		"transfer-connector-tagged",
-		"This rule checks Transfer connector tagged.",
+		"Checks if AWS Transfer Family connectors have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -165,7 +165,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	// transfer-profile-tagged
 	checker.Register(TaggedCheck(
 		"transfer-profile-tagged",
-		"This rule checks Transfer profile tagged.",
+		"Checks if AWS Transfer Family profiles have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -191,7 +191,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	// transfer-workflow-description + transfer-workflow-tagged
 	checker.Register(DescriptionCheck(
 		"transfer-workflow-description",
-		"This rule checks Transfer workflow description.",
+		"Checks if AWS Transfer Family workflows have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -208,7 +208,7 @@ func RegisterTransferChecks(d *awsdata.Data) {
 	))
 	checker.Register(TaggedCheck(
 		"transfer-workflow-tagged",
-		"This rule checks Transfer workflow tagged.",
+		"Checks if AWS Transfer Family workflows have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"transfer",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

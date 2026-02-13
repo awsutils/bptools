@@ -13,7 +13,7 @@ import (
 func RegisterAccountChecks(d *awsdata.Data) {
 	checker.Register(SingleCheck(
 		"account-part-of-organizations",
-		"This rule checks account membership in organizations.",
+		"Checks if an AWS account is part of AWS Organizations. The rule is NON_COMPLIANT if an AWS account is not part of AWS Organizations or AWS Organizations master account ID does not match rule parameter MasterAccountId.",
 		"organizations",
 		d,
 		func(d *awsdata.Data) (bool, string, error) {
@@ -34,7 +34,7 @@ func RegisterAccountChecks(d *awsdata.Data) {
 
 	checker.Register(SingleCheck(
 		"security-account-information-provided",
-		"This rule checks security account information provided.",
+		"Checks if you have provided security contact information for your AWS account contacts. The rule is NON_COMPLIANT if security contact information within the account is not provided.",
 		"account",
 		d,
 		func(d *awsdata.Data) (bool, string, error) {

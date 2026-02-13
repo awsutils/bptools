@@ -9,7 +9,7 @@ import (
 func RegisterIoTChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"iot-authorizer-token-signing-enabled",
-		"This rule checks IOT authorizer token signing enabled.",
+		"Checks if an AWS IoT Core authorizer has not disabled the signing requirements for validating the token signature in an authorization request. The rule is NON_COMPLIANT if the authorizer has configuration.SigningDisabled set to True.",
 		"iot",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -28,7 +28,7 @@ func RegisterIoTChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iot-job-template-tagged",
-		"This rule checks tagging for IOT job template exist.",
+		"Checks if AWS IoT job template resources resources have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iot",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -59,7 +59,7 @@ func RegisterIoTChecks(d *awsdata.Data) {
 
 	checker.Register(DescriptionCheck(
 		"iot-provisioning-template-description",
-		"This rule checks IOT provisioning template description.",
+		"Checks if AWS IoT provisioning templates have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"iot",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -78,7 +78,7 @@ func RegisterIoTChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"iot-provisioning-template-jitp",
-		"This rule checks IOT provisioning template jitp.",
+		"Checks if AWS IoT provisioning templates are using just-in-time provisioning (JITP). The rule is NON_COMPLIANT if configuration.TemplateType is not 'JITP'.",
 		"iot",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -97,7 +97,7 @@ func RegisterIoTChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iot-provisioning-template-tagged",
-		"This rule checks tagging for IOT provisioning template exist.",
+		"Checks if AWS IoT provisioning templates have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iot",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -128,7 +128,7 @@ func RegisterIoTChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"iot-scheduled-audit-tagged",
-		"This rule checks tagging for IOT scheduled audit exist.",
+		"Checks if AWS IoT scheduled audits have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"iot",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

@@ -16,7 +16,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 	// ecs-container-insights-enabled
 	checker.Register(EnabledCheck(
 		"ecs-container-insights-enabled",
-		"This rule checks ECS container insights enabled.",
+		"Checks if Amazon Elastic Container Service clusters have container insights enabled. The rule is NON_COMPLIANT if container insights are not enabled.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -42,7 +42,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 	// ecs-capacity-provider-tagged + ecs-capacity-provider-termination-check
 	checker.Register(TaggedCheck(
 		"ecs-capacity-provider-tagged",
-		"This rule checks ECS capacity provider tagged.",
+		"Checks if Amazon ECS capacity providers have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -69,7 +69,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"ecs-capacity-provider-termination-check",
-		"This rule checks ECS capacity provider termination protection.",
+		"Checks if an Amazon ECS Capacity provider containing Auto Scaling groups has managed termination protection enabled. This rule is NON_COMPLIANT if managed termination protection is disabled on the ECS Capacity Provider.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -103,7 +103,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-awsvpc-networking-enabled",
-		"This rule checks ECS awsvpc networking enabled.",
+		"Checks if the networking mode for active ECSTaskDefinitions is set to ‘awsvpc’. This rule is NON_COMPLIANT if active ECSTaskDefinitions is not set to ‘awsvpc’.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -122,7 +122,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-network-mode-not-host",
-		"This rule checks ECS task definition network mode not host.",
+		"Checks if the latest active revision of Amazon ECS task definitions use host network mode. The rule is NON_COMPLIANT if the latest active revision of the ECS task definition uses host network mode.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -141,7 +141,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-pid-mode-check",
-		"This rule checks ECS task definition PID mode.",
+		"Checks if ECSTaskDefinitions are configured to share a host’s process namespace with its Amazon Elastic Container Service (Amazon ECS) containers. The rule is NON_COMPLIANT if the pidMode parameter is set to ‘host’.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -160,7 +160,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-containers-nonprivileged",
-		"This rule checks ECS containers non-privileged.",
+		"Checks if the privileged parameter in the container definition of ECSTaskDefinitions is set to ‘true’. The rule is NON_COMPLIANT if the privileged parameter is ‘true’.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -185,7 +185,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-containers-readonly-access",
-		"This rule checks ECS containers readonly root filesystem.",
+		"Checks if Amazon Elastic Container Service (Amazon ECS) Containers only have read-only access to its root filesystems. The rule is NON_COMPLIANT if the readonlyRootFilesystem parameter in the container definition of ECSTaskDefinitions is set to ‘false’.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -210,7 +210,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-no-environment-secrets",
-		"This rule checks ECS no environment secrets.",
+		"Checks if secrets are passed as container environment variables. The rule is NON_COMPLIANT if 1 or more environment variable key matches a key listed in the 'secretKeys' parameter (excluding environmental variables from other locations such as Amazon S3).",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -251,7 +251,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-efs-encryption-enabled",
-		"This rule checks ECS task definition EFS encryption enabled.",
+		"Checks if Amazon ECS Task Definitions with EFS volumes have in-transit encryption enabled. The rule is NON_COMPLIANT if an ECS Task Definition contains an EFS volume without transit encryption enabled.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -278,7 +278,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-log-configuration",
-		"This rule checks ECS task definition log configuration.",
+		"Checks if logConfiguration is set on active ECS Task Definitions. This rule is NON_COMPLIANT if an active ECSTaskDefinition does not have the logConfiguration resource defined or the value for logConfiguration is null in at least one container definition.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -303,7 +303,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-memory-hard-limit",
-		"This rule checks ECS task definition memory hard limit.",
+		"Checks if Amazon Elastic Container Service (ECS) task definitions have a set memory limit for its container definitions. The rule is NON_COMPLIANT for a task definition if the ‘memory’ parameter is absent for one container definition.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -328,7 +328,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-linux-user-non-root",
-		"This rule checks ECS task definition linux user non-root.",
+		"Checks if the latest active revision of an Amazon ECS task definition configures Linux containers to run as non-root users.The rule is NON_COMPLIANT if root user is specified or user configuration is absent for any container.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -353,7 +353,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-nonroot-user",
-		"This rule checks ECS task definition nonroot user.",
+		"Checks if ECSTaskDefinitions specify a user for Amazon Elastic Container Service (Amazon ECS) EC2 launch type containers to run on. The rule is NON_COMPLIANT if the ‘user’ parameter is not present or set to ‘root’.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -378,7 +378,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-windows-user-non-admin",
-		"This rule checks ECS task definition windows user non-admin.",
+		"Checks if the latest active revision of an Amazon ECS task definition configures Windows containers to run as non-administrator users. The rule is NON_COMPLIANT if default administrator user is specified or user configuration is absent for any container.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -408,7 +408,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ecs-task-definition-user-for-host-mode-check",
-		"This rule checks ECS task definition user for host mode.",
+		"Checks if Amazon ECS task definitions with host network mode have privileged OR nonroot in the container definition. The rule is NON_COMPLIANT if the latest active revision of a task definition has privileged=false (or is null) AND user=root (or is null).",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -441,7 +441,7 @@ func RegisterECSChecks(d *awsdata.Data) {
 	// ecs-fargate-latest-platform-version
 	checker.Register(ConfigCheck(
 		"ecs-fargate-latest-platform-version",
-		"This rule checks ECS Fargate latest platform version.",
+		"Checks if ECS Fargate services is set to the latest platform version. The rule is NON_COMPLIANT if PlatformVersion for the Fargate launch type is not set to LATEST, or if neither latestLinuxVersion nor latestWindowsVersion are provided as parameters.",
 		"ecs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

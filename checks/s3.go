@@ -27,7 +27,7 @@ func bucketName(b s3types.Bucket) string {
 
 func RegisterS3Checks(d *awsdata.Data) {
 	// s3-bucket-tagged
-	checker.Register(TaggedCheck("s3-bucket-tagged", "Check S3 bucket tagged", "s3", d,
+	checker.Register(TaggedCheck("s3-bucket-tagged", "Checks if Amazon S3 buckets have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.", "s3", d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -50,7 +50,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-bucket-versioning-enabled
-	checker.Register(EnabledCheck("s3-bucket-versioning-enabled", "Check versioning", "s3", d,
+	checker.Register(EnabledCheck("s3-bucket-versioning-enabled", "Checks if versioning is enabled for your S3 buckets. Optionally, the rule checks if MFA delete is enabled for your S3 buckets.", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -66,7 +66,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-bucket-server-side-encryption-enabled
-	checker.Register(EnabledCheck("s3-bucket-server-side-encryption-enabled", "Check SSE", "s3", d,
+	checker.Register(EnabledCheck("s3-bucket-server-side-encryption-enabled", "Checks if your Amazon S3 bucket either has the Amazon S3 default encryption enabled or that the Amazon S3 bucket policy explicitly denies put-object requests without server side encryption that uses AES-256 or AWS Key Management Service. The rule is NON_COMPLIANT if your Amazon S3 bucket is not encrypted by default.", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -81,7 +81,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-bucket-logging-enabled
-	checker.Register(LoggingCheck("s3-bucket-logging-enabled", "Check bucket logging", "s3", d,
+	checker.Register(LoggingCheck("s3-bucket-logging-enabled", "Checks if logging is enabled for your S3 buckets. The rule is NON_COMPLIANT if logging is not enabled.", "s3", d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -97,7 +97,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-bucket-public-read-prohibited + s3-bucket-public-write-prohibited + s3-bucket-level-public-access-prohibited
-	checker.Register(ConfigCheck("s3-bucket-public-read-prohibited", "Check no public read", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-public-read-prohibited", "Checks if your Amazon S3 buckets do not allow public read access. The rule checks the Block Public Access settings, the bucket policy, and the bucket access control list (ACL).", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -112,7 +112,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-bucket-public-write-prohibited", "Check no public write", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-public-write-prohibited", "Checks if your Amazon S3 buckets do not allow public write access. The rule checks the Block Public Access settings, the bucket policy, and the bucket access control list (ACL).", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -146,7 +146,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-bucket-level-public-access-prohibited", "Check bucket public access blocked", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-level-public-access-prohibited", "Checks if S3 buckets are publicly accessible. The rule is NON_COMPLIANT if an S3 bucket is not listed in the excludedPublicBuckets parameter and bucket level settings are public.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -166,7 +166,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-bucket-ssl-requests-only
-	checker.Register(ConfigCheck("s3-bucket-ssl-requests-only", "Check SSL only", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-ssl-requests-only", "Checks if S3 buckets have policies that require requests to use SSL/TLS. The rule is NON_COMPLIANT if any S3 bucket has policies allowing HTTP requests.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -232,7 +232,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 	}
 
 	// s3-bucket-default-lock-enabled
-	checker.Register(EnabledCheck("s3-bucket-default-lock-enabled", "Check object lock", "s3", d,
+	checker.Register(EnabledCheck("s3-bucket-default-lock-enabled", "Checks if the S3 bucket has lock enabled, by default. The rule is NON_COMPLIANT if the lock is not enabled.", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -247,7 +247,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-bucket-mfa-delete-enabled
-	checker.Register(EnabledCheck("s3-bucket-mfa-delete-enabled", "Check MFA delete", "s3", d,
+	checker.Register(EnabledCheck("s3-bucket-mfa-delete-enabled", "Checks if MFA Delete is enabled in the Amazon Simple Storage Service (Amazon S3) bucket versioning configuration. The rule is NON_COMPLIANT if MFA Delete is not enabled.", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -263,7 +263,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-bucket-acl-prohibited
-	checker.Register(ConfigCheck("s3-bucket-acl-prohibited", "Check ACL prohibited", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-acl-prohibited", "Checks if Amazon Simple Storage Service (Amazon S3) Buckets allow user permissions through access control lists (ACLs). The rule is NON_COMPLIANT if ACLs are configured for user access in Amazon S3 Buckets.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -283,7 +283,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-default-encryption-kms
-	checker.Register(ConfigCheck("s3-default-encryption-kms", "Check KMS encryption", "s3", d,
+	checker.Register(ConfigCheck("s3-default-encryption-kms", "Checks if the S3 buckets are encrypted with AWS Key Management Service (AWS KMS). The rule is NON_COMPLIANT if the S3 bucket is not encrypted with an AWS KMS key.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -306,7 +306,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		}))
 
 	// s3-event-notifications-enabled
-	checker.Register(EnabledCheck("s3-event-notifications-enabled", "Check event notifications", "s3", d,
+	checker.Register(EnabledCheck("s3-event-notifications-enabled", "Checks if Amazon S3 Events Notifications are enabled on an S3 bucket. The rule is NON_COMPLIANT if S3 Events Notifications are not set on a bucket, or if the event type or destination do not match the eventTypes and destinationArn parameters.", "s3", d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -363,7 +363,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		_ = cid
 	}
 
-	checker.Register(ConfigCheck("s3-access-point-in-vpc-only", "This rule checks S3 access point in VPC only.", "s3", d,
+	checker.Register(ConfigCheck("s3-access-point-in-vpc-only", "Checks if an Amazon S3 access point does not allow access from the internet (NetworkOrigin is VPC). The rule is NON_COMPLIANT if NetworkOrigin is Internet.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			accountID, err := d.AccountID.Get()
 			if err != nil {
@@ -385,7 +385,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-access-point-public-access-blocks", "This rule checks S3 access point public access blocks.", "s3", d,
+	checker.Register(ConfigCheck("s3-access-point-public-access-blocks", "Checks if Amazon S3 access points have block public access settings enabled. The rule is NON_COMPLIANT if block public access settings are not enabled for S3 access points.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			accountID, err := d.AccountID.Get()
 			if err != nil {
@@ -416,7 +416,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-bucket-policy-not-more-permissive", "This rule checks S3 bucket policy not more permissive.", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-policy-not-more-permissive", "Checks if your Amazon Simple Storage Service bucket policies do not allow other inter-account permissions than the control Amazon S3 bucket policy that you provide.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -442,7 +442,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-bucket-policy-grantee-check", "This rule checks configuration for S3 bucket policy grantee.", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-policy-grantee-check", "Checks that the access granted by the Amazon S3 bucket is restricted by any of the AWS principals, federated users, service principals, IP addresses, or VPCs that you provide. The rule is COMPLIANT if a bucket policy is not present.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			type statement struct {
 				Effect    string      `json:"Effect"`
@@ -492,7 +492,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-bucket-blacklisted-actions-prohibited", "This rule checks S3 bucket blacklisted actions prohibited.", "s3", d,
+	checker.Register(ConfigCheck("s3-bucket-blacklisted-actions-prohibited", "Checks if an Amazon Simple Storage Service (Amazon S3) bucket policy does not allow blocklisted bucket-level and object-level actions on resources in the bucket for principals from other AWS accounts. For example, the rule checks that the Amazon S3 bucket policy does not allow another AWS account to perform any s3:GetBucket* actions and s3:DeleteObject on any object in the bucket. The rule is NON_COMPLIANT if any blocklisted actions are allowed by the Amazon S3 bucket policy.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			type statement struct {
 				Effect string      `json:"Effect"`
@@ -555,7 +555,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3express-dir-bucket-lifecycle-rules-check", "This rule checks configuration for s3express dir bucket lifecycle rules.", "s3", d,
+	checker.Register(ConfigCheck("s3express-dir-bucket-lifecycle-rules-check", "Checks if lifecycle rules are configured for an Amazon S3 Express directory bucket. The rule is NON_COMPLIANT if there is no active lifecycle configuration rules or the configuration does not match with the parameter values.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -618,7 +618,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 		return isProtected, lastBackup, inProtectedVault, nil
 	}
 
-	checker.Register(ConfigCheck("s3-resources-protected-by-backup-plan", "This rule checks S3 resources protected by backup plan.", "s3", d,
+	checker.Register(ConfigCheck("s3-resources-protected-by-backup-plan", "Checks if Amazon Simple Storage Service (Amazon S3) buckets are protected by a backup plan. The rule is NON_COMPLIANT if the Amazon S3 bucket is not covered by a backup plan.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -637,7 +637,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-last-backup-recovery-point-created", "This rule checks S3 last backup recovery point created.", "s3", d,
+	checker.Register(ConfigCheck("s3-last-backup-recovery-point-created", "Checks if a recovery point was created for Amazon Simple Storage Service (Amazon S3). The rule is NON_COMPLIANT if the Amazon S3 bucket does not have a corresponding recovery point created within the specified time period.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -657,7 +657,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-meets-restore-time-target", "This rule checks S3 meets restore time target.", "s3", d,
+	checker.Register(ConfigCheck("s3-meets-restore-time-target", "Checks if the restore time of Amazon Simple Storage Service (Amazon S3) buckets meets the specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of an Amazon S3 bucket is greater than maxRestoreTime minutes.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {
@@ -676,7 +676,7 @@ func RegisterS3Checks(d *awsdata.Data) {
 			return res, nil
 		}))
 
-	checker.Register(ConfigCheck("s3-resources-in-logically-air-gapped-vault", "This rule checks S3 resources in logically air gapped vault.", "s3", d,
+	checker.Register(ConfigCheck("s3-resources-in-logically-air-gapped-vault", "Checks if Amazon Simple Storage Service (Amazon S3) buckets are in a logically air-gapped vault. The rule is NON_COMPLIANT if an Amazon S3 bucket is not in a logically air-gapped vault within the specified time period.", "s3", d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
 			buckets, err := d.S3Buckets.Get()
 			if err != nil {

@@ -15,7 +15,7 @@ import (
 func RegisterELBChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"elb-acm-certificate-required",
-		"This rule checks ELB ACM certificate required.",
+		"Checks if the Classic Load Balancers use SSL certificates provided by AWS Certificate Manager. To use this rule, use an SSL or HTTPS listener with your Classic Load Balancer. This rule is only applicable to Classic Load Balancers. This rule does not check Application Load Balancers and Network Load Balancers.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -48,7 +48,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"elb-cross-zone-load-balancing-enabled",
-		"This rule checks enabled state for ELB cross zone load balancing.",
+		"Checks if cross-zone load balancing is enabled for Classic Load Balancers. The rule is NON_COMPLIANT if cross-zone load balancing is not enabled for Classic Load Balancers.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -67,7 +67,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"elb-custom-security-policy-ssl-check",
-		"This rule checks configuration for ELB custom security policy SSL.",
+		"Checks whether your Classic Load Balancer SSL listeners are using a custom policy. The rule is only applicable if there are SSL listeners for the Classic Load Balancer.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -121,7 +121,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"elb-deletion-protection-enabled",
-		"This rule checks enabled state for ELB deletion protection.",
+		"Checks whether an Elastic Load Balancer has deletion protection enabled. The rule is NON_COMPLIANT if deletion_protection.enabled is false.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -152,7 +152,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"elb-internal-scheme-check",
-		"This rule checks configuration for ELB internal scheme.",
+		"Checks if a Classic Load Balancer scheme is internal. The rule is NON_COMPLIANT if configuration.scheme is not set to internal.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -171,7 +171,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"elb-logging-enabled",
-		"This rule checks logging is enabled for ELB.",
+		"Checks if the Application Load Balancer and the Classic Load Balancer have logging enabled. The rule is NON_COMPLIANT if the access_logs.s3.enabled is false or access_logs.S3.bucket is not equal to the s3BucketName that you provided.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -206,7 +206,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"elb-predefined-security-policy-ssl-check",
-		"This rule checks configuration for ELB predefined security policy SSL.",
+		"Checks if your Classic Load Balancer SSL listeners use a predefined policy. The rule is NON_COMPLIANT if the Classic Load Balancer HTTPS/SSL listener's policy does not equal the value of the parameter 'predefinedPolicyName'.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -242,7 +242,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"elb-tagged",
-		"This rule checks tagging for ELB exist.",
+		"Checks if Classic Load Balancers have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -265,7 +265,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"elb-tls-https-listeners-only",
-		"This rule checks ELB TLS HTTPS listeners only.",
+		"Checks if your Classic Load Balancer is configured with SSL or HTTPS listeners. The rule is NON_COMPLIANT if a listener is not configured with SSL or HTTPS.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -294,7 +294,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"clb-multiple-az",
-		"This rule checks clb multiple az.",
+		"Checks if a Classic Load Balancer spans multiple Availability Zones (AZs). The rule is NON_COMPLIANT if a Classic Load Balancer spans less than 2 AZs or does not span number of AZs mentioned in the minAvailabilityZones parameter (if provided).",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -314,7 +314,7 @@ func RegisterELBChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"clb-desync-mode-check",
-		"This rule checks clb desync mode check.",
+		"Checks if Classic Load Balancers (CLB) are configured with a user defined Desync mitigation mode. The rule is NON_COMPLIANT if CLB Desync mitigation mode does not match with user defined Desync mitigation mode.",
 		"elb",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

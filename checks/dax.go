@@ -11,7 +11,7 @@ import (
 func RegisterDAXChecks(d *awsdata.Data) {
 	checker.Register(EncryptionCheck(
 		"dax-encryption-enabled",
-		"This rule checks DAX encryption enabled.",
+		"Checks if Amazon DynamoDB Accelerator (DAX) clusters are encrypted. The rule is NON_COMPLIANT if a DAX cluster is not encrypted.",
 		"dax",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -31,7 +31,7 @@ func RegisterDAXChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"dax-tls-endpoint-encryption",
-		"This rule checks DAX TLS endpoint encryption.",
+		"Checks if your Amazon DynamoDB Accelerator (DAX) cluster has ClusterEndpointEncryptionType set to TLS. The rule is NON_COMPLIANT if a DAX cluster is not encrypted by transport layer security (TLS).",
 		"dax",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {

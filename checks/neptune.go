@@ -15,7 +15,7 @@ import (
 func RegisterNeptuneChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"neptune-cluster-backup-retention-check",
-		"This rule checks configuration for neptune cluster backup retention.",
+		"Checks if an Amazon Neptune DB cluster retention period is set to specific number of days. The rule is NON_COMPLIANT if the retention period is less than the value specified by the parameter.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -39,7 +39,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"neptune-cluster-cloudwatch-log-export-enabled",
-		"This rule checks enabled state for neptune cluster CloudWatch log export.",
+		"Checks if an Amazon Neptune cluster has CloudWatch log export enabled for audit logs. The rule is NON_COMPLIANT if a Neptune cluster does not have CloudWatch log export enabled for audit logs.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -65,7 +65,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"neptune-cluster-copy-tags-to-snapshot-enabled",
-		"This rule checks enabled state for neptune cluster copy tags to snapshot.",
+		"Checks if an Amazon Neptune cluster is configured to copy all tags to snapshots when the snapshots are created. The rule is NON_COMPLIANT if 'copyTagsToSnapshot' is set to false.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -85,7 +85,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"neptune-cluster-deletion-protection-enabled",
-		"This rule checks enabled state for neptune cluster deletion protection.",
+		"Checks if an Amazon Neptune DB cluster has deletion protection enabled. The rule is NON_COMPLIANT if an Amazon Neptune cluster has the deletionProtection field set to false.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -105,7 +105,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"neptune-cluster-encrypted",
-		"This rule checks neptune cluster encrypted.",
+		"Checks if storage encryption is enabled for your Amazon Neptune DB clusters. The rule is NON_COMPLIANT if storage encryption is not enabled.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -125,7 +125,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"neptune-cluster-iam-database-authentication",
-		"This rule checks neptune cluster IAM database authentication.",
+		"Checks if an Amazon Neptune cluster has AWS Identity and Access Management (IAM) database authentication enabled. The rule is NON_COMPLIANT if an Amazon Neptune cluster does not have IAM database authentication enabled.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -145,7 +145,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"neptune-cluster-multi-az-enabled",
-		"This rule checks enabled state for neptune cluster multi az.",
+		"Checks if an Amazon Neptune cluster is configured with Amazon RDS Multi-AZ replication. The rule is NON_COMPLIANT if Multi-AZ replication is not enabled.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -165,7 +165,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(EncryptionCheck(
 		"neptune-cluster-snapshot-encrypted",
-		"This rule checks neptune cluster snapshot encrypted.",
+		"Checks if an Amazon Neptune DB cluster has snapshots encrypted. The rule is NON_COMPLIANT if a Neptune cluster does not have snapshots encrypted.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -185,7 +185,7 @@ func RegisterNeptuneChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"neptune-cluster-snapshot-public-prohibited",
-		"This rule checks neptune cluster snapshot public prohibited.",
+		"Checks if an Amazon Neptune manual DB cluster snapshot is public. The rule is NON_COMPLIANT if any existing and new Neptune cluster snapshot is public.",
 		"neptune",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

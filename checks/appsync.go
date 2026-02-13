@@ -13,7 +13,7 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 	// appsync-associated-with-waf
 	checker.Register(EnabledCheck(
 		"appsync-associated-with-waf",
-		"This rule checks AppSync associated with WAF.",
+		"Checks if AWS AppSync APIs are associated with AWS WAFv2 web access control lists (ACLs). The rule is NON_COMPLIANT for an AWS AppSync API if it is not associated with a web ACL.",
 		"appsync",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -39,7 +39,7 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 	// appsync-authorization-check
 	checker.Register(ConfigCheck(
 		"appsync-authorization-check",
-		"This rule checks AppSync authorization check.",
+		"Checks if an AWS AppSync API is using allowed authorization mechanisms. The rule is NON_COMPLIANT if an unapproved authorization mechanism is being used.",
 		"appsync",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -63,7 +63,7 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 	// appsync-cache-ct-encryption-at-rest
 	checker.Register(EnabledCheck(
 		"appsync-cache-ct-encryption-at-rest",
-		"This rule checks AppSync cache CT encryption at rest.",
+		"Checks if an AWS AppSync API cache has encryption at rest enabled. This rule is NON_COMPLIANT if 'AtRestEncryptionEnabled' is false.",
 		"appsync",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -93,7 +93,7 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 	// appsync-cache-ct-encryption-in-transit
 	checker.Register(EnabledCheck(
 		"appsync-cache-ct-encryption-in-transit",
-		"This rule checks AppSync cache CT encryption in transit.",
+		"Checks if an AWS AppSync API cache has encryption in transit enabled. The rule is NON_COMPLIANT if 'TransitEncryptionEnabled' is false.",
 		"appsync",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -123,7 +123,7 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 	// appsync-cache-encryption-at-rest
 	checker.Register(EnabledCheck(
 		"appsync-cache-encryption-at-rest",
-		"This rule checks AppSync cache encryption at rest.",
+		"Checks if an AWS AppSync API cache has encryption at rest enabled. This rule is NON_COMPLIANT if 'AtRestEncryptionEnabled' is false.",
 		"appsync",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -153,7 +153,7 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 	// appsync-graphql-api-xray-enabled
 	checker.Register(EnabledCheck(
 		"appsync-graphql-api-xray-enabled",
-		"This rule checks AppSync GraphQL API X-Ray enabled.",
+		"Checks if AWS AppSync GraphQL APIs have AWS X-Ray tracing enabled. The rule is NON_COMPLIANT if configuration.XrayEnabled is false.",
 		"appsync",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -176,7 +176,7 @@ func RegisterAppSyncChecks(d *awsdata.Data) {
 	// appsync-logging-enabled
 	checker.Register(LoggingCheck(
 		"appsync-logging-enabled",
-		"This rule checks AppSync logging enabled.",
+		"Checks if an AWS AppSync API has field level logging enabled. The rule is NON_COMPLIANT if field level logging is not enabled, or if the field logging levels for the AppSync API do not match the values specified in the 'fieldLoggingLevel' parameter.",
 		"appsync",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {

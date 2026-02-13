@@ -19,7 +19,7 @@ func RegisterGuardDutyChecks(d *awsdata.Data) {
 	// guardduty-enabled-centralized
 	checker.Register(EnabledCheck(
 		"guardduty-enabled-centralized",
-		"This rule checks GuardDuty enabled centralized.",
+		"Checks if Amazon GuardDuty is enabled in your AWS account and AWS Region. If you provide an AWS account for centralization, the rule evaluates the GuardDuty results in the centralized account. The rule is COMPLIANT when GuardDuty is enabled.",
 		"guardduty",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -80,7 +80,7 @@ func RegisterGuardDutyChecks(d *awsdata.Data) {
 	// guardduty-non-archived-findings
 	checker.Register(ConfigCheck(
 		"guardduty-non-archived-findings",
-		"This rule checks GuardDuty non-archived findings.",
+		"Checks if Amazon GuardDuty has findings that are non-archived. The rule is NON_COMPLIANT if GuardDuty has non-archived low/medium/high severity findings older than the specified number in the daysLowSev/daysMediumSev/daysHighSev parameter.",
 		"guardduty",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

@@ -6,13 +6,31 @@ import (
 
 	"bptools/awsdata"
 	"bptools/checker"
+
+	"github.com/aws/aws-sdk-go-v2/service/appconfig"
 )
+
+func appconfigListTags(d *awsdata.Data, arn string) map[string]string {
+	out, err := d.Clients.AppConfig.ListTagsForResource(d.Ctx, &appconfig.ListTagsForResourceInput{
+		ResourceArn: &arn,
+	})
+	if err != nil || out == nil {
+		return nil
+	}
+	return out.Tags
+}
+
+func appconfigResourceARN(d *awsdata.Data, resourcePath string) string {
+	region := d.Clients.AppConfig.Options().Region
+	acct, _ := d.AccountID.Get()
+	return fmt.Sprintf("arn:aws:appconfig:%s:%s:%s", region, acct, resourcePath)
+}
 
 func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-application-description
 	checker.Register(DescriptionCheck(
 		"appconfig-application-description",
-		"This rule checks descriptions for AppConfig application exist.",
+		"Checks if AWS AppConfig applications have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -35,7 +53,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-application-tagged
 	checker.Register(TaggedCheck(
 		"appconfig-application-tagged",
-		"This rule checks tagging for AppConfig application exist.",
+		"Checks if AWS AppConfig applications have tags. Optionally, you can specify tag keys for the rule to check. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -49,7 +67,8 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if app.Id != nil {
 					id = *app.Id
 				}
-				res = append(res, TaggedResource{ID: id, Tags: nil})
+				arn := appconfigResourceARN(d, "application/"+id)
+				res = append(res, TaggedResource{ID: id, Tags: appconfigListTags(d, arn)})
 			}
 			return res, nil
 		},
@@ -58,7 +77,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-environment-description
 	checker.Register(DescriptionCheck(
 		"appconfig-environment-description",
-		"This rule checks descriptions for AppConfig environment exist.",
+		"Checks if AWS AppConfig environments have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -83,7 +102,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-environment-tagged
 	checker.Register(TaggedCheck(
 		"appconfig-environment-tagged",
-		"This rule checks tagging for AppConfig environment exist.",
+		"Checks if AWS AppConfig environments have tags. Optionally, you can specify tag keys for the rule to check. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -95,10 +114,13 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 			for appID, envs := range envsByApp {
 				for _, env := range envs {
 					id := appID
+					envID := appID
 					if env.Id != nil {
-						id = appID + ":" + *env.Id
+						envID = *env.Id
+						id = appID + ":" + envID
 					}
-					res = append(res, TaggedResource{ID: id, Tags: nil})
+					arn := appconfigResourceARN(d, "application/"+appID+"/environment/"+envID)
+					res = append(res, TaggedResource{ID: id, Tags: appconfigListTags(d, arn)})
 				}
 			}
 			return res, nil
@@ -108,7 +130,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-configuration-profile-tagged
 	checker.Register(TaggedCheck(
 		"appconfig-configuration-profile-tagged",
-		"This rule checks tagging for AppConfig configuration profile exist.",
+		"Checks if AWS AppConfig configuration profiles have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -120,10 +142,13 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 			for appID, profs := range profiles {
 				for _, p := range profs {
 					id := appID
+					profID := appID
 					if p.Id != nil {
-						id = appID + ":" + *p.Id
+						profID = *p.Id
+						id = appID + ":" + profID
 					}
-					res = append(res, TaggedResource{ID: id, Tags: nil})
+					arn := appconfigResourceARN(d, "application/"+appID+"/configurationprofile/"+profID)
+					res = append(res, TaggedResource{ID: id, Tags: appconfigListTags(d, arn)})
 				}
 			}
 			return res, nil
@@ -133,7 +158,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-configuration-profile-validators-not-empty
 	checker.Register(ConfigCheck(
 		"appconfig-configuration-profile-validators-not-empty",
-		"This rule checks AppConfig configuration profile validators not empty.",
+		"Checks if an AWS AppConfig configuration profile includes at least one validator for syntactic or semantic check to ensure the configuration deploy functions as intended. The rule is NON_COMPLIANT if the Validators property is an empty array.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -159,7 +184,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-deployment-strategy-description
 	checker.Register(DescriptionCheck(
 		"appconfig-deployment-strategy-description",
-		"This rule checks descriptions for AppConfig deployment strategy exist.",
+		"Checks if AWS AppConfig deployment strategies have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -185,7 +210,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-deployment-strategy-minimum-final-bake-time
 	checker.Register(ConfigCheck(
 		"appconfig-deployment-strategy-minimum-final-bake-time",
-		"This rule checks AppConfig deployment strategy minimum final bake time.",
+		"Checks if an AWS AppConfig deployment strategy requires the specified minimum bake time. The rule is NON_COMPLIANT if the deployment strategy has a final bake time less than value specified in the rule parameter. The default value is 30 minutes.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -212,7 +237,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-deployment-strategy-replicate-to-ssm
 	checker.Register(ConfigCheck(
 		"appconfig-deployment-strategy-replicate-to-ssm",
-		"This rule checks AppConfig deployment strategy replicate to SSM.",
+		"Checks if AWS AppConfig deployment strategies save the deployment strategy to an AWS Systems Manager (SSM) document. The rule is NON_COMPLIANT if configuration.ReplicateTo is not 'SSM_DOCUMENT'.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -239,7 +264,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-deployment-strategy-tagged
 	checker.Register(TaggedCheck(
 		"appconfig-deployment-strategy-tagged",
-		"This rule checks tagging for AppConfig deployment strategy exist.",
+		"Checks if AWS AppConfig deployment strategies have tags. Optionally, you can specify tag keys for the rule. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -256,7 +281,8 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if appconfigIsAWSManagedDeploymentStrategyID(id) {
 					continue
 				}
-				res = append(res, TaggedResource{ID: id, Tags: nil})
+				arn := appconfigResourceARN(d, "deploymentstrategy/"+id)
+				res = append(res, TaggedResource{ID: id, Tags: appconfigListTags(d, arn)})
 			}
 			return res, nil
 		},
@@ -265,7 +291,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-extension-association-tagged
 	checker.Register(TaggedCheck(
 		"appconfig-extension-association-tagged",
-		"This rule checks tagging for AppConfig extension association exist.",
+		"Checks if AWS AppConfig extension associations have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -279,7 +305,8 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 				if a.Id != nil {
 					id = *a.Id
 				}
-				res = append(res, TaggedResource{ID: id, Tags: nil})
+				arn := appconfigResourceARN(d, "extensionassociation/"+id)
+				res = append(res, TaggedResource{ID: id, Tags: appconfigListTags(d, arn)})
 			}
 			return res, nil
 		},
@@ -288,7 +315,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-freeform-profile-config-storage
 	checker.Register(ConfigCheck(
 		"appconfig-freeform-profile-config-storage",
-		"This rule checks AppConfig freeform profile config storage.",
+		"Checks if freeform configuration profiles for AWS AppConfig store their configuration data in AWS Secrets Manager or AWS AppConfig hosted configuration store. The rule is NON_COMPLIANT if configuration.LocationUri is not secretsmanager or hosted.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -326,7 +353,7 @@ func RegisterAppConfigChecks(d *awsdata.Data) {
 	// appconfig-hosted-configuration-version-description
 	checker.Register(DescriptionCheck(
 		"appconfig-hosted-configuration-version-description",
-		"This rule checks descriptions for AppConfig hosted configuration version exist.",
+		"Checks if AWS AppConfig hosted configuration versions have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"appconfig",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {

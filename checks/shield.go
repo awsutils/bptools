@@ -11,7 +11,7 @@ import (
 func RegisterShieldChecks(d *awsdata.Data) {
 	checker.Register(SingleCheck(
 		"shield-advanced-enabled-autorenew",
-		"This rule checks shield advanced enabled autorenew.",
+		"Checks if AWS Shield Advanced is enabled in your AWS account and this subscription is set to automatically renew. The rule is COMPLIANT if Shield Advanced is enabled and auto renew is enabled.",
 		"shield",
 		d,
 		func(d *awsdata.Data) (bool, string, error) {
@@ -31,7 +31,7 @@ func RegisterShieldChecks(d *awsdata.Data) {
 
 	checker.Register(SingleCheck(
 		"shield-drt-access",
-		"This rule checks shield drt access.",
+		"Checks if the Shield Response Team (SRT) can access your AWS account. The rule is NON_COMPLIANT if AWS Shield Advanced is enabled but the role for SRT access is not configured.",
 		"shield",
 		d,
 		func(d *awsdata.Data) (bool, string, error) {

@@ -14,7 +14,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 	// autoscaling-capacity-rebalancing
 	checker.Register(EnabledCheck(
 		"autoscaling-capacity-rebalancing",
-		"This rule checks Auto Scaling capacity rebalancing.",
+		"Checks if Capacity Rebalancing is enabled for Amazon EC2 Auto Scaling groups that use multiple instance types. The rule is NON_COMPLIANT if capacity Rebalancing is not enabled.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -38,7 +38,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 	// autoscaling-group-elb-healthcheck-required
 	checker.Register(ConfigCheck(
 		"autoscaling-group-elb-healthcheck-required",
-		"This rule checks Auto Scaling group ELB healthcheck required.",
+		"Checks if your Amazon EC2 Auto Scaling groups that are associated with an Elastic Load Balancer use Elastic Load Balancing health checks. The rule is NON_COMPLIANT if the Amazon EC2 Auto Scaling groups are not using Elastic Load Balancing health checks.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -67,7 +67,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 	// autoscaling-launch-template
 	checker.Register(ConfigCheck(
 		"autoscaling-launch-template",
-		"This rule checks Auto Scaling launch template.",
+		"Checks if an Amazon Elastic Compute Cloud (EC2) Auto Scaling group is created from an EC2 launch template. The rule is NON_COMPLIANT if the scaling group is not created from an EC2 launch template.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -91,7 +91,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 	// autoscaling-multiple-az
 	checker.Register(ConfigCheck(
 		"autoscaling-multiple-az",
-		"This rule checks Auto Scaling group multiple AZ.",
+		"Checks if the Auto Scaling group spans multiple Availability Zones. The rule is NON_COMPLIANT if the Auto Scaling group does not span multiple Availability Zones.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -144,7 +144,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 	// autoscaling-multiple-instance-types
 	checker.Register(ConfigCheck(
 		"autoscaling-multiple-instance-types",
-		"This rule checks Auto Scaling group multiple instance types.",
+		"Checks if an Amazon EC2 Auto Scaling group uses multiple instance types. The rule is NON_COMPLIANT if the Amazon EC2 Auto Scaling group has only one instance type defined. This rule does not evaluate attribute-based instance types.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -172,7 +172,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 	// autoscaling-launchconfig-requires-imdsv2 + autoscaling-launch-config-hop-limit + autoscaling-launch-config-public-ip-disabled
 	checker.Register(ConfigCheck(
 		"autoscaling-launchconfig-requires-imdsv2",
-		"This rule checks Auto Scaling launch config requires IMDSv2.",
+		"Checks whether only IMDSv2 is enabled. This rule is NON_COMPLIANT if the Metadata version is not included in the launch configuration or if both Metadata V1 and V2 are enabled.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -199,7 +199,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"autoscaling-launch-config-hop-limit",
-		"This rule checks Auto Scaling launch config hop limit.",
+		"Checks the number of network hops that the metadata token can travel. This rule is NON_COMPLIANT if the Metadata response hop limit is greater than 1.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -217,7 +217,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 				if lc.MetadataOptions != nil && lc.MetadataOptions.HttpPutResponseHopLimit != nil {
 					hop = *lc.MetadataOptions.HttpPutResponseHopLimit
 				}
-				ok := hop > 0 && hop <= 1
+				ok := hop <= 1 // 0 means unset (AWS default = 1, compliant); >1 is NON_COMPLIANT
 				res = append(res, ConfigResource{ID: id, Passing: ok, Detail: fmt.Sprintf("HopLimit: %d", hop)})
 			}
 			return res, nil
@@ -226,7 +226,7 @@ func RegisterAutoScalingChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"autoscaling-launch-config-public-ip-disabled",
-		"This rule checks Auto Scaling launch config public IP disabled.",
+		"Checks if Amazon EC2 Auto Scaling groups have public IP addresses enabled through Launch Configurations. The rule is NON_COMPLIANT if the Launch Configuration for an Amazon EC2 Auto Scaling group has AssociatePublicIpAddress set to 'true'.",
 		"autoscaling",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

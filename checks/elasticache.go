@@ -16,7 +16,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	// elasticache-automatic-backup-check-enabled + elasticache-redis-cluster-automatic-backup-check
 	checker.Register(ConfigCheck(
 		"elasticache-automatic-backup-check-enabled",
-		"This rule checks ElastiCache automatic backup enabled.",
+		"Checks if Amazon ElastiCache clusters (Valkey or Redis OSS) have automatic backup turned on. The rule is NON_COMPLIANT if automated backup is not enabled or the SnapshotRetentionLimit for a cluster is less than the specified snapshotRetentionPeriod.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -38,7 +38,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"elasticache-redis-cluster-automatic-backup-check",
-		"This rule checks ElastiCache Redis cluster automatic backup.",
+		"Check if the Amazon ElastiCache Redis clusters have automatic backup turned on. The rule is NON_COMPLIANT if the SnapshotRetentionLimit for Redis cluster is less than the SnapshotRetentionPeriod parameter. For example: If the parameter is 15 then the rule is non-compliant if the snapshotRetentionPeriod is between 0-15.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -78,7 +78,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	// elasticache-auto-minor-version-upgrade-check
 	checker.Register(ConfigCheck(
 		"elasticache-auto-minor-version-upgrade-check",
-		"This rule checks ElastiCache auto minor version upgrade.",
+		"Checks if Amazon ElastiCache clusters have auto minor version upgrades enabled. The rule is NON_COMPLIANT for an ElastiCache cluster if it is using the Redis or Valkey engine and 'AutoMinorVersionUpgrade' is not set to 'true'.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -107,7 +107,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	// elasticache-repl-grp-auto-failover-enabled
 	checker.Register(EnabledCheck(
 		"elasticache-repl-grp-auto-failover-enabled",
-		"This rule checks ElastiCache replication group auto failover enabled.",
+		"Checks if Amazon ElastiCache Redis replication groups have automatic failover enabled. The rule is NON_COMPLIANT for an ElastiCache replication group if ‘AutomaticFailover’ is not set to ‘enabled’.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -131,7 +131,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	// elasticache-repl-grp-encrypted-at-rest + elasticache-repl-grp-encrypted-in-transit + elasticache-rbac-auth-enabled + elasticache-repl-grp-redis-auth-enabled
 	checker.Register(EncryptionCheck(
 		"elasticache-repl-grp-encrypted-at-rest",
-		"This rule checks ElastiCache replication group encrypted at rest.",
+		"Checks if Amazon ElastiCache replication groups have encryption-at-rest enabled. The rule is NON_COMPLIANT for an ElastiCache replication group if 'AtRestEncryptionEnabled' is disabled or if the KMS key ARN does not match the approvedKMSKeyArns parameter.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -152,7 +152,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	))
 	checker.Register(EncryptionCheck(
 		"elasticache-repl-grp-encrypted-in-transit",
-		"This rule checks ElastiCache replication group encrypted in transit.",
+		"Checks if Amazon ElastiCache replication groups have encryption-in-transit enabled. The rule is NON_COMPLIANT for an ElastiCache replication group if ‘TransitEncryptionEnabled’ is set to ‘false’.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -173,7 +173,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"elasticache-rbac-auth-enabled",
-		"This rule checks ElastiCache RBAC auth enabled.",
+		"Checks if Amazon ElastiCache replication groups have RBAC authentication enabled. The rule is NON_COMPLIANT if the Redis version is 6 or above and ‘UserGroupIds’ is missing, empty, or does not match an entry provided by the 'allowedUserGroupIDs' parameter.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -204,7 +204,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"elasticache-repl-grp-redis-auth-enabled",
-		"This rule checks ElastiCache replication group Redis auth enabled.",
+		"Checks if Amazon ElastiCache replication groups have Redis AUTH enabled. The rule is NON_COMPLIANT for an ElastiCache replication group if the Redis version of its nodes is below 6 (Version 6+ use Redis ACLs) and ‘AuthToken’ is missing or is empty/null.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -237,7 +237,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	// elasticache-subnet-group-check
 	checker.Register(ConfigCheck(
 		"elasticache-subnet-group-check",
-		"This rule checks ElastiCache subnet group.",
+		"Checks if Amazon ElastiCache clusters are configured with a custom subnet group. The rule is NON_COMPLIANT for an ElastiCache cluster if it is using a default subnet group.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -303,7 +303,7 @@ func RegisterElastiCacheChecks(d *awsdata.Data) {
 	// elasticache-supported-engine-version
 	checker.Register(ConfigCheck(
 		"elasticache-supported-engine-version",
-		"This rule checks ElastiCache supported engine version.",
+		"Checks if ElastiCache clusters are running a version greater or equal to the recommended engine version. The rule is NON_COMPLIANT if the 'EngineVersion' for an ElastiCache cluster is less than the specified recommended version for its given engine.",
 		"elasticache",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

@@ -16,7 +16,7 @@ import (
 func RegisterSSMChecks(d *awsdata.Data) {
 	checker.Register(ConfigCheck(
 		"ssm-automation-block-public-sharing",
-		"This rule checks SSM automation block public sharing.",
+		"Checks if AWS Systems Manager Documents has block public sharing enabled. The rule is NON_COMPLIANT if Systems Manager Documents has block public sharing disabled.",
 		"ssm",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -32,7 +32,7 @@ func RegisterSSMChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"ssm-automation-logging-enabled",
-		"This rule checks SSM automation logging enabled.",
+		"Checks if AWS Systems Manager Automation has Amazon CloudWatch logging enabled. The rule returns NON_COMPLIANT if Systems Manager Automation doesn't have CloudWatch logging enabled.",
 		"ssm",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -67,7 +67,7 @@ func RegisterSSMChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"ssm-document-not-public",
-		"This rule checks SSM document not public.",
+		"Checks if AWS Systems Manager documents owned by the account are public. The rule is NON_COMPLIANT if Systems Manager documents with the owner 'Self' are public.",
 		"ssm",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -108,7 +108,7 @@ func RegisterSSMChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"ssm-document-tagged",
-		"This rule checks tagging for SSM document exist.",
+		"Checks if AWS Systems Manager documents have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"ssm",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

@@ -16,7 +16,7 @@ import (
 func RegisterCloudTrailChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"cloudtrail-enabled",
-		"This rule checks enabled state for CloudTrail.",
+		"Checks if an AWS CloudTrail trail is enabled in your AWS account. The rule is NON_COMPLIANT if a trail is not enabled. Optionally, the rule checks a specific S3 bucket, Amazon Simple Notification Service (Amazon SNS) topic, and CloudWatch log group.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -35,7 +35,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cloud-trail-cloud-watch-logs-enabled",
-		"This rule checks enabled state for cloud trail cloud watch logs.",
+		"Checks if AWS CloudTrail trails are configured to send logs to CloudWatch logs. The trail is NON_COMPLIANT if the CloudWatchLogsLogGroupArn property of the trail is empty.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -54,7 +54,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cloud-trail-encryption-enabled",
-		"This rule checks enabled state for cloud trail encryption.",
+		"Checks if AWS CloudTrail is configured to use the server side encryption (SSE) AWS Key Management Service (AWS KMS) encryption. The rule is COMPLIANT if the KmsKeyId is defined.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -73,7 +73,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"cloud-trail-log-file-validation-enabled",
-		"This rule checks enabled state for cloud trail log file validation.",
+		"Checks if AWS CloudTrail creates a signed digest file with logs. AWS recommends that the file validation must be enabled on all trails. The rule is NON_COMPLIANT if the validation is not enabled.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -92,7 +92,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudtrail-security-trail-enabled",
-		"This rule checks cloudtrail security trail enabled.",
+		"Checks that there is at least one AWS CloudTrail trail defined with security best practices. This rule is COMPLIANT if there is at least one trail that meets all of the following:",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -135,7 +135,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudtrail-s3-dataevents-enabled",
-		"This rule checks cloudtrail s3 dataevents enabled.",
+		"Checks if at least one AWS CloudTrail trail is logging Amazon Simple Storage Service (Amazon S3) data events for all S3 buckets. The rule is NON_COMPLIANT if there are trails or if no trails record S3 data events.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -173,7 +173,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudtrail-all-read-s3-data-event-check",
-		"This rule checks cloudtrail all read s3 data event check.",
+		"Checks if an AWS CloudTrail multi-Region trail is enabled and logs all read S3 data events for your buckets. The rule is NON_COMPLIANT if no multi-Region trail logs all read S3 data event types for all current and future S3 buckets.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -214,7 +214,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudtrail-all-write-s3-data-event-check",
-		"This rule checks cloudtrail all write s3 data event check.",
+		"Checks if an AWS CloudTrail multi-Region trail is enabled and logs all write S3 data events for your buckets. The rule is NON_COMPLIANT if no multi-Region trail logs all write S3 data event types for all current and future S3 buckets.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -255,7 +255,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"cloudtrail-s3-bucket-access-logging",
-		"This rule checks cloudtrail s3 bucket access logging.",
+		"Checks if the S3 bucket configurations for your AWS CloudTrail logs have Amazon S3 server access logging enabled. The rule is NON_COMPLIANT if at least one S3 bucket for a CloudTrail trail does not have S3 server access logging enabled.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -283,7 +283,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"cloudtrail-s3-bucket-public-access-prohibited",
-		"This rule checks cloudtrail s3 bucket public access prohibited.",
+		"Checks if the S3 bucket configurations for your AWS CloudTrail logs block public access. The rule is NON_COMPLIANT if at least one S3 bucket for a CloudTrail trail is publicly accessible.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -315,7 +315,7 @@ func RegisterCloudTrailChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"event-data-store-cmk-encryption-enabled",
-		"This rule checks event data store cmk encryption enabled.",
+		"Checks if AWS Cloud Trail event data stores have customer managed AWS KMS keys enabled. The rule is NON_COMPLIANT if an event data store has disabled customer managed KMS keys. Optionally, you can specify a list of KMS keys for the rule to check.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

@@ -15,7 +15,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	// efs-encrypted-check + efs-filesystem-ct-encrypted
 	checker.Register(EncryptionCheck(
 		"efs-encrypted-check",
-		"This rule checks EFS encrypted.",
+		"Checks if Amazon Elastic File System (Amazon EFS) is configured to encrypt the file data using AWS Key Management Service (AWS KMS). The rule is NON_COMPLIANT if the encrypted key is set to false on DescribeFileSystems or if the KmsKeyId key on DescribeFileSystems does not match the KmsKeyId parameter.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -37,7 +37,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	))
 	checker.Register(EncryptionCheck(
 		"efs-filesystem-ct-encrypted",
-		"This rule checks EFS filesystem client traffic encrypted.",
+		"Checks if Amazon Elastic File System (Amazon EFS) encrypts data with AWS Key Management Service (AWS KMS). The rule is NON_COMPLIANT if a file system is not encrypted. Optionally, you can check if a file system is not encrypted with specified KMS keys.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]EncryptionResource, error) {
@@ -67,7 +67,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	// efs-automatic-backups-enabled
 	checker.Register(EnabledCheck(
 		"efs-automatic-backups-enabled",
-		"This rule checks EFS automatic backups enabled.",
+		"Checks if an Amazon Elastic File System (Amazon EFS) file system has automatic backups enabled. The rule is NON_COMPLIANT if `BackupPolicy.Status` is set to DISABLED.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -95,7 +95,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	// efs-file-system-tagged
 	checker.Register(TaggedCheck(
 		"efs-file-system-tagged",
-		"This rule checks EFS file system tagged.",
+		"Checks if Amazon Elastic File System file systems have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -121,7 +121,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	// efs-access-point-enforce-root-directory + efs-access-point-enforce-user-identity
 	checker.Register(ConfigCheck(
 		"efs-access-point-enforce-root-directory",
-		"This rule checks EFS access point enforce root directory.",
+		"Checks if Amazon Elastic File System (Amazon EFS) access points are configured to enforce a root directory. The rule is NON_COMPLIANT if the value of 'Path' is set to '/' (default root directory of the file system).",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -146,7 +146,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"efs-access-point-enforce-user-identity",
-		"This rule checks EFS access point enforce user identity.",
+		"Checks if Amazon Elastic File System (Amazon EFS) access points are configured to enforce a user identity. The rule is NON_COMPLIANT if 'PosixUser' is not defined or if parameters are provided and there is no match in the corresponding parameter.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -170,7 +170,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	// efs-mount-target-public-accessible
 	checker.Register(ConfigCheck(
 		"efs-mount-target-public-accessible",
-		"This rule checks EFS mount target public accessible.",
+		"Checks if an Amazon Elastic File System (Amazon EFS) is associated with subnets that assign public IP addresses on launch. The rule is NON_COMPLIANT if the Amazon EFS mount target is associated with subnets that assign public IP addresses on launch.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -211,7 +211,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	// Backup-related EFS checks
 	checker.Register(ConfigCheck(
 		"efs-in-backup-plan",
-		"This rule checks EFS in backup plan.",
+		"Checks if Amazon Elastic File System (Amazon EFS) file systems are added in the backup plans of AWS Backup. The rule is NON_COMPLIANT if EFS file systems are not included in the backup plans.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -237,7 +237,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"efs-resources-protected-by-backup-plan",
-		"This rule checks EFS resources protected by backup plan.",
+		"Checks if Amazon Elastic File System (Amazon EFS) File Systems are protected by a backup plan. The rule is NON_COMPLIANT if the EFS File System is not covered by a backup plan.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -263,7 +263,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"efs-last-backup-recovery-point-created",
-		"This rule checks EFS last backup recovery point created.",
+		"Checks if a recovery point was created for Amazon Elastic File System (Amazon EFS) File Systems. The rule is NON_COMPLIANT if the Amazon EFS File System does not have a corresponding Recovery Point created within the specified time period.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -289,7 +289,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"efs-meets-restore-time-target",
-		"This rule checks EFS meets restore time target.",
+		"Checks if the restore time of Amazon Elastic File System (Amazon EFS) File Systems meets the specified duration. The rule is NON_COMPLIANT if LatestRestoreExecutionTimeMinutes of an Amazon EFS File System is greater than maxRestoreTime minutes.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -314,7 +314,7 @@ func RegisterEFSChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"efs-resources-in-logically-air-gapped-vault",
-		"This rule checks EFS resources in logically air gapped vault.",
+		"Checks if Amazon Elastic File System (Amazon EFS) File Systems are in a logically air-gapped vault. The rule is NON_COMPLIANT if an Amazon EFS File System is not in a logically air-gapped vault within the specified time period.",
 		"efs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {

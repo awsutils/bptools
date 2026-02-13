@@ -13,7 +13,7 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 	// apprunner-service-in-vpc
 	checker.Register(ConfigCheck(
 		"apprunner-service-in-vpc",
-		"This rule checks App Runner service is in VPC.",
+		"Checks if AWS App Runner services route egress traffic through custom VPC. The rule is NON_COMPLIANT if configuration.NetworkConfiguration.EgressConfiguration.EgressType is equal to DEFAULT.",
 		"apprunner",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -37,7 +37,7 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 	// apprunner-service-ip-address-type-check
 	checker.Register(ConfigCheck(
 		"apprunner-service-ip-address-type-check",
-		"This rule checks App Runner service IP address type.",
+		"Checks if an AWS App Runner service is configured with the specified IP address type for incoming public network configuration. The rule is NON_COMPLIANT if the service is not configured with the IP address type specified in the required rule parameter.",
 		"apprunner",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -61,7 +61,7 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 	// apprunner-service-max-unhealthy-threshold
 	checker.Register(ConfigCheck(
 		"apprunner-service-max-unhealthy-threshold",
-		"This rule checks App Runner service max unhealthy threshold.",
+		"Checks if an AWS App Runner service is configured to have an unhealthy threshold less than or equal to the specified value. The rule is NON_COMPLIANT if the unhealthy threshold is greater than the value specified in the required rule parameter.",
 		"apprunner",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -85,7 +85,7 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 	// apprunner-service-no-public-access
 	checker.Register(ConfigCheck(
 		"apprunner-service-no-public-access",
-		"This rule checks App Runner service no public access.",
+		"Checks if AWS AppRunner Services are not publicly accessible. The rule is NON_COMPLIANT if service.configuration.NetworkConfiguration.IngressConfiguration.IsPubliclyAccessible is False.",
 		"apprunner",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -108,7 +108,7 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 	// apprunner-service-observability-enabled
 	checker.Register(EnabledCheck(
 		"apprunner-service-observability-enabled",
-		"This rule checks App Runner service observability enabled.",
+		"Checks if AWS App Runner services have observability enabled. The rule is NON_COMPLIANT if configuration.ObservabilityConfiguration.ObservabilityEnabled is false'.",
 		"apprunner",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -128,7 +128,7 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 	// apprunner-service-tagged
 	checker.Register(TaggedCheck(
 		"apprunner-service-tagged",
-		"This rule checks tagging for App Runner service exist.",
+		"Checks if AWS App Runner services have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"apprunner",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -151,7 +151,7 @@ func RegisterAppRunnerChecks(d *awsdata.Data) {
 	// apprunner-vpc-connector-tagged
 	checker.Register(TaggedCheck(
 		"apprunner-vpc-connector-tagged",
-		"This rule checks tagging for App Runner VPC connector exist.",
+		"Checks if AWS App Runner VPC connectors have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"apprunner",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

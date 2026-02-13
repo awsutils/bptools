@@ -9,7 +9,7 @@ import (
 func RegisterGlobalAcceleratorChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"glb-tagged",
-		"This rule checks glb tagged.",
+		"Checks if Gateway Load Balancers have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"globalaccelerator",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -35,7 +35,7 @@ func RegisterGlobalAcceleratorChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"glb-listener-tagged",
-		"This rule checks glb listener tagged.",
+		"Checks if Gateway Load Balancer listeners have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"globalaccelerator",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

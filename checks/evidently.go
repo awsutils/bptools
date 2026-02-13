@@ -9,7 +9,7 @@ import (
 func RegisterEvidentlyChecks(d *awsdata.Data) {
 	checker.Register(DescriptionCheck(
 		"evidently-launch-description",
-		"This rule checks evidently launch description.",
+		"Checks if Amazon CloudWatch Evidently launches have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"evidently",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -28,7 +28,7 @@ func RegisterEvidentlyChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"evidently-launch-tagged",
-		"This rule checks tagging for evidently launch exist.",
+		"Checks if Amazon CloudWatch Evidently launches have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"evidently",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -50,7 +50,7 @@ func RegisterEvidentlyChecks(d *awsdata.Data) {
 
 	checker.Register(DescriptionCheck(
 		"evidently-project-description",
-		"This rule checks evidently project description.",
+		"Checks if Amazon CloudWatch Evidently projects have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"evidently",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -69,7 +69,7 @@ func RegisterEvidentlyChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"evidently-project-tagged",
-		"This rule checks tagging for evidently project exist.",
+		"Checks if Amazon CloudWatch Evidently projects have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"evidently",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -91,7 +91,7 @@ func RegisterEvidentlyChecks(d *awsdata.Data) {
 
 	checker.Register(DescriptionCheck(
 		"evidently-segment-description",
-		"This rule checks evidently segment description.",
+		"Checks if Amazon CloudWatch Evidently segments have a description. The rule is NON_COMPLIANT if configuration.Description does not exist or is an empty string.",
 		"evidently",
 		d,
 		func(d *awsdata.Data) ([]DescriptionResource, error) {
@@ -110,7 +110,7 @@ func RegisterEvidentlyChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"evidently-segment-tagged",
-		"This rule checks tagging for evidently segment exist.",
+		"Checks if Amazon CloudWatch Evidently segments have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"evidently",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

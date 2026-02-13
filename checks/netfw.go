@@ -12,7 +12,7 @@ import (
 func RegisterNetFWChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"netfw-deletion-protection-enabled",
-		"This rule checks enabled state for netfw deletion protection.",
+		"Checks if AWS Network Firewall has deletion protection enabled. The rule is NON_COMPLIANT if Network Firewall does not have deletion protection enabled.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -31,7 +31,7 @@ func RegisterNetFWChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"netfw-logging-enabled",
-		"This rule checks logging is enabled for netfw.",
+		"Checks if AWS Network Firewall firewalls have logging enabled. The rule is NON_COMPLIANT if a logging type is not configured. You can specify which logging type you want the rule to check.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -50,7 +50,7 @@ func RegisterNetFWChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"netfw-multi-az-enabled",
-		"This rule checks enabled state for netfw multi az.",
+		"Checks if AWS Network Firewall firewalls are deployed across multiple Availability Zones. The rule is NON_COMPLIANT if firewalls are deployed in only one Availability Zone or in fewer zones than the number listed in the optional parameter.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -73,7 +73,7 @@ func RegisterNetFWChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"netfw-policy-default-action-fragment-packets",
-		"This rule checks netfw policy default action fragment packets.",
+		"Checks if an AWS Network Firewall policy is configured with a user defined stateless default action for fragmented packets. The rule is NON_COMPLIANT if stateless default action for fragmented packets does not match with user defined default action.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -96,7 +96,7 @@ func RegisterNetFWChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"netfw-policy-default-action-full-packets",
-		"This rule checks netfw policy default action full packets.",
+		"Checks if an AWS Network Firewall policy is configured with a user defined default stateless action for full packets. This rule is NON_COMPLIANT if default stateless action for full packets does not match with user defined default stateless action.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -119,7 +119,7 @@ func RegisterNetFWChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"netfw-policy-rule-group-associated",
-		"This rule checks netfw policy rule group associated.",
+		"Check AWS Network Firewall policy is associated with stateful OR stateless rule groups. This rule is NON_COMPLIANT if no stateful or stateless rule groups are associated with the Network Firewall policy else COMPLIANT if any one of the rule group exists.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -142,7 +142,7 @@ func RegisterNetFWChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"netfw-stateless-rule-group-not-empty",
-		"This rule checks netfw stateless rule group not empty.",
+		"Checks if a Stateless Network Firewall Rule Group contains rules. The rule is NON_COMPLIANT if there are no rules in a Stateless Network Firewall Rule Group.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -169,7 +169,7 @@ func RegisterNetFWChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"netfw-subnet-change-protection-enabled",
-		"This rule checks enabled state for netfw subnet change protection.",
+		"Checks if AWS Network Firewall has subnet change protection enabled. The rule is NON_COMPLIANT if subnet change protection is not enabled.",
 		"netfw",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {

@@ -10,7 +10,7 @@ import (
 func RegisterCassandraChecks(d *awsdata.Data) {
 	checker.Register(TaggedCheck(
 		"cassandra-keyspace-tagged",
-		"This rule checks tagging for cassandra keyspace exist.",
+		"Checks if Amazon Keyspaces (for Apache Cassandra) keyspaces have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"cassandra",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {

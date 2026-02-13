@@ -18,7 +18,7 @@ import (
 func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	checker.Register(EnabledCheck(
 		"cmk-backing-key-rotation-enabled",
-		"This rule checks cmk backing key rotation enabled.",
+		"Checks if automatic key rotation is enabled for each key and matches to the key ID of the customer created AWS KMS key. The rule is NON_COMPLIANT if the AWS Config recorder role for a resource does not have the kms:DescribeKey permission.",
 		"kms",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -42,7 +42,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"kms-cmk-not-scheduled-for-deletion",
-		"This rule checks kms cmk not scheduled for deletion.",
+		"Checks if AWS Key Management Service (AWS KMS) keys are not scheduled for deletion in AWS KMS. The rule is NON_COMPLIANT if KMS keys are scheduled for deletion.",
 		"kms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -60,7 +60,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"kms-key-policy-no-public-access",
-		"This rule checks kms key policy no public access.",
+		"Checks if the AWS KMS key policy allows public access. The rule is NON_COMPLIANT if the KMS key policy allows public access to the KMS key.",
 		"kms",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -85,7 +85,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	))
 	checker.Register(TaggedCheck(
 		"kms-key-tagged",
-		"This rule checks kms key tagged.",
+		"Checks if AWS Key Management Service (KMS) keys have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"kms",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -110,7 +110,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"sns-encrypted-kms",
-		"This rule checks sns encrypted kms.",
+		"Checks if SNS topics are encrypted with AWS Key Management Service (AWS KMS). The rule is NON_COMPLIANT if an SNS topic is not encrypted with AWS KMS. Optionally, specify the key ARNs, the alias ARNs, the alias name, or the key IDs for the rule to check.",
 		"sns",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -128,7 +128,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	))
 	checker.Register(EnabledCheck(
 		"sns-topic-message-delivery-notification-enabled",
-		"This rule checks sns topic message delivery notification enabled.",
+		"Checks if Amazon Simple Notification Service (SNS) logging is enabled for the delivery status of notification messages sent to a topic for the endpoints. The rule is NON_COMPLIANT if the delivery status notification for messages is not enabled.",
 		"sns",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -146,7 +146,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"sns-topic-no-public-access",
-		"This rule checks sns topic no public access.",
+		"Checks if the SNS topic access policy allows public access. The rule is NON_COMPLIANT if the SNS topic access policy allows public access.",
 		"sns",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -165,7 +165,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"sqs-queue-dlq-check",
-		"This rule checks sqs queue dlq check.",
+		"Checks if Amazon Simple Queue Service (Amazon SQS) queues have configuration to use dead-letter queue (DLQ). The rule is NON_COMPLIANT if an Amazon SQS queue does not have any configuration to use DLQ.",
 		"sqs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -183,7 +183,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"sqs-queue-no-public-access",
-		"This rule checks sqs queue no public access.",
+		"Checks if the SQS queue access policy allows public access. The rule is NON_COMPLIANT if the SQS queue access policy allows public access.",
 		"sqs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -201,7 +201,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 	))
 	checker.Register(ConfigCheck(
 		"sqs-queue-policy-full-access-check",
-		"This rule checks sqs queue policy full access check.",
+		"Checks if the SQS queue access policy allows full access. The rule is NON_COMPLIANT if the SQS policy contains `SQS:*` within `Action` and `Effect` is `Allow`.",
 		"sqs",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -220,7 +220,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(TaggedCheck(
 		"stepfunctions-state-machine-tagged",
-		"This rule checks stepfunctions state machine tagged.",
+		"Checks if AWS Step Functions state machines have tags. Optionally, you can specify tag keys. The rule is NON_COMPLIANT if there are no tags or if the specified tag keys are not present. The rule does not check for tags starting with 'aws:'.",
 		"stepfunctions",
 		d,
 		func(d *awsdata.Data) ([]TaggedResource, error) {
@@ -246,7 +246,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(LoggingCheck(
 		"step-functions-state-machine-logging-enabled",
-		"This rule checks step functions state machine logging enabled.",
+		"Checks if AWS Step Functions machine has logging enabled. The rule is NON_COMPLIANT if a state machine does not have logging enabled or the logging configuration is not at the minimum level provided.",
 		"stepfunctions",
 		d,
 		func(d *awsdata.Data) ([]LoggingResource, error) {
@@ -280,7 +280,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(EnabledCheck(
 		"multi-region-cloudtrail-enabled",
-		"This rule checks multi region cloudtrail enabled.",
+		"Checks if there is at least one multi-region AWS CloudTrail. The rule is NON_COMPLIANT if the trails do not match input parameters. The rule is NON_COMPLIANT if the ExcludeManagementEventSources field is not empty or if AWS CloudTrail is configured to exclude management events such as AWS KMS events or Amazon RDS Data API events.",
 		"cloudtrail",
 		d,
 		func(d *awsdata.Data) ([]EnabledResource, error) {
@@ -336,7 +336,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"db-instance-backup-enabled",
-		"This rule checks db instance backup enabled.",
+		"Checks if RDS DB instances have backups enabled. Optionally, the rule checks the backup retention period and the backup window.",
 		"rds",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -359,7 +359,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"internet-gateway-authorized-vpc-only",
-		"This rule checks internet gateway authorized vpc only.",
+		"Checks if internet gateways are attached to an authorized virtual private cloud (Amazon VPC). The rule is NON_COMPLIANT if internet gateways are attached to an unauthorized VPC.",
 		"ec2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -399,7 +399,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"nacl-no-unrestricted-ssh-rdp",
-		"This rule checks nacl no unrestricted ssh rdp.",
+		"Checks if default ports for SSH/RDP ingress traffic for network access control lists (NACLs) is unrestricted. The rule is NON_COMPLIANT if a NACL inbound entry allows a source TCP or UDP CIDR block for ports 22 or 3389.",
 		"ec2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
@@ -437,7 +437,7 @@ func RegisterMiscSecurityChecks(d *awsdata.Data) {
 
 	checker.Register(ConfigCheck(
 		"no-unrestricted-route-to-igw",
-		"This rule checks no unrestricted route to igw.",
+		"Checks if there are public routes in the route table to an Internet gateway (IGW). The rule is NON_COMPLIANT if a route to an IGW has a destination CIDR block of '0.0.0.0/0' or '::/0' or if a destination CIDR block does not match the rule parameter.",
 		"ec2",
 		d,
 		func(d *awsdata.Data) ([]ConfigResource, error) {
