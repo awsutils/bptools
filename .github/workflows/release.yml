@@ -80,7 +80,7 @@ jobs:
           go build -trimpath -ldflags="-s -w -X main.version=${{ needs.version.outputs.tag }}" \
             -o bptools-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: bptools-${{ matrix.goos }}-${{ matrix.goarch }}
           path: bptools-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
