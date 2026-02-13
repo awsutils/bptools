@@ -1,2 +1,17 @@
-# build output
+# Build output
 bptools
+bptools-*
+
+# Test artifacts
+*.test
+cover.out
+coverage.html
+
+# Go workspace
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

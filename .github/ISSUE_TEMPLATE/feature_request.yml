@@ -1,0 +1,42 @@
+name: Feature Request
+description: Suggest a new check or feature for bptools
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Request type
+      options:
+        - New AWS service check
+        - New check for an existing service
+        - CLI / output improvement
+        - Performance improvement
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: service
+    attributes:
+      label: AWS service (if applicable)
+      placeholder: "e.g. S3, EC2, IAM"
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What gap does this address? Link to the relevant AWS best-practice documentation if applicable.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
