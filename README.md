@@ -49,6 +49,51 @@ Download [`bptools-windows-amd64.exe`](https://awsutils.github.io/bptools/bptool
 
 Verify the download against [`checksums.txt`](https://awsutils.github.io/bptools/checksums.txt).
 
+## Docker
+
+Images are published to the GitHub Container Registry on every release for `linux/amd64` and `linux/arm64`.
+
+**Pull the latest image:**
+
+```bash
+docker pull ghcr.io/awsutils/bptools:latest
+```
+
+**Run with environment-variable credentials:**
+
+```bash
+docker run --rm \
+  -e AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN \
+  -e AWS_REGION \
+  ghcr.io/awsutils/bptools:latest
+```
+
+**Run with a mounted AWS credentials file:**
+
+```bash
+docker run --rm \
+  -v ~/.aws:/root/.aws:ro \
+  -e AWS_PROFILE=myprofile \
+  -e AWS_REGION=us-east-1 \
+  ghcr.io/awsutils/bptools:latest
+```
+
+**Pass CLI flags:**
+
+```bash
+docker run --rm \
+  -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_REGION \
+  ghcr.io/awsutils/bptools:latest -services ec2,s3,iam
+```
+
+**Pin to a specific release:**
+
+```bash
+docker run --rm ... ghcr.io/awsutils/bptools:v2026.02.13.1
+```
+
 ## Requirements
 
 - Go `1.25+`
