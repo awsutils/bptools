@@ -16,7 +16,7 @@
 </head>
 <body>
   <h1>bptools</h1>
-  <p>AWS best-practice check runner &mdash; latest: <strong>v2026.02.13.1</strong></p>
+  <p>AWS best-practice check runner &mdash; latest: <strong>v2026.02.13.2</strong></p>
   <p>
     <a href="https://github.com/awsutils/bptools">GitHub</a> &middot;
     <a href="https://github.com/awsutils/bptools/releases">All releases</a>
@@ -25,7 +25,7 @@
   <h2>Quick install</h2>
   <pre>curl -fsSL https://awsutils.github.io/bptools/install.sh | sh</pre>
 
-  <h2>Downloads &mdash; v2026.02.13.1</h2>
+  <h2>Downloads &mdash; v2026.02.13.2</h2>
   <table>
     <tr><th>Platform</th><th>Arch</th><th>Binary</th></tr>
     <tr><td>Linux</td><td>amd64</td><td><a href="bptools-linux-amd64">bptools-linux-amd64</a></td></tr>
@@ -35,5 +35,26 @@
     <tr><td>Windows</td><td>amd64</td><td><a href="bptools-windows-amd64.exe">bptools-windows-amd64.exe</a></td></tr>
   </table>
   <p><a href="checksums.txt">checksums.txt (SHA-256)</a></p>
+
+  <h2>Docker</h2>
+  <p>
+    Multi-platform images (<code>linux/amd64</code>, <code>linux/arm64</code>) are published
+    to the GitHub Container Registry on every release.
+  </p>
+  <pre>docker pull ghcr.io/awsutils/bptools:latest</pre>
+  <p>Run with environment-variable credentials:</p>
+  <pre>docker run --rm \
+  -e AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY \
+  -e AWS_SESSION_TOKEN \
+  -e AWS_REGION \
+  ghcr.io/awsutils/bptools:latest</pre>
+  <p>Run with a mounted credentials file:</p>
+  <pre>docker run --rm \
+  -v ~/.aws:/root/.aws:ro \
+  -e AWS_PROFILE=myprofile \
+  -e AWS_REGION=us-east-1 \
+  ghcr.io/awsutils/bptools:latest</pre>
+  <p>Pin to this release: <code>ghcr.io/awsutils/bptools:v2026.02.13.2</code></p>
 </body>
 </html>
