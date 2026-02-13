@@ -166,8 +166,8 @@ github.com/aws/aws-sdk-go-v2/service/ivs v1.48.10 h1:OOxyP+IrcIKt/97n1iOaglbXPlV
 github.com/aws/aws-sdk-go-v2/service/ivs v1.48.10/go.mod h1:UJmgzqrep5uQku14nTbwG3tGdQi1DGUho1yKN/8Yn3g=
 github.com/aws/aws-sdk-go-v2/service/kafka v1.46.7 h1:0jDb9b505gbCmtjH1RT7kx8hDbVDzOhnTeZm7dzskpQ=
 github.com/aws/aws-sdk-go-v2/service/kafka v1.46.7/go.mod h1:tWnHS64fg5ydLHivFlCAtEh/1iMNzr56QsH3F+UTwD4=
-github.com/aws/aws-sdk-go-v2/service/kafkaconnect v1.29.2 h1:Esa5fUqBBCxHBN86eVUc4LJ3ghzlAZ8UVMq2m8iUVBw=
-github.com/aws/aws-sdk-go-v2/service/kafkaconnect v1.29.2/go.mod h1:1wTR2S82nvPBUL8GlXagTRwOpkwTWNQ8BI6cPrm20Tg=
+github.com/aws/aws-sdk-go-v2/service/kafkaconnect v1.30.0 h1:oCS9Y51IleWpuSivRFY9Q/o59fD58kQQeiCDS/gBHq4=
+github.com/aws/aws-sdk-go-v2/service/kafkaconnect v1.30.0/go.mod h1:1wTR2S82nvPBUL8GlXagTRwOpkwTWNQ8BI6cPrm20Tg=
 github.com/aws/aws-sdk-go-v2/service/keyspaces v1.25.0 h1:uMiVSOl/IZH5CaeBfOXQtFJJ3zTWjNGGKO6Dab4U6tM=
 github.com/aws/aws-sdk-go-v2/service/keyspaces v1.25.0/go.mod h1:UWRbDRog8jboaraZnLAPkS97ttyzB3FHccuNMoe9Onc=
 github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.0 h1:xqUZZ3mQHLCsrmZXmhI3UaP0KeCPKqBOMCkJVepY+HA=
