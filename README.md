@@ -1,7 +1,53 @@
 # bptools
 
-`bptools` is a Go-based AWS best-practice check runner.  
+`bptools` is a Go-based AWS best-practice check runner.
 It collects AWS resource data and executes a large set of service-specific rules.
+
+## Download
+
+**One-liner install (Linux & macOS)** — detects your OS and CPU architecture automatically:
+
+```bash
+curl -fsSL https://awsutils.github.io/bptools/install.sh | sh
+```
+
+To install to a custom directory:
+
+```bash
+INSTALL_DIR=~/.local/bin curl -fsSL https://awsutils.github.io/bptools/install.sh | sh
+```
+
+Or download a binary directly from [awsutils.github.io/bptools](https://awsutils.github.io/bptools) or the [Releases](https://github.com/awsutils/bptools/releases/latest) page.
+
+**Linux (amd64)**
+```bash
+curl -Lo bptools https://awsutils.github.io/bptools/bptools-linux-amd64
+chmod +x bptools
+```
+
+**Linux (arm64)**
+```bash
+curl -Lo bptools https://awsutils.github.io/bptools/bptools-linux-arm64
+chmod +x bptools
+```
+
+**macOS (Apple Silicon)**
+```bash
+curl -Lo bptools https://awsutils.github.io/bptools/bptools-darwin-arm64
+chmod +x bptools
+```
+
+**macOS (Intel)**
+```bash
+curl -Lo bptools https://awsutils.github.io/bptools/bptools-darwin-amd64
+chmod +x bptools
+```
+
+**Windows (amd64)**
+
+Download [`bptools-windows-amd64.exe`](https://awsutils.github.io/bptools/bptools-windows-amd64.exe).
+
+Verify the download against [`checksums.txt`](https://awsutils.github.io/bptools/checksums.txt).
 
 ## Requirements
 

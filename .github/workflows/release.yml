@@ -1,0 +1,195 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  # -------------------------------------------------------------------------
+  # 1. Auto-calculate and create the next patch version tag
+  # -------------------------------------------------------------------------
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create date-based version tag
+        id: bump
+        run: |
+          BASE="v$(date -u +%Y.%m.%d)"
+
+          # Find the next available counter for today (always include .N)
+          N=1
+          while git tag -l "${BASE}.${N}" | grep -q .; do
+            N=$((N + 1))
+          done
+          NEW_TAG="${BASE}.${N}"
+
+          echo "New tag: ${NEW_TAG}"
+          echo "tag=${NEW_TAG}" >> "$GITHUB_OUTPUT"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$NEW_TAG"
+          git push origin "$NEW_TAG"
+
+  # -------------------------------------------------------------------------
+  # 2. Cross-compile binaries (parallel matrix)
+  # -------------------------------------------------------------------------
+  build:
+    needs: version
+    name: Build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+            ext: .exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          go build -trimpath -ldflags="-s -w -X main.version=${{ needs.version.outputs.tag }}" \
+            -o bptools-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }} .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bptools-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: bptools-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}
+
+  # -------------------------------------------------------------------------
+  # 3a. Create GitHub Release
+  # -------------------------------------------------------------------------
+  release:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create checksums
+        run: sha256sum bptools-* > checksums.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          files: |
+            bptools-*
+            checksums.txt
+          generate_release_notes: true
+
+  # -------------------------------------------------------------------------
+  # 3b. Publish latest binaries to GitHub Pages (awsutils.github.io/bptools)
+  # -------------------------------------------------------------------------
+  deploy-pages:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: _binaries
+
+      - name: Publish to gh-pages
+        env:
+          VERSION: ${{ needs.version.outputs.tag }}
+        run: |
+          # Switch to gh-pages branch (create as orphan if it doesn't exist)
+          if git ls-remote --exit-code origin gh-pages >/dev/null 2>&1; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . --quiet
+          fi
+
+          # Checksums
+          (cd _binaries && sha256sum bptools-* > checksums.txt)
+
+          # Copy binaries and checksums to root (latest) and to a versioned dir
+          cp _binaries/* .
+          mkdir -p "$VERSION"
+          cp _binaries/* "$VERSION/"
+
+          # Copy install.sh from main
+          git show origin/main:install.sh > install.sh
+
+          # Generate download index page
+          cat > index.html <<EOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>bptools downloads</title>
+            <style>
+              body { font-family: monospace; max-width: 700px; margin: 3rem auto; padding: 0 1rem; }
+              h1 { font-size: 1.4rem; }
+              a { color: #0969da; }
+              table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+              th, td { text-align: left; padding: .4rem .8rem; border-bottom: 1px solid #ddd; }
+              th { background: #f6f8fa; }
+              pre { background: #f6f8fa; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+            </style>
+          </head>
+          <body>
+            <h1>bptools</h1>
+            <p>AWS best-practice check runner &mdash; latest: <strong>${VERSION}</strong></p>
+            <p>
+              <a href="https://github.com/awsutils/bptools">GitHub</a> &middot;
+              <a href="https://github.com/awsutils/bptools/releases">All releases</a>
+            </p>
+
+            <h2>Quick install</h2>
+            <pre>curl -fsSL https://awsutils.github.io/bptools/install.sh | sh</pre>
+
+            <h2>Downloads &mdash; ${VERSION}</h2>
+            <table>
+              <tr><th>Platform</th><th>Arch</th><th>Binary</th></tr>
+              <tr><td>Linux</td><td>amd64</td><td><a href="bptools-linux-amd64">bptools-linux-amd64</a></td></tr>
+              <tr><td>Linux</td><td>arm64</td><td><a href="bptools-linux-arm64">bptools-linux-arm64</a></td></tr>
+              <tr><td>macOS</td><td>amd64 (Intel)</td><td><a href="bptools-darwin-amd64">bptools-darwin-amd64</a></td></tr>
+              <tr><td>macOS</td><td>arm64 (Apple Silicon)</td><td><a href="bptools-darwin-arm64">bptools-darwin-arm64</a></td></tr>
+              <tr><td>Windows</td><td>amd64</td><td><a href="bptools-windows-amd64.exe">bptools-windows-amd64.exe</a></td></tr>
+            </table>
+            <p><a href="checksums.txt">checksums.txt (SHA-256)</a></p>
+          </body>
+          </html>
+          EOF
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "release: ${VERSION}" || echo "Nothing to commit"
+          git push origin gh-pages
