@@ -49,6 +49,9 @@ func main() {
 			blockSet[id] = true
 		}
 	}
+	for _, id := range defaultBlocklist {
+		blockSet[id] = true
+	}
 	filtered := checker.Exclude(checker.Filter(all, idSet, svcSet), blockSet)
 
 	conc := *concurrency
@@ -192,6 +195,13 @@ func registerAllChecks(d *awsdata.Data) {
 	checks.RegisterWAFChecks(d)
 	checks.RegisterWorkspacesChecks(d)
 	checks.RegisterRemainingChecks(d)
+}
+
+var defaultBlocklist = []string{
+	"access-keys-rotated",
+	"iam-password-policy",
+	"kms-cmk-not-scheduled-for-deletion",
+	"security-account-information-provided",
 }
 
 func parseSet(s string) map[string]bool {
