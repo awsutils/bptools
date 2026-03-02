@@ -1,5 +1,6 @@
 # Build output
 bptools
+bptools.exe
 bptools-*
 
 # Test artifacts
