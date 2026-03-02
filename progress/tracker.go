@@ -143,11 +143,7 @@ func (t *Tracker) PrefetchHooks() awsdata.PrefetchHooks {
 		OnStart: func(total int) {
 			t.logf("prefetch: starting (%d caches)", total)
 		},
-		OnComplete: func(name string, err error) {
-			if err != nil {
-				t.logf("prefetch: error: %s: %v", name, err)
-			}
-		},
+		OnComplete: func(name string, err error) {},
 		OnDone: func(total int, failures int) {
 			if failures > 0 {
 				t.logf("prefetch: done with %d/%d failures", failures, total)

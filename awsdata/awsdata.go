@@ -2828,11 +2828,22 @@ func (d *Data) init() {
 		return out.AssetModelSummaries, nil
 	})
 	d.IoTSiteWiseDashboards = cache.New("IoTSiteWiseDashboards", func() ([]sitewisetypes.DashboardSummary, error) {
-		out, err := c.IoTSiteWise.ListDashboards(ctx, &iotsitewise.ListDashboardsInput{})
+		projects, err := d.IoTSiteWiseProjects.Get()
 		if err != nil {
 			return nil, err
 		}
-		return out.DashboardSummaries, nil
+		var out []sitewisetypes.DashboardSummary
+		for _, p := range projects {
+			if p.Id == nil {
+				continue
+			}
+			resp, err := c.IoTSiteWise.ListDashboards(ctx, &iotsitewise.ListDashboardsInput{ProjectId: p.Id})
+			if err != nil {
+				continue
+			}
+			out = append(out, resp.DashboardSummaries...)
+		}
+		return out, nil
 	})
 	d.IoTSiteWiseGateways = cache.New("IoTSiteWiseGateways", func() ([]sitewisetypes.GatewaySummary, error) {
 		out, err := c.IoTSiteWise.ListGateways(ctx, &iotsitewise.ListGatewaysInput{})
@@ -2849,11 +2860,22 @@ func (d *Data) init() {
 		return out.PortalSummaries, nil
 	})
 	d.IoTSiteWiseProjects = cache.New("IoTSiteWiseProjects", func() ([]sitewisetypes.ProjectSummary, error) {
-		out, err := c.IoTSiteWise.ListProjects(ctx, &iotsitewise.ListProjectsInput{})
+		portals, err := d.IoTSiteWisePortals.Get()
 		if err != nil {
 			return nil, err
 		}
-		return out.ProjectSummaries, nil
+		var out []sitewisetypes.ProjectSummary
+		for _, portal := range portals {
+			if portal.Id == nil {
+				continue
+			}
+			resp, err := c.IoTSiteWise.ListProjects(ctx, &iotsitewise.ListProjectsInput{PortalId: portal.Id})
+			if err != nil {
+				continue
+			}
+			out = append(out, resp.ProjectSummaries...)
+		}
+		return out, nil
 	})
 	d.IoTSiteWiseTags = cache.New("IoTSiteWiseTags", func() (map[string]map[string]string, error) {
 		out := make(map[string]map[string]string)
@@ -4858,11 +4880,22 @@ func (d *Data) init() {
 
 	// AMP
 	d.AMPRuleGroupsNamespaces = cache.New("AMPRuleGroupsNamespaces", func() ([]amptypes.RuleGroupsNamespaceSummary, error) {
-		out, err := c.AMP.ListRuleGroupsNamespaces(ctx, &amp.ListRuleGroupsNamespacesInput{})
+		workspaces, err := c.AMP.ListWorkspaces(ctx, &amp.ListWorkspacesInput{})
 		if err != nil {
 			return nil, err
 		}
-		return out.RuleGroupsNamespaces, nil
+		var out []amptypes.RuleGroupsNamespaceSummary
+		for _, ws := range workspaces.Workspaces {
+			if ws.WorkspaceId == nil {
+				continue
+			}
+			resp, err := c.AMP.ListRuleGroupsNamespaces(ctx, &amp.ListRuleGroupsNamespacesInput{WorkspaceId: ws.WorkspaceId})
+			if err != nil {
+				continue
+			}
+			out = append(out, resp.RuleGroupsNamespaces...)
+		}
+		return out, nil
 	})
 
 	// AuditManager
@@ -6461,11 +6494,22 @@ func (d *Data) init() {
 		return out, nil
 	})
 	d.TransferAgreements = cache.New("TransferAgreements", func() ([]transfertypes.ListedAgreement, error) {
-		out, err := c.Transfer.ListAgreements(ctx, &transfer.ListAgreementsInput{})
+		servers, err := d.TransferServers.Get()
 		if err != nil {
 			return nil, err
 		}
-		return out.Agreements, nil
+		var out []transfertypes.ListedAgreement
+		for _, s := range servers {
+			if s.ServerId == nil {
+				continue
+			}
+			resp, err := c.Transfer.ListAgreements(ctx, &transfer.ListAgreementsInput{ServerId: s.ServerId})
+			if err != nil {
+				continue
+			}
+			out = append(out, resp.Agreements...)
+		}
+		return out, nil
 	})
 	d.TransferAgreementDetails = cache.New("TransferAgreementDetails", func() (map[string]transfertypes.DescribedAgreement, error) {
 		agreements, err := d.TransferAgreements.Get()
@@ -6474,10 +6518,13 @@ func (d *Data) init() {
 		}
 		out := make(map[string]transfertypes.DescribedAgreement)
 		for _, a := range agreements {
-			if a.AgreementId == nil {
+			if a.AgreementId == nil || a.ServerId == nil {
 				continue
 			}
-			desc, err := c.Transfer.DescribeAgreement(ctx, &transfer.DescribeAgreementInput{AgreementId: a.AgreementId})
+			desc, err := c.Transfer.DescribeAgreement(ctx, &transfer.DescribeAgreementInput{
+				AgreementId: a.AgreementId,
+				ServerId:    a.ServerId,
+			})
 			if err != nil || desc.Agreement == nil {
 				continue
 			}
