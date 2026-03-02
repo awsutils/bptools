@@ -57,6 +57,8 @@ func (t *Tracker) Actions() <-chan Action {
 func (t *Tracker) Close() {}
 
 // ShowResults prints results to stdout in plain text.
+// Checks where every result is an error (e.g. EoL / unreachable service) are
+// omitted entirely — only checks with at least one FAIL finding are shown.
 func (t *Tracker) ShowResults(results []checker.Result, descriptions map[string]string) {
 	grouped := make(map[string][]checker.Result)
 	for _, r := range results {
@@ -66,46 +68,15 @@ func (t *Tracker) ShowResults(results []checker.Result, descriptions map[string]
 		grouped[r.CheckID] = append(grouped[r.CheckID], r)
 	}
 
-	if len(grouped) == 0 {
-		fmt.Fprintln(os.Stdout, "No non-compliant resources found.")
-		return
+	// Build sorted list of check IDs that have at least one FAIL.
+	type checkSummary struct {
+		id        string
+		items     []checker.Result
+		failCount int
+		errCount  int
 	}
-
-	checkIDs := make([]string, 0, len(grouped))
-	for id := range grouped {
-		checkIDs = append(checkIDs, id)
-	}
-	sort.Strings(checkIDs)
-
-	totalItems := 0
-	totalErrors := 0
-	for _, items := range grouped {
-		for _, item := range items {
-			totalItems++
-			if item.Status == checker.StatusError {
-				totalErrors++
-			}
-		}
-	}
-
-	summary := fmt.Sprintf("rules_with_issues=%d findings=%d", len(checkIDs), totalItems)
-	if totalErrors > 0 {
-		summary += fmt.Sprintf(" errors=%d", totalErrors)
-	}
-	fmt.Fprintln(os.Stdout, summary)
-
-	for _, checkID := range checkIDs {
-		items := grouped[checkID]
-		sort.Slice(items, func(i, j int) bool {
-			if items[i].Status != items[j].Status {
-				return items[i].Status < items[j].Status
-			}
-			if items[i].ResourceID != items[j].ResourceID {
-				return items[i].ResourceID < items[j].ResourceID
-			}
-			return items[i].Message < items[j].Message
-		})
-
+	var checks []checkSummary
+	for id, items := range grouped {
 		failCount := 0
 		errCount := 0
 		for _, item := range items {
@@ -115,14 +86,43 @@ func (t *Tracker) ShowResults(results []checker.Result, descriptions map[string]
 				failCount++
 			}
 		}
+		if failCount == 0 {
+			continue // all errors → EoL / unreachable service, skip
+		}
+		checks = append(checks, checkSummary{id: id, items: items, failCount: failCount, errCount: errCount})
+	}
 
-		fmt.Fprintf(os.Stdout, "\n%s (fail=%d error=%d)\n", checkID, failCount, errCount)
-		if desc := strings.TrimSpace(descriptions[checkID]); desc != "" {
+	if len(checks) == 0 {
+		fmt.Fprintln(os.Stdout, "No non-compliant resources found.")
+		return
+	}
+
+	sort.Slice(checks, func(i, j int) bool { return checks[i].id < checks[j].id })
+
+	totalFindings := 0
+	for _, c := range checks {
+		totalFindings += c.failCount
+	}
+	fmt.Fprintf(os.Stdout, "rules_with_issues=%d findings=%d\n", len(checks), totalFindings)
+
+	for _, c := range checks {
+		sort.Slice(c.items, func(i, j int) bool {
+			if c.items[i].ResourceID != c.items[j].ResourceID {
+				return c.items[i].ResourceID < c.items[j].ResourceID
+			}
+			return c.items[i].Message < c.items[j].Message
+		})
+
+		fmt.Fprintf(os.Stdout, "\n%s (fail=%d)\n", c.id, c.failCount)
+		if desc := strings.TrimSpace(descriptions[c.id]); desc != "" {
 			fmt.Fprintf(os.Stdout, "  description: %s\n", desc)
 		}
-		fmt.Fprintf(os.Stdout, "  docs: https://docs.aws.amazon.com/config/latest/developerguide/%s.html\n", checkID)
+		fmt.Fprintf(os.Stdout, "  docs: https://docs.aws.amazon.com/config/latest/developerguide/%s.html\n", c.id)
 
-		for _, item := range items {
+		for _, item := range c.items {
+			if item.Status == checker.StatusError {
+				continue
+			}
 			resource := strings.TrimSpace(item.ResourceID)
 			if resource == "" {
 				resource = "<account>"
@@ -132,11 +132,7 @@ func (t *Tracker) ShowResults(results []checker.Result, descriptions map[string]
 				msg = "-"
 			}
 			msg = strings.Join(strings.Fields(msg), " ")
-			status := "FAIL"
-			if item.Status == checker.StatusError {
-				status = "ERR"
-			}
-			fmt.Fprintf(os.Stdout, "  [%s] %s — %s\n", status, resource, msg)
+			fmt.Fprintf(os.Stdout, "  [FAIL] %s — %s\n", resource, msg)
 		}
 	}
 }
