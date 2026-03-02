@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"os"
@@ -16,10 +17,12 @@ import (
 
 func main() {
 	var (
-		concurrency = flag.Int("concurrency", 20, "Number of concurrent checks")
-		ids         = flag.String("ids", "", "Comma-separated list of check IDs to run")
-		services    = flag.String("services", "", "Comma-separated list of services to run")
-		prefetch    = flag.Bool("prefetch", true, "Prefetch all AWS data caches before running checks")
+		concurrency   = flag.Int("concurrency", 20, "Number of concurrent checks")
+		ids           = flag.String("ids", "", "Comma-separated list of check IDs to run")
+		services      = flag.String("services", "", "Comma-separated list of services to run")
+		prefetch      = flag.Bool("prefetch", true, "Prefetch all AWS data caches before running checks")
+		blocklist     = flag.String("blocklist", "", "Comma-separated list of check IDs to skip")
+		blocklistFile = flag.String("blocklist-file", "", "Path to a file with one check ID per line to skip")
 	)
 	flag.Parse()
 
@@ -36,7 +39,17 @@ func main() {
 	all := checker.All()
 	idSet := parseSet(*ids)
 	svcSet := parseSet(*services)
-	filtered := checker.Filter(all, idSet, svcSet)
+	blockSet := parseSet(*blocklist)
+	if *blocklistFile != "" {
+		fileSet, err := parseSetFile(*blocklistFile)
+		if err != nil {
+			fatal(err)
+		}
+		for id := range fileSet {
+			blockSet[id] = true
+		}
+	}
+	filtered := checker.Exclude(checker.Filter(all, idSet, svcSet), blockSet)
 
 	conc := *concurrency
 	if conc < 1 {
@@ -191,6 +204,24 @@ func parseSet(s string) map[string]bool {
 		out[v] = true
 	}
 	return out
+}
+
+func parseSetFile(path string) (map[string]bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	out := make(map[string]bool)
+	sc := bufio.NewScanner(f)
+	for sc.Scan() {
+		v := strings.TrimSpace(sc.Text())
+		if v == "" || strings.HasPrefix(v, "#") {
+			continue
+		}
+		out[v] = true
+	}
+	return out, sc.Err()
 }
 
 func failedErroredChecks(checks []checker.Check, results []checker.Result) []checker.Check {

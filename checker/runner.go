@@ -166,3 +166,17 @@ func Filter(checks []Check, ids map[string]bool, services map[string]bool) []Che
 	}
 	return out
 }
+
+// Exclude removes checks whose IDs are in the blocklist.
+func Exclude(checks []Check, blocklist map[string]bool) []Check {
+	if len(blocklist) == 0 {
+		return checks
+	}
+	out := make([]Check, 0, len(checks))
+	for _, c := range checks {
+		if !blocklist[c.ID()] {
+			out = append(out, c)
+		}
+	}
+	return out
+}
