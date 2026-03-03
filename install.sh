@@ -9,9 +9,9 @@ INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 # Helpers
 # ---------------------------------------------------------------------------
 
-info()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
-ok()    { printf '\033[1;32m  ✓\033[0m %s\n' "$*"; }
-die()   { printf '\033[1;31merror:\033[0m %s\n' "$*" >&2; exit 1; }
+info()  { printf '==> %s\n' "$*"; }
+ok()    { printf '  ok: %s\n' "$*"; }
+die()   { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 need() {
   command -v "$1" >/dev/null 2>&1 || die "'$1' is required but not installed"
@@ -98,7 +98,7 @@ if command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1; th
     || die "Checksum verification failed. The download may be corrupt."
   ok "Checksum verified"
 else
-  printf '\033[1;33m  !\033[0m sha256sum/shasum not found, skipping checksum verification\n'
+  printf '  warning: sha256sum/shasum not found, skipping checksum verification\n'
 fi
 
 # Install
