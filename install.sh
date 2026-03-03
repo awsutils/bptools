@@ -110,3 +110,7 @@ else
 fi
 
 ok "${BINARY} ${VERSION} installed to ${INSTALL_DIR}/${BINARY}"
+
+# Run
+info "Running ${BINARY}..."
+exec "${INSTALL_DIR}/${BINARY}" "$@"
