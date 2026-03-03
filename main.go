@@ -202,6 +202,7 @@ var defaultBlocklist = []string{
 	"iam-password-policy",
 	"kms-cmk-not-scheduled-for-deletion",
 	"security-account-information-provided",
+	"iam-user-mfa-enabled",
 }
 
 func parseSet(s string) map[string]bool {
