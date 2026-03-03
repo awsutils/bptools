@@ -11,18 +11,24 @@ import (
 	"bptools/awsdata"
 	"bptools/checker"
 	"bptools/checks"
+	"bptools/fix"
+	"bptools/fixes"
 	"bptools/progress"
 	"bptools/runstate"
 )
 
 func main() {
 	var (
-		concurrency   = flag.Int("concurrency", 20, "Number of concurrent checks")
-		ids           = flag.String("ids", "", "Comma-separated list of check IDs to run")
-		services      = flag.String("services", "", "Comma-separated list of services to run")
-		prefetch      = flag.Bool("prefetch", true, "Prefetch all AWS data caches before running checks")
-		blocklist     = flag.String("blocklist", "", "Comma-separated list of check IDs to skip")
-		blocklistFile = flag.String("blocklist-file", "", "Path to a file with one check ID per line to skip")
+		concurrency    = flag.Int("concurrency", 20, "Number of concurrent checks")
+		ids            = flag.String("ids", "", "Comma-separated list of check IDs to run")
+		services       = flag.String("services", "", "Comma-separated list of services to run")
+		prefetch       = flag.Bool("prefetch", true, "Prefetch all AWS data caches before running checks")
+		blocklist      = flag.String("blocklist", "", "Comma-separated list of check IDs to skip")
+		blocklistFile  = flag.String("blocklist-file", "", "Path to a file with one check ID per line to skip")
+		autoFix        = flag.Bool("auto-fix", false, "Apply fixes for detected violations (NO_IMPACT only by default)")
+		dryRun         = flag.Bool("dry-run", false, "Show planned fix actions without executing")
+		impactFilter   = flag.String("impact-filter", "NO_IMPACT", "Comma-separated impact levels to fix: NO_IMPACT,DEGRADATION,DOWN")
+		severityFilter = flag.String("severity-filter", "", "Comma-separated severity levels to fix: LOW,MEDIUM,HIGH (default: all)")
 	)
 	flag.Parse()
 
@@ -73,17 +79,17 @@ func main() {
 		ruleDescriptions[check.ID()] = check.Description()
 	}
 
-	results := checker.RunAllWithHooks(filtered, conc, tracker.RunHooks())
-	tracker.ShowResults(results, ruleDescriptions)
+	allResults := checker.RunAllWithHooks(filtered, conc, tracker.RunHooks())
+	tracker.ShowResults(allResults, ruleDescriptions)
 	for action := range tracker.Actions() {
 		if action != progress.ActionRecheckFailedErrored {
 			continue
 		}
-		recheck := failedErroredChecks(filtered, results)
+		recheck := failedErroredChecks(filtered, allResults)
 		if len(recheck) == 0 {
 			continue
 		}
-		failedIDs := failedErroredCheckIDs(results)
+		failedIDs := failedErroredCheckIDs(allResults)
 		recheckMemoNames := runstate.MemoNamesForChecks(failedIDs)
 		if len(recheckMemoNames) > 0 {
 			data.ClearMemoNames(recheckMemoNames)
@@ -99,10 +105,21 @@ func main() {
 		for _, check := range recheck {
 			recheckDescriptions[check.ID()] = check.Description()
 		}
-		results = checker.RunAllWithHooks(recheck, conc, tracker.RunHooks())
-		tracker.ShowResults(results, recheckDescriptions)
+		recheckResults := checker.RunAllWithHooks(recheck, conc, tracker.RunHooks())
+		allResults = append(allResults, recheckResults...)
+		tracker.ShowResults(recheckResults, recheckDescriptions)
 	}
 	tracker.Wait()
+
+	if *autoFix || *dryRun {
+		fixes.RegisterAllFixes(data)
+		fixResults := fix.RunFixes(ctx, allResults, fix.RunOpts{
+			DryRun:         *dryRun,
+			ImpactFilter:   parseImpactSet(*impactFilter),
+			SeverityFilter: parseSeveritySet(*severityFilter),
+		}, tracker.FixHooks())
+		tracker.ShowFixResults(fixResults)
+	}
 }
 
 func registerAllChecks(d *awsdata.Data) {
@@ -270,6 +287,34 @@ func serviceSetForChecks(checks []checker.Check) map[string]bool {
 		out[service] = true
 	}
 	return out
+}
+
+func parseImpactSet(s string) map[fix.ImpactType]bool {
+	if s == "" {
+		return nil
+	}
+	m := make(map[fix.ImpactType]bool)
+	for _, v := range strings.Split(s, ",") {
+		v = strings.TrimSpace(v)
+		if v != "" {
+			m[fix.ImpactType(v)] = true
+		}
+	}
+	return m
+}
+
+func parseSeveritySet(s string) map[fix.SeverityLevel]bool {
+	if s == "" {
+		return nil
+	}
+	m := make(map[fix.SeverityLevel]bool)
+	for _, v := range strings.Split(s, ",") {
+		v = strings.TrimSpace(v)
+		if v != "" {
+			m[fix.SeverityLevel(v)] = true
+		}
+	}
+	return m
 }
 
 func fatal(err error) {

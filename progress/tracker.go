@@ -10,6 +10,7 @@ import (
 
 	"bptools/awsdata"
 	"bptools/checker"
+	"bptools/fix"
 )
 
 // Action represents a user-triggered action.
@@ -135,6 +136,75 @@ func (t *Tracker) ShowResults(results []checker.Result, descriptions map[string]
 			fmt.Fprintf(os.Stdout, "  [FAIL] %s — %s\n", resource, msg)
 		}
 	}
+}
+
+// FixHooks returns hooks that log fix execution progress to stderr.
+func (t *Tracker) FixHooks() fix.RunHooks {
+	return fix.RunHooks{
+		OnStart: func(total int) {
+			t.logf("fixes: starting (%d)", total)
+		},
+		OnComplete: func(checkID, resourceID string, r fix.FixResult) {
+			switch r.Status {
+			case fix.FixApplied:
+				t.logf("[APPLIED] %s / %s", checkID, resourceID)
+				for _, s := range r.Steps {
+					t.logf("  → %s", s)
+				}
+			case fix.FixDryRun:
+				t.logf("[DRY-RUN] %s / %s", checkID, resourceID)
+				for _, s := range r.Steps {
+					t.logf("  → %s", s)
+				}
+			case fix.FixFailed:
+				t.logf("[FAILED] %s / %s: %s", checkID, resourceID, r.Message)
+			case fix.FixSkipped:
+				t.logf("[SKIPPED] %s / %s: %s", checkID, resourceID, r.Message)
+			}
+		},
+		OnDone: func(total, applied, failed int) {
+			t.logf("fixes: done (total=%d applied=%d failed=%d)", total, applied, failed)
+		},
+	}
+}
+
+// ShowFixResults prints a fix summary to stdout grouped by CheckID.
+func (t *Tracker) ShowFixResults(results []fix.FixResult) {
+	if len(results) == 0 {
+		fmt.Fprintln(os.Stdout, "No fixes attempted.")
+		return
+	}
+
+	grouped := make(map[string][]fix.FixResult)
+	for _, r := range results {
+		grouped[r.CheckID] = append(grouped[r.CheckID], r)
+	}
+
+	ids := make([]string, 0, len(grouped))
+	for id := range grouped {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+
+	totalApplied, totalFailed, totalSkipped := 0, 0, 0
+	for _, id := range ids {
+		applied, failed, skipped := 0, 0, 0
+		for _, r := range grouped[id] {
+			switch r.Status {
+			case fix.FixApplied, fix.FixDryRun:
+				applied++
+				totalApplied++
+			case fix.FixFailed:
+				failed++
+				totalFailed++
+			case fix.FixSkipped:
+				skipped++
+				totalSkipped++
+			}
+		}
+		fmt.Fprintf(os.Stdout, "\n%s (applied=%d failed=%d skipped=%d)\n", id, applied, failed, skipped)
+	}
+	fmt.Fprintf(os.Stdout, "\nfix_summary: applied=%d failed=%d skipped=%d\n", totalApplied, totalFailed, totalSkipped)
 }
 
 // PrefetchHooks returns hooks that log prefetch progress to stderr.
