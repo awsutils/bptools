@@ -94,6 +94,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          pattern: bptools-*
           merge-multiple: true
 
       - name: Create checksums
@@ -120,6 +121,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
+          pattern: bptools-*
           merge-multiple: true
           path: _binaries
 
