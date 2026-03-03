@@ -233,9 +233,12 @@ type Clients struct {
 
 // NewClients constructs all AWS SDK clients from the default config.
 func NewClients(ctx context.Context) (*Clients, error) {
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithAPIOptions([]func(*middleware.Stack) error{
-		addOpLogger,
-	}))
+	cfg, err := config.LoadDefaultConfig(ctx,
+		config.WithAppID("bptools"),
+		config.WithAPIOptions([]func(*middleware.Stack) error{
+			addOpLogger,
+		}),
+	)
 	if err != nil {
 		return nil, err
 	}
