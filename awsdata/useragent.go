@@ -8,14 +8,18 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"unicode"
 
+	awsmw "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-var userAgent = buildUserAgent()
+// userAgentPrefix is the static portion built once at startup.
+// The per-request md/command#... token is appended in HandleFinalize.
+var userAgentPrefix = buildUserAgentPrefix()
 
-func buildUserAgent() string {
+func buildUserAgentPrefix() string {
 	osName := runtime.GOOS
 	arch := normalizeArch(runtime.GOARCH)
 	kernel := kernelVersion()
@@ -38,9 +42,45 @@ func buildUserAgent() string {
 	if distrib != "" {
 		parts = append(parts, "md/distrib#"+distrib)
 	}
-	parts = append(parts, "md/prompt#off", "md/command#ec2.describe-instances")
-
+	parts = append(parts, "md/prompt#off")
 	return strings.Join(parts, " ")
+}
+
+// formatCommand converts SDK service ID + operation name to CLI notation.
+// e.g. "Amazon EC2" + "DescribeInstances" → "ec2.describe-instances"
+func formatCommand(serviceID, opName string) string {
+	svc := strings.ToLower(strings.ReplaceAll(serviceID, " ", ""))
+	// Strip common "amazon" / "aws" prefixes that the CLI omits
+	svc = strings.TrimPrefix(svc, "amazon")
+	svc = strings.TrimPrefix(svc, "aws")
+	op := pascalToKebab(opName)
+	if svc == "" || op == "" {
+		return "unknown"
+	}
+	return svc + "." + op
+}
+
+// pascalToKebab converts PascalCase to kebab-case.
+// e.g. "DescribeInstances" → "describe-instances"
+func pascalToKebab(s string) string {
+	runes := []rune(s)
+	var b strings.Builder
+	for i, r := range runes {
+		if i > 0 && unicode.IsUpper(r) {
+			prev := runes[i-1]
+			next := rune(0)
+			if i+1 < len(runes) {
+				next = runes[i+1]
+			}
+			// Insert dash before an uppercase that follows a lowercase,
+			// or before the last uppercase in a run (e.g. "XMLParser" → "xml-parser").
+			if unicode.IsLower(prev) || (unicode.IsUpper(prev) && next != 0 && unicode.IsLower(next)) {
+				b.WriteRune('-')
+			}
+		}
+		b.WriteRune(unicode.ToLower(r))
+	}
+	return b.String()
 }
 
 // normalizeArch converts Go arch names to the convention used in the CLI UA.
@@ -57,9 +97,8 @@ func normalizeArch(goarch string) string {
 	}
 }
 
-// kernelVersion reads the kernel release string.
-// On Linux this comes from /proc/sys/kernel/osrelease; elsewhere it falls back
-// to the Go OS name.
+// kernelVersion reads the kernel release string from /proc on Linux,
+// falling back to the Go OS name on other platforms.
 func kernelVersion() string {
 	if data, err := os.ReadFile("/proc/sys/kernel/osrelease"); err == nil {
 		return strings.TrimSpace(string(data))
@@ -67,8 +106,8 @@ func kernelVersion() string {
 	return runtime.GOOS
 }
 
-// detectDistrib parses /etc/os-release for ID and VERSION_ID and returns a
-// string like "amzn.2023" or "ubuntu.22.04". Returns "" if undetectable.
+// detectDistrib parses /etc/os-release for ID and VERSION_ID.
+// Returns e.g. "amzn.2023" or "" if undetectable.
 func detectDistrib() string {
 	data, err := os.ReadFile("/etc/os-release")
 	if err != nil {
@@ -111,7 +150,8 @@ func (userAgentOverride) HandleFinalize(ctx context.Context, in middleware.Final
 	middleware.FinalizeOutput, middleware.Metadata, error,
 ) {
 	if req, ok := in.Request.(*smithyhttp.Request); ok {
-		req.Header.Set("User-Agent", userAgent)
+		cmd := formatCommand(awsmw.GetServiceID(ctx), awsmw.GetOperationName(ctx))
+		req.Header.Set("User-Agent", userAgentPrefix+" md/command#"+cmd)
 	}
 	return next.HandleFinalize(ctx, in)
 }
