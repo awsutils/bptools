@@ -5,6 +5,7 @@ import (
 	"bptools/fix"
 	"bptools/fix/pool"
 
+	cloudtrailtypes "github.com/aws/aws-sdk-go-v2/service/cloudtrail/types"
 	inspector2types "github.com/aws/aws-sdk-go-v2/service/inspector2/types"
 )
 
@@ -32,6 +33,7 @@ func RegisterAllFixes(d *awsdata.Data) {
 
 	// NO_IMPACT / MEDIUM
 	fix.Register(newELBLoggingFix(d.Clients, p))
+	fix.Register(&elbCrossZoneFix{clients: d.Clients})
 	fix.Register(newS3LoggingFix(d.Clients, p))
 	fix.Register(&s3VersioningFix{clients: d.Clients})
 	fix.Register(&dynamoDBPITRFix{clients: d.Clients})
@@ -80,6 +82,7 @@ func RegisterAllFixes(d *awsdata.Data) {
 	fix.Register(&iamAccessAnalyzerFix{clients: d.Clients})
 	fix.Register(&netfwDeletionProtectionFix{clients: d.Clients})
 	fix.Register(&netfwSubnetChangeProtectionFix{clients: d.Clients})
+	fix.Register(&netfwLoggingFix{clients: d.Clients})
 	fix.Register(&cognitoUserPoolDeletionProtectionFix{clients: d.Clients})
 	fix.Register(&kmsCancelDeletionFix{clients: d.Clients})
 	fix.Register(&docDBDeletionProtectionFix{clients: d.Clients})
@@ -101,6 +104,7 @@ func RegisterAllFixes(d *awsdata.Data) {
 	fix.Register(&rdsInstanceDeletionProtectionFix{clients: d.Clients})
 	fix.Register(&rdsClusterDeletionProtectionFix{clients: d.Clients})
 	fix.Register(&dynamoDBDeletionProtectionFix{clients: d.Clients})
+	fix.Register(&dynamoDBSSEFix{clients: d.Clients})
 	fix.Register(&cloudTrailLoggingFix{clients: d.Clients})
 	fix.Register(&s3EncryptionFix{clients: d.Clients})
 	fix.Register(&s3PublicAccessBlockFix{checkID: "s3-bucket-level-public-access-prohibited", clients: d.Clients})
@@ -115,6 +119,7 @@ func RegisterAllFixes(d *awsdata.Data) {
 	fix.Register(newOpenSearchEncryptionAtRestFix(d.Clients))
 	fix.Register(newOpenSearchNodeToNodeEncryptionFix(d.Clients))
 	fix.Register(newOpenSearchHTTPSFix(d.Clients))
+	fix.Register(&opensearchAuditLoggingFix{clients: d.Clients})
 
 	// NO_IMPACT / MEDIUM (continued)
 	fix.Register(&elastiCacheAutoFailoverFix{clients: d.Clients})
@@ -122,6 +127,7 @@ func RegisterAllFixes(d *awsdata.Data) {
 	fix.Register(&elastiCacheRedisBackupFix{clients: d.Clients})
 	fix.Register(&redshiftEnhancedVPCRoutingFix{clients: d.Clients})
 	fix.Register(&redshiftBackupFix{clients: d.Clients})
+	fix.Register(newRedshiftAuditLoggingFix(d.Clients, p))
 	fix.Register(&redshiftServerlessLogsFix{clients: d.Clients})
 	fix.Register(&redshiftServerlessEnhancedVPCFix{clients: d.Clients})
 	fix.Register(&macieFix{clients: d.Clients})
@@ -142,8 +148,32 @@ func RegisterAllFixes(d *awsdata.Data) {
 	fix.Register(&dmsReplicationTaskLoggingFix{checkID: "dms-replication-task-targetdb-logging", source: false, clients: d.Clients})
 	fix.Register(&apigwV1SSLFix{clients: d.Clients})
 	fix.Register(&firehoseEncryptionFix{clients: d.Clients})
-
 	fix.Register(&cloudTrailS3DataEventsFix{clients: d.Clients})
+	fix.Register(&ssmAutomationLoggingFix{clients: d.Clients})
+	fix.Register(&connectInstanceLoggingFix{clients: d.Clients})
+	fix.Register(&route53QueryLoggingFix{clients: d.Clients})
+	fix.Register(&cloudTrailS3AllDataEventsFix{checkID: "cloudtrail-all-read-s3-data-event-check", readWrite: cloudtrailtypes.ReadWriteTypeReadOnly, clients: d.Clients})
+	fix.Register(&cloudTrailS3AllDataEventsFix{checkID: "cloudtrail-all-write-s3-data-event-check", readWrite: cloudtrailtypes.ReadWriteTypeWriteOnly, clients: d.Clients})
+	fix.Register(&rdsPostgreSQLLoggingFix{clients: d.Clients})
+	fix.Register(&rdsSQLServerLoggingFix{clients: d.Clients})
+	fix.Register(&rdsProxyTLSFix{clients: d.Clients})
+	fix.Register(&ecrImageScanningFix{clients: d.Clients})
+	fix.Register(&ecrTagImmutabilityFix{clients: d.Clients})
+	fix.Register(&ecrLifecyclePolicyFix{clients: d.Clients})
+	fix.Register(&ec2ENISourceDestCheckFix{clients: d.Clients})
+	fix.Register(&ec2LaunchTemplateIMDSv2Fix{clients: d.Clients})
+	fix.Register(&ec2LaunchTemplatePublicIPFix{clients: d.Clients})
+	fix.Register(&ec2ClientVPNLoggingFix{clients: d.Clients})
+	fix.Register(&ec2VPNConnectionLoggingFix{clients: d.Clients})
+	fix.Register(&sfnLoggingFix{clients: d.Clients})
+	fix.Register(&fsxWindowsAuditLogFix{clients: d.Clients})
+	fix.Register(&dataSyncTaskLoggingFix{clients: d.Clients})
+	fix.Register(&dataSyncObjectStorageHTTPSFix{clients: d.Clients})
+	fix.Register(&cwAlarmActionEnabledFix{clients: d.Clients})
+
+	// NO_IMPACT / LOW (continued)
+	fix.Register(&fsxOpenZFSCopyTagsFix{clients: d.Clients})
+	fix.Register(&dataSyncTaskVerificationFix{clients: d.Clients})
 
 	// NO_IMPACT / LOW (continued)
 	fix.Register(&codeDeployAutoRollbackFix{clients: d.Clients})
@@ -156,16 +186,47 @@ func RegisterAllFixes(d *awsdata.Data) {
 	fix.Register(&autoscalingCapacityRebalancingFix{clients: d.Clients})
 	fix.Register(&autoscalingELBHealthCheckFix{clients: d.Clients})
 	fix.Register(&apigwV1XRayFix{clients: d.Clients})
+	fix.Register(&appsyncXRayFix{clients: d.Clients})
 
 	// NO_IMPACT / MEDIUM (continued again)
 	fix.Register(&sagemakerNotebookRootAccessFix{clients: d.Clients})
+	fix.Register(&apigwV1AccessLogsFix{clients: d.Clients})
+	fix.Register(&apigwV2AccessLogsFix{clients: d.Clients})
 	fix.Register(&cloudFrontHTTPSFix{clients: d.Clients})
+	fix.Register(&globalEndpointReplicationFix{clients: d.Clients})
+	fix.Register(&rumCWLoggingFix{clients: d.Clients})
+	fix.Register(&kinesisVideoRetentionFix{clients: d.Clients})
+	fix.Register(&appRunnerObservabilityFix{clients: d.Clients})
+	fix.Register(&s3KMSEncryptionFix{clients: d.Clients})
+	fix.Register(&albDesyncModeFix{clients: d.Clients})
+	fix.Register(&clbDesyncModeFix{clients: d.Clients})
+	fix.Register(&codeBuildReportGroupEncryptionFix{clients: d.Clients})
+	fix.Register(&cloudTrailS3PublicAccessFix{clients: d.Clients})
+
+	// NO_IMPACT / HIGH (continued)
+	fix.Register(&ebsSnapshotPublicFix{clients: d.Clients})
+	fix.Register(&ec2LaunchTemplateEBSEncryptionFix{clients: d.Clients})
+	fix.Register(&docDBSnapshotPublicFix{clients: d.Clients})
+	fix.Register(&docDBTLSFix{clients: d.Clients})
+	fix.Register(&dynamoDBKMSEncryptionFix{clients: d.Clients})
+	fix.Register(&ecsFargatePlatformVersionFix{clients: d.Clients})
+	fix.Register(&neptuneSnapshotPublicFix{clients: d.Clients})
+	fix.Register(&rdsSnapshotPublicFix{clients: d.Clients})
+	fix.Register(&snsKMSEncryptionFix{clients: d.Clients})
+	fix.Register(&ssmDocumentNotPublicFix{clients: d.Clients})
+
+	// DEGRADATION / MEDIUM (continued)
+	fix.Register(&transferNoFTPFix{clients: d.Clients})
 
 	// DEGRADATION / LOW
 	fix.Register(&albHTTPSRedirectFix{clients: d.Clients})
 
 	// DEGRADATION / HIGH
+	fix.Register(&sqsNoPublicAccessFix{clients: d.Clients})
+	fix.Register(&sqsNoFullAccessFix{clients: d.Clients})
+	fix.Register(&snsNoPublicAccessFix{clients: d.Clients})
 	fix.Register(&rdsInstancePublicAccessFix{clients: d.Clients})
+	fix.Register(&mskPublicAccessFix{clients: d.Clients})
 	fix.Register(&redshiftPublicAccessFix{clients: d.Clients})
 	fix.Register(&redshiftServerlessPublicAccessFix{clients: d.Clients})
 
@@ -173,6 +234,7 @@ func RegisterAllFixes(d *awsdata.Data) {
 	fix.Register(&ec2IMDSv2Fix{clients: d.Clients})
 
 	// DEGRADATION / MEDIUM
+	fix.Register(&s3ACLProhibitedFix{clients: d.Clients})
 	fix.Register(newALBWAFFix(d.Clients))
 	fix.Register(&eksEndpointNoPublicAccessFix{clients: d.Clients})
 

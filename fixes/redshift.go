@@ -1,16 +1,19 @@
 package fixes
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"bptools/awsdata"
 	"bptools/fix"
+	"bptools/fix/pool"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/redshift"
 	"github.com/aws/aws-sdk-go-v2/service/redshiftserverless"
 	rsstypes "github.com/aws/aws-sdk-go-v2/service/redshiftserverless/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // ── redshift-cluster-maintenancesettings-check ────────────────────────────────
@@ -373,6 +376,110 @@ func (f *redshiftServerlessPublicAccessFix) Apply(fctx fix.FixContext, resourceI
 	base.Steps = []string{fmt.Sprintf("disabled public accessibility on Redshift Serverless workgroup %s", resourceID)}
 	base.Status = fix.FixApplied
 	return base
+}
+
+// ── redshift-audit-logging-enabled ───────────────────────────────────────────
+
+type redshiftAuditLoggingFix struct {
+	clients *awsdata.Clients
+	pool    *pool.S3BucketPool
+}
+
+func newRedshiftAuditLoggingFix(clients *awsdata.Clients, p *pool.S3BucketPool) *redshiftAuditLoggingFix {
+	return &redshiftAuditLoggingFix{clients: clients, pool: p}
+}
+
+func (f *redshiftAuditLoggingFix) CheckID() string { return "redshift-audit-logging-enabled" }
+func (f *redshiftAuditLoggingFix) Description() string {
+	return "Enable audit logging on Redshift cluster"
+}
+func (f *redshiftAuditLoggingFix) Impact() fix.ImpactType      { return fix.ImpactNone }
+func (f *redshiftAuditLoggingFix) Severity() fix.SeverityLevel { return fix.SeverityMedium }
+
+func (f *redshiftAuditLoggingFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	out, err := f.clients.Redshift.DescribeClusters(fctx.Ctx, &redshift.DescribeClustersInput{
+		ClusterIdentifier: aws.String(resourceID),
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "describe cluster: " + err.Error()
+		return base
+	}
+	if len(out.Clusters) == 0 {
+		base.Status = fix.FixFailed
+		base.Message = "cluster not found"
+		return base
+	}
+
+	logOut, err := f.clients.Redshift.DescribeLoggingStatus(fctx.Ctx, &redshift.DescribeLoggingStatusInput{
+		ClusterIdentifier: aws.String(resourceID),
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "describe logging status: " + err.Error()
+		return base
+	}
+	if logOut.LoggingEnabled != nil && *logOut.LoggingEnabled {
+		base.Status = fix.FixSkipped
+		base.Message = "audit logging already enabled"
+		return base
+	}
+
+	region := f.clients.CloudWatchLogs.Options().Region
+	bucketName, steps, err := f.pool.Ensure(fctx.Ctx, pool.S3BucketSpec{
+		Purpose:        "redshift-audit",
+		Region:         region,
+		BucketPrefix:   "logs-",
+		BucketPolicyFn: redshiftAuditLogsBucketPolicy,
+	}, fctx.DryRun)
+	base.Steps = append(base.Steps, steps...)
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "ensure S3 bucket: " + err.Error()
+		return base
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = append(base.Steps,
+			fmt.Sprintf("would enable audit logging on Redshift cluster %s → s3://%s/%s/", resourceID, bucketName, resourceID),
+		)
+		return base
+	}
+
+	_, err = f.clients.Redshift.EnableLogging(fctx.Ctx, &redshift.EnableLoggingInput{
+		ClusterIdentifier: aws.String(resourceID),
+		BucketName:        aws.String(bucketName),
+		S3KeyPrefix:       aws.String(resourceID + "/"),
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "enable logging: " + err.Error()
+		return base
+	}
+	base.Steps = append(base.Steps,
+		fmt.Sprintf("enabled audit logging on Redshift cluster %s → s3://%s/%s/", resourceID, bucketName, resourceID),
+	)
+	base.Status = fix.FixApplied
+	return base
+}
+
+func redshiftAuditLogsBucketPolicy(ctx context.Context, s3Client *s3.Client, bucketName string) error {
+	policy := fmt.Sprintf(
+		`{"Version":"2012-10-17","Statement":[`+
+			`{"Sid":"RedshiftAuditLogsWrite","Effect":"Allow",`+
+			`"Principal":{"Service":"redshift.amazonaws.com"},`+
+			`"Action":["s3:PutObject","s3:GetBucketAcl"],`+
+			`"Resource":["arn:aws:s3:::%s","arn:aws:s3:::%s/*"]}]}`,
+		bucketName, bucketName,
+	)
+	_, err := s3Client.PutBucketPolicy(ctx, &s3.PutBucketPolicyInput{
+		Bucket: aws.String(bucketName),
+		Policy: aws.String(policy),
+	})
+	return err
 }
 
 // Suppress unused import warning

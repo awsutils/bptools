@@ -225,3 +225,77 @@ func (f *codeBuildProjectLoggingFix) Apply(fctx fix.FixContext, resourceID strin
 	base.Status = fix.FixApplied
 	return base
 }
+
+// ── codebuild-report-group-encrypted-at-rest ──────────────────────────────────
+
+type codeBuildReportGroupEncryptionFix struct{ clients *awsdata.Clients }
+
+func (f *codeBuildReportGroupEncryptionFix) CheckID() string {
+	return "codebuild-report-group-encrypted-at-rest"
+}
+func (f *codeBuildReportGroupEncryptionFix) Description() string {
+	return "Enable encryption on CodeBuild report group S3 export"
+}
+func (f *codeBuildReportGroupEncryptionFix) Impact() fix.ImpactType      { return fix.ImpactNone }
+func (f *codeBuildReportGroupEncryptionFix) Severity() fix.SeverityLevel { return fix.SeverityMedium }
+
+func (f *codeBuildReportGroupEncryptionFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	out, err := f.clients.CodeBuild.BatchGetReportGroups(fctx.Ctx, &codebuild.BatchGetReportGroupsInput{
+		ReportGroupArns: []string{resourceID},
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "batch get report groups: " + err.Error()
+		return base
+	}
+	if len(out.ReportGroups) == 0 {
+		base.Status = fix.FixFailed
+		base.Message = "report group not found"
+		return base
+	}
+	rg := out.ReportGroups[0]
+
+	if rg.ExportConfig == nil || rg.ExportConfig.S3Destination == nil {
+		base.Status = fix.FixSkipped
+		base.Message = "report group has no S3 export config"
+		return base
+	}
+	if rg.ExportConfig.S3Destination.EncryptionDisabled == nil || !*rg.ExportConfig.S3Destination.EncryptionDisabled {
+		base.Status = fix.FixSkipped
+		base.Message = "report group S3 export encryption already enabled"
+		return base
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{"would enable encryption on CodeBuild report group " + resourceID}
+		return base
+	}
+
+	exportConfig := &cbtypes.ReportExportConfig{
+		ExportConfigType: rg.ExportConfig.ExportConfigType,
+		S3Destination: &cbtypes.S3ReportExportConfig{
+			Bucket:            rg.ExportConfig.S3Destination.Bucket,
+			BucketOwner:       rg.ExportConfig.S3Destination.BucketOwner,
+			EncryptionDisabled: aws.Bool(false),
+			EncryptionKey:     rg.ExportConfig.S3Destination.EncryptionKey,
+			Packaging:         rg.ExportConfig.S3Destination.Packaging,
+			Path:              rg.ExportConfig.S3Destination.Path,
+		},
+	}
+
+	_, err = f.clients.CodeBuild.UpdateReportGroup(fctx.Ctx, &codebuild.UpdateReportGroupInput{
+		Arn:          aws.String(resourceID),
+		ExportConfig: exportConfig,
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "update report group: " + err.Error()
+		return base
+	}
+	base.Steps = []string{"enabled encryption on CodeBuild report group " + resourceID}
+	base.Status = fix.FixApplied
+	return base
+}

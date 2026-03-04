@@ -954,3 +954,114 @@ func (f *rdsSQLServerLoggingFix) Apply(fctx fix.FixContext, resourceID string) f
 	base.Status = fix.FixApplied
 	return base
 }
+
+// ── rds-proxy-tls-encryption ──────────────────────────────────────────────────
+
+type rdsProxyTLSFix struct{ clients *awsdata.Clients }
+
+func (f *rdsProxyTLSFix) CheckID() string     { return "rds-proxy-tls-encryption" }
+func (f *rdsProxyTLSFix) Description() string { return "Enforce TLS on RDS Proxy" }
+func (f *rdsProxyTLSFix) Impact() fix.ImpactType      { return fix.ImpactNone }
+func (f *rdsProxyTLSFix) Severity() fix.SeverityLevel { return fix.SeverityMedium }
+
+func (f *rdsProxyTLSFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	out, err := f.clients.RDS.DescribeDBProxies(fctx.Ctx, &rds.DescribeDBProxiesInput{
+		DBProxyName: aws.String(resourceID),
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "describe DB proxy: " + err.Error()
+		return base
+	}
+	if len(out.DBProxies) > 0 && out.DBProxies[0].RequireTLS != nil && *out.DBProxies[0].RequireTLS {
+		base.Status = fix.FixSkipped
+		base.Message = "TLS already required"
+		return base
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{fmt.Sprintf("would enable RequireTLS on RDS Proxy %s", resourceID)}
+		return base
+	}
+
+	_, err = f.clients.RDS.ModifyDBProxy(fctx.Ctx, &rds.ModifyDBProxyInput{
+		DBProxyName: aws.String(resourceID),
+		RequireTLS:  aws.Bool(true),
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "modify DB proxy: " + err.Error()
+		return base
+	}
+	base.Steps = []string{fmt.Sprintf("enabled RequireTLS on RDS Proxy %s", resourceID)}
+	base.Status = fix.FixApplied
+	return base
+}
+
+// ── rds-snapshots-public-prohibited ──────────────────────────────────────────
+
+type rdsSnapshotPublicFix struct{ clients *awsdata.Clients }
+
+func (f *rdsSnapshotPublicFix) CheckID() string { return "rds-snapshots-public-prohibited" }
+func (f *rdsSnapshotPublicFix) Description() string {
+	return "Remove public restore access from RDS DB snapshot"
+}
+func (f *rdsSnapshotPublicFix) Impact() fix.ImpactType      { return fix.ImpactNone }
+func (f *rdsSnapshotPublicFix) Severity() fix.SeverityLevel { return fix.SeverityHigh }
+
+func (f *rdsSnapshotPublicFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	attrOut, err := f.clients.RDS.DescribeDBSnapshotAttributes(fctx.Ctx,
+		&rds.DescribeDBSnapshotAttributesInput{
+			DBSnapshotIdentifier: aws.String(resourceID),
+		})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "describe snapshot attributes: " + err.Error()
+		return base
+	}
+
+	isPublic := false
+	if attrOut.DBSnapshotAttributesResult != nil {
+		for _, a := range attrOut.DBSnapshotAttributesResult.DBSnapshotAttributes {
+			if aws.ToString(a.AttributeName) == "restore" {
+				for _, v := range a.AttributeValues {
+					if v == "all" {
+						isPublic = true
+						break
+					}
+				}
+			}
+		}
+	}
+	if !isPublic {
+		base.Status = fix.FixSkipped
+		base.Message = "snapshot is already private"
+		return base
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{fmt.Sprintf("would remove public restore access from RDS snapshot %s", resourceID)}
+		return base
+	}
+
+	_, err = f.clients.RDS.ModifyDBSnapshotAttribute(fctx.Ctx,
+		&rds.ModifyDBSnapshotAttributeInput{
+			DBSnapshotIdentifier: aws.String(resourceID),
+			AttributeName:        aws.String("restore"),
+			ValuesToRemove:       []string{"all"},
+		})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "modify snapshot attribute: " + err.Error()
+		return base
+	}
+	base.Steps = []string{fmt.Sprintf("removed public restore access from RDS snapshot %s", resourceID)}
+	base.Status = fix.FixApplied
+	return base
+}

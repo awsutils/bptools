@@ -269,3 +269,76 @@ func (f *neptuneCloudWatchLogsFix) Apply(fctx fix.FixContext, resourceID string)
 	base.Status = fix.FixApplied
 	return base
 }
+
+// ── neptune-cluster-snapshot-public-prohibited ────────────────────────────────
+
+type neptuneSnapshotPublicFix struct{ clients *awsdata.Clients }
+
+func (f *neptuneSnapshotPublicFix) CheckID() string {
+	return "neptune-cluster-snapshot-public-prohibited"
+}
+func (f *neptuneSnapshotPublicFix) Description() string {
+	return "Remove public restore access from Neptune cluster snapshot"
+}
+func (f *neptuneSnapshotPublicFix) Impact() fix.ImpactType      { return fix.ImpactNone }
+func (f *neptuneSnapshotPublicFix) Severity() fix.SeverityLevel { return fix.SeverityHigh }
+
+func (f *neptuneSnapshotPublicFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	// Extract snapshot identifier from ARN: arn:aws:rds:...:cluster-snapshot:snapshot-id
+	snapshotID := resourceID
+	if idx := strings.LastIndex(resourceID, ":"); idx >= 0 {
+		snapshotID = resourceID[idx+1:]
+	}
+
+	attrOut, err := f.clients.Neptune.DescribeDBClusterSnapshotAttributes(fctx.Ctx,
+		&neptune.DescribeDBClusterSnapshotAttributesInput{
+			DBClusterSnapshotIdentifier: aws.String(snapshotID),
+		})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "describe snapshot attributes: " + err.Error()
+		return base
+	}
+
+	isPublic := false
+	if attrOut.DBClusterSnapshotAttributesResult != nil {
+		for _, a := range attrOut.DBClusterSnapshotAttributesResult.DBClusterSnapshotAttributes {
+			if aws.ToString(a.AttributeName) == "restore" {
+				for _, v := range a.AttributeValues {
+					if v == "all" {
+						isPublic = true
+						break
+					}
+				}
+			}
+		}
+	}
+	if !isPublic {
+		base.Status = fix.FixSkipped
+		base.Message = "snapshot is already private"
+		return base
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{fmt.Sprintf("would remove public restore access from Neptune snapshot %s", snapshotID)}
+		return base
+	}
+
+	_, err = f.clients.Neptune.ModifyDBClusterSnapshotAttribute(fctx.Ctx,
+		&neptune.ModifyDBClusterSnapshotAttributeInput{
+			DBClusterSnapshotIdentifier: aws.String(snapshotID),
+			AttributeName:               aws.String("restore"),
+			ValuesToRemove:              []string{"all"},
+		})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "modify snapshot attribute: " + err.Error()
+		return base
+	}
+	base.Steps = []string{fmt.Sprintf("removed public restore access from Neptune snapshot %s", snapshotID)}
+	base.Status = fix.FixApplied
+	return base
+}

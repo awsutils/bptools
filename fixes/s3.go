@@ -420,3 +420,109 @@ func (f *s3SSLOnlyFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResu
 	base.Status = fix.FixApplied
 	return base
 }
+
+// ── s3-default-encryption-kms ─────────────────────────────────────────────────
+
+type s3KMSEncryptionFix struct{ clients *awsdata.Clients }
+
+func (f *s3KMSEncryptionFix) CheckID() string { return "s3-default-encryption-kms" }
+func (f *s3KMSEncryptionFix) Description() string {
+	return "Enable S3 default SSE-KMS encryption on bucket"
+}
+func (f *s3KMSEncryptionFix) Impact() fix.ImpactType      { return fix.ImpactNone }
+func (f *s3KMSEncryptionFix) Severity() fix.SeverityLevel { return fix.SeverityHigh }
+
+func (f *s3KMSEncryptionFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	out, err := f.clients.S3.GetBucketEncryption(fctx.Ctx, &s3.GetBucketEncryptionInput{
+		Bucket: aws.String(resourceID),
+	})
+	if err == nil && out.ServerSideEncryptionConfiguration != nil {
+		for _, rule := range out.ServerSideEncryptionConfiguration.Rules {
+			if rule.ApplyServerSideEncryptionByDefault != nil &&
+				rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm == s3types.ServerSideEncryptionAwsKms {
+				base.Status = fix.FixSkipped
+				base.Message = "SSE-KMS encryption already configured"
+				return base
+			}
+		}
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{fmt.Sprintf("would enable SSE-KMS encryption on bucket %s", resourceID)}
+		return base
+	}
+
+	_, err = f.clients.S3.PutBucketEncryption(fctx.Ctx, &s3.PutBucketEncryptionInput{
+		Bucket: aws.String(resourceID),
+		ServerSideEncryptionConfiguration: &s3types.ServerSideEncryptionConfiguration{
+			Rules: []s3types.ServerSideEncryptionRule{{
+				ApplyServerSideEncryptionByDefault: &s3types.ServerSideEncryptionByDefault{
+					SSEAlgorithm: s3types.ServerSideEncryptionAwsKms,
+				},
+				BucketKeyEnabled: aws.Bool(true),
+			}},
+		},
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "put bucket encryption: " + err.Error()
+		return base
+	}
+	base.Steps = []string{fmt.Sprintf("enabled SSE-KMS encryption on bucket %s", resourceID)}
+	base.Status = fix.FixApplied
+	return base
+}
+
+// ── s3-bucket-acl-prohibited ──────────────────────────────────────────────────
+
+type s3ACLProhibitedFix struct{ clients *awsdata.Clients }
+
+func (f *s3ACLProhibitedFix) CheckID() string { return "s3-bucket-acl-prohibited" }
+func (f *s3ACLProhibitedFix) Description() string {
+	return "Disable ACLs on S3 bucket by enabling BucketOwnerEnforced ownership"
+}
+func (f *s3ACLProhibitedFix) Impact() fix.ImpactType      { return fix.ImpactDegradation }
+func (f *s3ACLProhibitedFix) Severity() fix.SeverityLevel { return fix.SeverityMedium }
+
+func (f *s3ACLProhibitedFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	out, err := f.clients.S3.GetBucketOwnershipControls(fctx.Ctx, &s3.GetBucketOwnershipControlsInput{
+		Bucket: aws.String(resourceID),
+	})
+	if err == nil && out.OwnershipControls != nil {
+		for _, rule := range out.OwnershipControls.Rules {
+			if rule.ObjectOwnership == s3types.ObjectOwnershipBucketOwnerEnforced {
+				base.Status = fix.FixSkipped
+				base.Message = "bucket already uses BucketOwnerEnforced (ACLs disabled)"
+				return base
+			}
+		}
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{fmt.Sprintf("would set BucketOwnerEnforced on bucket %s to disable ACLs", resourceID)}
+		return base
+	}
+
+	_, err = f.clients.S3.PutBucketOwnershipControls(fctx.Ctx, &s3.PutBucketOwnershipControlsInput{
+		Bucket: aws.String(resourceID),
+		OwnershipControls: &s3types.OwnershipControls{
+			Rules: []s3types.OwnershipControlsRule{{
+				ObjectOwnership: s3types.ObjectOwnershipBucketOwnerEnforced,
+			}},
+		},
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "put bucket ownership controls: " + err.Error()
+		return base
+	}
+	base.Steps = []string{fmt.Sprintf("set BucketOwnerEnforced on bucket %s (ACLs disabled)", resourceID)}
+	base.Status = fix.FixApplied
+	return base
+}

@@ -371,3 +371,58 @@ func (f *elbDeletionProtectionFix) Apply(fctx fix.FixContext, resourceID string)
 	base.Status = fix.FixApplied
 	return base
 }
+
+// ── alb-desync-mode-check ─────────────────────────────────────────────────────
+
+type albDesyncModeFix struct{ clients *awsdata.Clients }
+
+func (f *albDesyncModeFix) CheckID() string          { return "alb-desync-mode-check" }
+func (f *albDesyncModeFix) Description() string      { return "Set ALB desync mitigation mode to defensive" }
+func (f *albDesyncModeFix) Impact() fix.ImpactType   { return fix.ImpactNone }
+func (f *albDesyncModeFix) Severity() fix.SeverityLevel { return fix.SeverityMedium }
+
+func (f *albDesyncModeFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	attrOut, err := f.clients.ELBv2.DescribeLoadBalancerAttributes(fctx.Ctx,
+		&elasticloadbalancingv2.DescribeLoadBalancerAttributesInput{
+			LoadBalancerArn: aws.String(resourceID),
+		})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "describe lb attributes: " + err.Error()
+		return base
+	}
+	for _, a := range attrOut.Attributes {
+		if aws.ToString(a.Key) == "routing.http.desync_mitigation_mode" {
+			v := aws.ToString(a.Value)
+			if v == "defensive" || v == "strictest" {
+				base.Status = fix.FixSkipped
+				base.Message = fmt.Sprintf("desync mitigation mode already set to %s", v)
+				return base
+			}
+		}
+	}
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{fmt.Sprintf("would set desync mitigation mode to defensive on ALB %s", resourceID)}
+		return base
+	}
+
+	_, err = f.clients.ELBv2.ModifyLoadBalancerAttributes(fctx.Ctx,
+		&elasticloadbalancingv2.ModifyLoadBalancerAttributesInput{
+			LoadBalancerArn: aws.String(resourceID),
+			Attributes: []elbv2types.LoadBalancerAttribute{
+				{Key: aws.String("routing.http.desync_mitigation_mode"), Value: aws.String("defensive")},
+			},
+		})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "modify lb attributes: " + err.Error()
+		return base
+	}
+	base.Steps = []string{fmt.Sprintf("set desync mitigation mode to defensive on ALB %s", resourceID)}
+	base.Status = fix.FixApplied
+	return base
+}

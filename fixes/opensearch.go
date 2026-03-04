@@ -2,13 +2,16 @@ package fixes
 
 import (
 	"fmt"
+	"strings"
 
 	"bptools/awsdata"
 	"bptools/fix"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go-v2/service/opensearch"
 	opentypes "github.com/aws/aws-sdk-go-v2/service/opensearch/types"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 // opensearchFix applies a single UpdateDomainConfig change to an OpenSearch domain.
@@ -120,4 +123,102 @@ func newOpenSearchHTTPSFix(clients *awsdata.Clients) *opensearchFix {
 		},
 		clients: clients,
 	}
+}
+
+// ── opensearch-audit-logging-enabled ─────────────────────────────────────────
+
+type opensearchAuditLoggingFix struct{ clients *awsdata.Clients }
+
+func (f *opensearchAuditLoggingFix) CheckID() string { return "opensearch-audit-logging-enabled" }
+func (f *opensearchAuditLoggingFix) Description() string {
+	return "Enable audit logging on OpenSearch domain"
+}
+func (f *opensearchAuditLoggingFix) Impact() fix.ImpactType      { return fix.ImpactNone }
+func (f *opensearchAuditLoggingFix) Severity() fix.SeverityLevel { return fix.SeverityMedium }
+
+func (f *opensearchAuditLoggingFix) Apply(fctx fix.FixContext, resourceID string) fix.FixResult {
+	base := fix.FixResult{CheckID: f.CheckID(), ResourceID: resourceID, Impact: f.Impact(), Severity: f.Severity()}
+
+	out, err := f.clients.OpenSearch.DescribeDomain(fctx.Ctx, &opensearch.DescribeDomainInput{
+		DomainName: aws.String(resourceID),
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "describe domain: " + err.Error()
+		return base
+	}
+	if out.DomainStatus != nil && out.DomainStatus.LogPublishingOptions != nil {
+		if opt, ok := out.DomainStatus.LogPublishingOptions[string(opentypes.LogTypeAuditLogs)]; ok {
+			if opt.Enabled != nil && *opt.Enabled {
+				base.Status = fix.FixSkipped
+				base.Message = "audit logging already enabled"
+				return base
+			}
+		}
+	}
+
+	region := f.clients.CloudWatchLogs.Options().Region
+	callerOut, err := f.clients.STS.GetCallerIdentity(fctx.Ctx, &sts.GetCallerIdentityInput{})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "get caller identity: " + err.Error()
+		return base
+	}
+	account := aws.ToString(callerOut.Account)
+
+	logGroupName := "/aws/opensearch/domains/" + resourceID + "/audit-logs"
+	logGroupArn := fmt.Sprintf("arn:aws:logs:%s:%s:log-group:%s", region, account, logGroupName)
+
+	if fctx.DryRun {
+		base.Status = fix.FixDryRun
+		base.Steps = []string{
+			fmt.Sprintf("would create log group %s", logGroupName),
+			fmt.Sprintf("would enable audit logging on OpenSearch domain %s", resourceID),
+		}
+		return base
+	}
+
+	_, cgErr := f.clients.CloudWatchLogs.CreateLogGroup(fctx.Ctx, &cloudwatchlogs.CreateLogGroupInput{
+		LogGroupName: aws.String(logGroupName),
+	})
+	if cgErr != nil && !strings.Contains(cgErr.Error(), "ResourceAlreadyExistsException") {
+		base.Status = fix.FixFailed
+		base.Message = "create log group: " + cgErr.Error()
+		return base
+	}
+
+	// OpenSearch requires a resource-based policy on the log group
+	policyName := "opensearch-audit-logs-" + resourceID
+	policyDoc := fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"es.amazonaws.com"},"Action":["logs:PutLogEvents","logs:CreateLogStream"],"Resource":"%s:*","Condition":{"StringEquals":{"aws:SourceAccount":"%s"}}}]}`,
+		logGroupArn, account)
+	_, prErr := f.clients.CloudWatchLogs.PutResourcePolicy(fctx.Ctx, &cloudwatchlogs.PutResourcePolicyInput{
+		PolicyName:     aws.String(policyName),
+		PolicyDocument: aws.String(policyDoc),
+	})
+	if prErr != nil {
+		base.Status = fix.FixFailed
+		base.Message = "put CW log group resource policy: " + prErr.Error()
+		return base
+	}
+
+	_, err = f.clients.OpenSearch.UpdateDomainConfig(fctx.Ctx, &opensearch.UpdateDomainConfigInput{
+		DomainName: aws.String(resourceID),
+		LogPublishingOptions: map[string]opentypes.LogPublishingOption{
+			string(opentypes.LogTypeAuditLogs): {
+				Enabled:                 aws.Bool(true),
+				CloudWatchLogsLogGroupArn: aws.String(logGroupArn),
+			},
+		},
+	})
+	if err != nil {
+		base.Status = fix.FixFailed
+		base.Message = "update domain config: " + err.Error()
+		return base
+	}
+	base.Steps = []string{
+		fmt.Sprintf("ensured log group %s exists with OpenSearch resource policy", logGroupName),
+		fmt.Sprintf("enabled audit logging on OpenSearch domain %s", resourceID),
+	}
+	base.Status = fix.FixApplied
+	return base
 }
