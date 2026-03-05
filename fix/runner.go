@@ -2,6 +2,7 @@ package fix
 
 import (
 	"context"
+	"strings"
 
 	"bptools/checker"
 )
@@ -9,7 +10,7 @@ import (
 // RunOpts controls which fixes are executed.
 type RunOpts struct {
 	DryRun         bool
-	ImpactFilter   map[ImpactType]bool   // nil = all impacts
+	ImpactFilter   map[ImpactType]bool    // nil = all impacts
 	SeverityFilter map[SeverityLevel]bool // nil = all severities
 }
 
@@ -39,7 +40,7 @@ func RunFixes(ctx context.Context, results []checker.Result, opts RunOpts, hooks
 		}
 		action := Lookup(r.CheckID)
 		if action == nil {
-			continue
+			action = &manualFallbackFixAction{checkID: r.CheckID}
 		}
 		if opts.ImpactFilter != nil && !opts.ImpactFilter[action.Impact()] {
 			continue
@@ -80,4 +81,30 @@ func RunFixes(ctx context.Context, results []checker.Result, opts RunOpts, hooks
 		hooks.OnDone(len(jobs), applied, failed)
 	}
 	return fixResults
+}
+
+type manualFallbackFixAction struct {
+	checkID string
+}
+
+func (f *manualFallbackFixAction) CheckID() string     { return f.checkID }
+func (f *manualFallbackFixAction) Description() string { return "Manual remediation required" }
+func (f *manualFallbackFixAction) Impact() ImpactType  { return ImpactNone }
+func (f *manualFallbackFixAction) Severity() SeverityLevel {
+	return SeverityLow
+}
+
+func (f *manualFallbackFixAction) Apply(_ FixContext, resourceID string) FixResult {
+	id := strings.TrimSpace(resourceID)
+	if id == "" {
+		id = "<account>"
+	}
+	return FixResult{
+		CheckID:    f.checkID,
+		ResourceID: id,
+		Status:     FixSkipped,
+		Impact:     ImpactNone,
+		Severity:   SeverityLow,
+		Message:    "auto-fix fallback: no safe built-in remediation yet; apply manual remediation",
+	}
 }
