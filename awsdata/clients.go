@@ -236,7 +236,7 @@ func NewClients(ctx context.Context) (*Clients, error) {
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithAPIOptions([]func(*middleware.Stack) error{
 		addUserAgentOverride,
 		addOpLogger,
-	}))
+	}), config.WithEC2IMDSRegion())
 	if err != nil {
 		return nil, err
 	}
