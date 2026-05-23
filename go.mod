@@ -3,7 +3,7 @@ module bptools
 go 1.25.6
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.41.1
+	github.com/aws/aws-sdk-go-v2 v1.41.2
 	github.com/aws/aws-sdk-go-v2/config v1.32.7
 	github.com/aws/aws-sdk-go-v2/service/accessanalyzer v1.45.8
 	github.com/aws/aws-sdk-go-v2/service/account v1.30.1
@@ -74,7 +74,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iottwinmaker v1.29.17
 	github.com/aws/aws-sdk-go-v2/service/iotwireless v1.54.5
 	github.com/aws/aws-sdk-go-v2/service/ivs v1.48.10
-	github.com/aws/aws-sdk-go-v2/service/kafka v1.46.7
+	github.com/aws/aws-sdk-go-v2/service/kafka v1.48.1
 	github.com/aws/aws-sdk-go-v2/service/kafkaconnect v1.29.2
 	github.com/aws/aws-sdk-go-v2/service/keyspaces v1.25.0
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.43.0
@@ -115,15 +115,15 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/wafregional v1.30.17
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.70.7
 	github.com/aws/aws-sdk-go-v2/service/workspaces v1.66.0
-	github.com/aws/smithy-go v1.24.0
+	github.com/aws/smithy-go v1.24.1
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.4 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.7 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.17 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.17 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.17 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.18 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.18 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.17 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.4 // indirect
